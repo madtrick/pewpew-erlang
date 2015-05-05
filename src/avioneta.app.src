@@ -1,0 +1,13 @@
+{application, avioneta,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  lager
+                 ]},
+  {mod, { avioneta_app, []}},
+  {env, []}
+ ]}.

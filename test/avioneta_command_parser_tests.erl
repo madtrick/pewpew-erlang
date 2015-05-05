@@ -1,0 +1,2 @@
+-module(avioneta_command_parser_tests).
+-include_lib("eunit/include/eunit.hrl").
