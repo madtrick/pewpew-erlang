@@ -1,4 +1,4 @@
--module(avioneta_game_sup).
+-module(pewpew_game_sup).
 -behaviour(supervisor).
 
 -export([start_link/1]).
@@ -11,8 +11,8 @@ start_link(GameName) ->
 
 init([GameName]) ->
   {ok, { {one_for_one, 5, 10}, [
-        ?CHILD(avioneta_game, worker, [GameName])
-        %?CHILD(avioneta_arena_component, worker, [GameName]),
-        %?CHILD(avioneta_player_component_sup, supervisor, [])
+        ?CHILD(pewpew_game, worker, [GameName])
+        %?CHILD(pewpew_arena_component, worker, [GameName]),
+        %?CHILD(pewpew_player_component_sup, supervisor, [])
       ]} }.
 

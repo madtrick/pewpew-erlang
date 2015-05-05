@@ -1,4 +1,4 @@
--module(avioneta_games_sup).
+-module(pewpew_games_sup).
 -behaviour(supervisor).
 
 
@@ -15,6 +15,6 @@ add_game(GameName) ->
   supervisor:start_child(?MODULE, [GameName]).
 
 init([]) ->
-  {ok, { {simple_one_for_one, 5, 10}, [?CHILD(avioneta_game_sup, supervisor, [])]} }.
+  {ok, { {simple_one_for_one, 5, 10}, [?CHILD(pewpew_game_sup, supervisor, [])]} }.
 
 

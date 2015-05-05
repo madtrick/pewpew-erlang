@@ -1,15 +1,15 @@
--module(avioneta_game_context_data).
+-module(pewpew_game_context_data).
 
 -export([new/1]).
--export([avioneta_event_bus/1]).
+-export([pewpew_event_bus/1]).
 
--record(avioneta_game_context_data, {
-    avioneta_event_bus
+-record(pewpew_game_context_data, {
+    pewpew_event_bus
   }).
 
 new(Options) ->
-  #avioneta_game_context_data{
-    avioneta_event_bus = proplists:get_value(avioneta_event_bus, Options)
+  #pewpew_game_context_data{
+    pewpew_event_bus = proplists:get_value(pewpew_event_bus, Options)
   }.
 
-avioneta_event_bus(#avioneta_game_context_data{ avioneta_event_bus = AvionetaEventBus }) -> AvionetaEventBus.
+pewpew_event_bus(#pewpew_game_context_data{ pewpew_event_bus = PewpewEventBus }) -> PewpewEventBus.

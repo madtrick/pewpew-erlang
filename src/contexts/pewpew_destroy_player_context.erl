@@ -1,13 +1,13 @@
--module(avioneta_destroy_player_context).
+-module(pewpew_destroy_player_context).
 
 -export([call/3]).
 
-call(CommandContextData, AvionetaGame, OriginChannel) ->
-  UpdatedCommandContextData = avioneta_command_context_data:update(CommandContextData, [{origin, OriginChannel}, {avioneta_game, AvionetaGame}]),
-  CommandData = avioneta_command_context_data:command_data(UpdatedCommandContextData),
+call(CommandContextData, PewpewGame, OriginChannel) ->
+  UpdatedCommandContextData = pewpew_command_context_data:update(CommandContextData, [{origin, OriginChannel}, {pewpew_game, PewpewGame}]),
+  CommandData = pewpew_command_context_data:command_data(UpdatedCommandContextData),
 
-  _ = (avioneta_command_data:runner(CommandData)):run(
-    avioneta_command_data:runner_data(CommandData), UpdatedCommandContextData
+  _ = (pewpew_command_data:runner(CommandData)):run(
+    pewpew_command_data:runner_data(CommandData), UpdatedCommandContextData
   ),
 
   noreply.

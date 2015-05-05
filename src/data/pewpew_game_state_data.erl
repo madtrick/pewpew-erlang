@@ -1,24 +1,24 @@
--module(avioneta_game_state_data).
+-module(pewpew_game_state_data).
 
 -export([new/1]).
--export([avioneta_game_context_data/1, avioneta_arena_component/1]).
+-export([pewpew_game_context_data/1, pewpew_arena_component/1]).
 -export([update/2]).
 
--record(avioneta_game_state_data,{
-    avioneta_arena_component,
-    avioneta_game_context_data
+-record(pewpew_game_state_data,{
+    pewpew_arena_component,
+    pewpew_game_context_data
   }).
 
 new(Options) ->
-  #avioneta_game_state_data{
-    avioneta_arena_component = proplists:get_value(avioneta_arena_component, Options),
-    avioneta_game_context_data = proplists:get_value(avioneta_game_context_data, Options)
+  #pewpew_game_state_data{
+    pewpew_arena_component = proplists:get_value(pewpew_arena_component, Options),
+    pewpew_game_context_data = proplists:get_value(pewpew_game_context_data, Options)
   }.
 
-avioneta_arena_component(#avioneta_game_state_data{ avioneta_arena_component = AvionetaArenaComponent }) -> AvionetaArenaComponent.
-avioneta_game_context_data(#avioneta_game_state_data{ avioneta_game_context_data = AvionetaGameContextData }) -> AvionetaGameContextData.
+pewpew_arena_component(#pewpew_game_state_data{ pewpew_arena_component = PewpewArenaComponent }) -> PewpewArenaComponent.
+pewpew_game_context_data(#pewpew_game_state_data{ pewpew_game_context_data = PewpewGameContextData }) -> PewpewGameContextData.
 
-update(AvionetaGameStateData, Options) ->
-  AvionetaGameStateData#avioneta_game_state_data{
-    avioneta_arena_component = proplists:get_value(avioneta_arena_component, Options, avioneta_arena_component(AvionetaGameStateData))
+update(PewpewGameStateData, Options) ->
+  PewpewGameStateData#pewpew_game_state_data{
+    pewpew_arena_component = proplists:get_value(pewpew_arena_component, Options, pewpew_arena_component(PewpewGameStateData))
   }.

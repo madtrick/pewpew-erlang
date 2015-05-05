@@ -1,4 +1,4 @@
--module(avioneta_message_dispatcher).
+-module(pewpew_message_dispatcher).
 
 -export([dispatch/3]).
 
@@ -15,18 +15,18 @@ dispatch_messages([Message | Messages], OriginChannel, OtherChannels) ->
   dispatch_messages( Messages, OriginChannel, OtherChannels).
 
 dispatch_with_rule(send_to_origin, Data, OriginChannel, _OtherChannels) ->
-  avioneta_multicast:publish(Data, OriginChannel);
+  pewpew_multicast:publish(Data, OriginChannel);
 dispatch_with_rule(send_to_others, Data, _OriginChannel, OtherChannels) ->
-  avioneta_multicast:publish(Data, OtherChannels);
+  pewpew_multicast:publish(Data, OtherChannels);
 dispatch_with_rule(send_to_all, Data, OriginChannel, OtherChannels) ->
-  avioneta_multicast:publish(Data, [OriginChannel | OtherChannels]);
+  pewpew_multicast:publish(Data, [OriginChannel | OtherChannels]);
 dispatch_with_rule(_, _, _, _) ->
   lager:debug("Unknown dispatch rule").
 
 convert_to_json(Messages) ->
   JSONMessages = lists:foldl(fun(MessageData, Acc) ->
-      [ (avioneta_message_data:message_module(MessageData)):toJSON(
-        avioneta_message_data:message_data(MessageData)
+      [ (pewpew_message_data:message_module(MessageData)):toJSON(
+        pewpew_message_data:message_data(MessageData)
       ) | Acc]
   end, [], Messages),
 

@@ -1,4 +1,4 @@
--module(avioneta_player_component_sup).
+-module(pewpew_player_component_sup).
 -behaviour(supervisor).
 
 
@@ -11,9 +11,9 @@
 start_link() ->
   supervisor:start_link(?MODULE, []).
 
-add_player(Supervisor, AvionetaGameContextData, Data) ->
-  supervisor:start_child(Supervisor, [AvionetaGameContextData, Data]).
+add_player(Supervisor, PewpewGameContextData, Data) ->
+  supervisor:start_child(Supervisor, [PewpewGameContextData, Data]).
 
 init([]) ->
-  {ok, { {simple_one_for_one, 5, 10}, [?CHILD(avioneta_player_component, worker, [])]} }.
+  {ok, { {simple_one_for_one, 5, 10}, [?CHILD(pewpew_player_component, worker, [])]} }.
 

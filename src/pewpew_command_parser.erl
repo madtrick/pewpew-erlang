@@ -1,4 +1,4 @@
--module(avioneta_command_parser).
+-module(pewpew_command_parser).
 
 -export([parse/1]).
 
@@ -25,14 +25,14 @@ extract_commands_from_json(Command = {_}, Acc) ->
 
 
 build_command(?COMMAND("ShotHitPlayerCommand", Data)) ->
-  avioneta_command_context_data:new(avioneta_shot_hit_player_command_context, avioneta_shot_hit_player_command:fromJSON(Data));
+  pewpew_command_context_data:new(pewpew_shot_hit_player_command_context, pewpew_shot_hit_player_command:fromJSON(Data));
 build_command(?COMMAND("RegisterPlayerCommand", Data)) ->
-  avioneta_command_context_data:new(avioneta_register_player_context, register_player_command:fromJSON(Data));
+  pewpew_command_context_data:new(pewpew_register_player_context, register_player_command:fromJSON(Data));
 build_command(?COMMAND("MovePlayerCommand", Data)) ->
-  avioneta_command_context_data:new(avioneta_move_player_context, avioneta_move_player_command:fromJSON(Data));
+  pewpew_command_context_data:new(pewpew_move_player_context, pewpew_move_player_command:fromJSON(Data));
 build_command(?COMMAND("ShootPlayerCommand", Data)) ->
-  avioneta_command_context_data:new(avioneta_shoot_player_context, avioneta_shoot_player_command:fromJSON(Data));
+  pewpew_command_context_data:new(pewpew_shoot_player_context, pewpew_shoot_player_command:fromJSON(Data));
 build_command(?COMMAND("DestroyPlayerCommand", Data)) ->
-  avioneta_command_context_data:new(avioneta_destroy_player_context, avioneta_destroy_player_command:fromJSON(Data));
+  pewpew_command_context_data:new(pewpew_destroy_player_context, pewpew_destroy_player_command:fromJSON(Data));
 build_command(?COMMAND("RotatePlayerCommand", Data)) ->
-  avioneta_command_context_data:new(avioneta_rotate_player_context, avioneta_rotate_player_command:fromJSON(Data)).
+  pewpew_command_context_data:new(pewpew_rotate_player_context, pewpew_rotate_player_command:fromJSON(Data)).

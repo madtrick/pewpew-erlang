@@ -1,4 +1,4 @@
--module(avioneta_no_seats_left_notification_serializer).
+-module(pewpew_no_seats_left_notification_serializer).
 
 -export([toJSON/1]).
 

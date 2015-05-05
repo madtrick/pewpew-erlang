@@ -1,4 +1,4 @@
--module(avioneta_sup).
+-module(pewpew_sup).
 -behaviour(supervisor).
 
 -export([start_link/0]).
@@ -11,10 +11,10 @@ start_link() ->
 
 init([]) ->
   {ok, { {one_for_one, 5, 10}, [
-        ?CHILD(wsserver_server, worker, [avioneta_wsserver:config()]),
-        ?CHILD(avioneta_registry, worker, []),
-        ?CHILD(avioneta_multicast, worker, []),
-        ?CHILD(avioneta_games_sup, supervisor, []),
-        ?CHILD(avioneta_core, worker, [])
+        ?CHILD(wsserver_server, worker, [pewpew_wsserver:config()]),
+        ?CHILD(pewpew_registry, worker, []),
+        ?CHILD(pewpew_multicast, worker, []),
+        ?CHILD(pewpew_games_sup, supervisor, []),
+        ?CHILD(pewpew_core, worker, [])
       ]} }.
 

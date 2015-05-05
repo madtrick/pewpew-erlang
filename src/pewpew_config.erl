@@ -1,9 +1,9 @@
--module(avioneta_config).
+-module(pewpew_config).
 
 -export([init/1]).
 -export([get/1, get/2]).
 
--define(APPLICATION, avioneta).
+-define(APPLICATION, pewpew).
 
 init(Config) ->
   application:set_env(?APPLICATION, config, Config).
@@ -13,7 +13,7 @@ get(Key) ->
   kvc:path(Key, Env).
 
 get(Key, Default) ->
-  case avioneta_config:get(Key) of
+  case pewpew_config:get(Key) of
     [] -> Default;
     Value -> Value
   end.

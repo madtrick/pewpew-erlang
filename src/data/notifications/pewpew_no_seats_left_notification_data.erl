@@ -1,10 +1,10 @@
--module(avioneta_no_seats_left_notification_data).
+-module(pewpew_no_seats_left_notification_data).
 
 -export([new/1]).
 
--record(avioneta_no_seats_left_notification_data, {}).
+-record(pewpew_no_seats_left_notification_data, {}).
 
 new(Notification) ->
-  NotificationData = #avioneta_no_seats_left_notification_data{},
+  NotificationData = #pewpew_no_seats_left_notification_data{},
 
-  avioneta_message_data:new(Notification, NotificationData).
+  pewpew_message_data:new(Notification, NotificationData).

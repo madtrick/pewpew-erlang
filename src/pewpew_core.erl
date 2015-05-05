@@ -1,11 +1,11 @@
--module(avioneta_core).
+-module(pewpew_core).
 -behaviour(gen_server).
 
 -export([start_link/0, process_message/2]).
 -export([init/1, handle_cast/2, terminate/2]).
 
--record(avioneta_core_state, {
-    avioneta_game
+-record(pewpew_core_state, {
+    pewpew_game
   }).
 
 start_link() ->
@@ -15,18 +15,18 @@ process_message(Message, OriginChannel) ->
   gen_server:cast(?MODULE, {process_message, OriginChannel, Message}).
 
 init(_) ->
-  {ok, build_avioneta_core_state()}.
+  {ok, build_pewpew_core_state()}.
 
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
   ok;
 handle_cast({process_message, OriginChannel, Message}, State) ->
-  NewAvionetaCoreStateData = handle_process_message(OriginChannel, Message, State),
-  {noreply, NewAvionetaCoreStateData}.
+  NewPewpewCoreStateData = handle_process_message(OriginChannel, Message, State),
+  {noreply, NewPewpewCoreStateData}.
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
-  CommandContexts = avioneta_command_parser:parse(Message),
+  CommandContexts = pewpew_command_parser:parse(Message),
   evaluate_command_return_values(
-    avioneta_command_runner:run(CommandContexts, avioneta_game(State), OriginChannel),
+    pewpew_command_runner:run(CommandContexts, pewpew_game(State), OriginChannel),
     OriginChannel
   ),
   State.
@@ -41,33 +41,33 @@ evaluate_command_return_values([ReturnValue |  Tail], OriginChannel) ->
       dispatch_messages(Messages, OriginChannel, filter_origin_channel(OriginChannel, all_channels())),
       evaluate_command_return_values(Tail, OriginChannel);
     close ->
-      avioneta_channel:close(OriginChannel),
+      pewpew_channel:close(OriginChannel),
       ok; %Discard all pending values
     {close, Messages} ->
       dispatch_messages(Messages, OriginChannel, filter_origin_channel(OriginChannel, all_channels())),
-      avioneta_channel:close(OriginChannel),
+      pewpew_channel:close(OriginChannel),
       ok %Discard all pending values
   end.
 
 dispatch_messages(Messages, OriginChannel, OtherChannels) ->
-  avioneta_message_dispatcher:dispatch(Messages, OriginChannel, OtherChannels ).
+  pewpew_message_dispatcher:dispatch(Messages, OriginChannel, OtherChannels ).
 
 filter_origin_channel(OriginChannel, Channels) ->
   lists:filter(fun(Element) -> Element =/= OriginChannel end, Channels).
 
 all_channels() ->
-  avioneta_registry:entries().
+  pewpew_registry:entries().
 
 terminate(_Reason, _State) ->
   die.
 
-build_avioneta_core_state() ->
+build_pewpew_core_state() ->
   GameName = random_game_name(),
-  avioneta_games_sup:add_game(GameName),
-  avioneta_core_state_data:new(GameName).
+  pewpew_games_sup:add_game(GameName),
+  pewpew_core_state_data:new(GameName).
 
-avioneta_game(State) ->
-  avioneta_core_state_data:avioneta_game(State).
+pewpew_game(State) ->
+  pewpew_core_state_data:pewpew_game(State).
 
 random_game_name() ->
   %

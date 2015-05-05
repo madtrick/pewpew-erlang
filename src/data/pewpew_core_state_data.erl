@@ -1,15 +1,15 @@
--module(avioneta_core_state_data).
+-module(pewpew_core_state_data).
 
--export([new/1, avioneta_game/1]).
+-export([new/1, pewpew_game/1]).
 
--record(avioneta_core_state_data, {
-    avioneta_game
+-record(pewpew_core_state_data, {
+    pewpew_game
   }).
 
-new(AvionetaGame) ->
-  #avioneta_core_state_data{
-    avioneta_game = AvionetaGame
+new(PewpewGame) ->
+  #pewpew_core_state_data{
+    pewpew_game = PewpewGame
   }.
 
-avioneta_game(#avioneta_core_state_data{ avioneta_game = AvionetaGame }) ->
-  AvionetaGame.
+pewpew_game(#pewpew_core_state_data{ pewpew_game = PewpewGame }) ->
+  PewpewGame.

@@ -1,10 +1,10 @@
--module(avioneta_registry).
+-module(pewpew_registry).
 -behaviour(gen_server).
 
 -export([start_link/0, register/1, entries/0]).
 -export([init/1, handle_cast/2, handle_call/3, handle_info/2]).
 
--define(GEN_SERVER_NAME, avioneta_registry).
+-define(GEN_SERVER_NAME, pewpew_registry).
 
 -record(registry, { entries = [] }).
 

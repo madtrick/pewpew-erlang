@@ -1,17 +1,17 @@
--module(avioneta_shoot_player_order_data).
+-module(pewpew_shoot_player_order_data).
 
 -export([new/2]).
 -export([shot/1]).
 
--record(avioneta_shoot_player_order_data, {
+-record(pewpew_shoot_player_order_data, {
     shot
   }).
 
 new(Order, Data) ->
-  OrderData = #avioneta_shoot_player_order_data{
+  OrderData = #pewpew_shoot_player_order_data{
     shot = proplists:get_value(shot, Data)
   },
 
-  avioneta_message_data:new(Order, OrderData).
+  pewpew_message_data:new(Order, OrderData).
 
-shot(#avioneta_shoot_player_order_data{ shot = Shot }) -> Shot.
+shot(#pewpew_shoot_player_order_data{ shot = Shot }) -> Shot.

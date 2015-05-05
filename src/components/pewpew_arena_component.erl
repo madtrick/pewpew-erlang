@@ -1,4 +1,4 @@
--module(avioneta_arena_component).
+-module(pewpew_arena_component).
 -behaviour(gen_server).
 
 -export([start_link/1]).
@@ -24,18 +24,18 @@ players(ArenaComponent) ->
   gen_server:call(ArenaComponent, players).
 
 init([Data]) ->
-  {ok, AvionetaPlayerComponentSup} = avioneta_player_component_sup:start_link(),
-  {ok, avioneta_arena_component_data:new([
-        {avioneta_player_component_sup, AvionetaPlayerComponentSup},
-        {avioneta_game_context_data, proplists:get_value(avioneta_game_context_data, Data)},
-        {max_number_of_players, avioneta_config:get('arena.players.max')},
+  {ok, PewpewPlayerComponentSup} = pewpew_player_component_sup:start_link(),
+  {ok, pewpew_arena_component_data:new([
+        {pewpew_player_component_sup, PewpewPlayerComponentSup},
+        {pewpew_game_context_data, proplists:get_value(pewpew_game_context_data, Data)},
+        {max_number_of_players, pewpew_config:get('arena.players.max')},
         {width, proplists:get_value(width, Data)},
         {height, proplists:get_value(height, Data)}
       ])}.
 
 handle_info(?PLAYER_DOWN(Pid), ArenaComponentData) ->
-  NewPlayers = [Player || Player <- avioneta_arena_component_data:players(ArenaComponentData), Player =/= Pid ],
-  NewArenaComponentData = avioneta_arena_component_data:update(ArenaComponentData, [{players, NewPlayers}]),
+  NewPlayers = [Player || Player <- pewpew_arena_component_data:players(ArenaComponentData), Player =/= Pid ],
+  NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, NewPlayers}]),
   {noreply, NewArenaComponentData}.
 
 handle_call({create_player, Data}, _, ArenaComponentData) ->
@@ -44,40 +44,40 @@ handle_call({create_player, Data}, _, ArenaComponentData) ->
   {x, X, y, Y} = pick_player_coordinates(ArenaComponentData),
   Name         = pick_player_name(ArenaComponentData),
 
-  {ok, Player}                = avioneta_player_component_sup:add_player(
-    avioneta_arena_component_data:avioneta_player_component_sup(ArenaComponentData),
-    avioneta_arena_component_data:avioneta_game_context_data(ArenaComponentData),
+  {ok, Player}                = pewpew_player_component_sup:add_player(
+    pewpew_arena_component_data:pewpew_player_component_sup(ArenaComponentData),
+    pewpew_arena_component_data:pewpew_game_context_data(ArenaComponentData),
     [{color, Color}, {id, Id}, {x, X}, {y, Y}, {name, Name} | Data]
   ),
 
   monitor_player_componet(Player),
-  Players               = avioneta_arena_component_data:players(ArenaComponentData),
-  NewArenaComponentData = avioneta_arena_component_data:update(ArenaComponentData, [{players, [Player | Players]}]),
+  Players               = pewpew_arena_component_data:players(ArenaComponentData),
+  NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, [Player | Players]}]),
   {reply, Player, NewArenaComponentData};
 
 handle_call({get_player, Data}, _, ArenaComponentData) ->
   PlayerId = Data,
-  [Player] = [Player || Player <- avioneta_arena_component_data:players(ArenaComponentData), avioneta_player_component:id(Player) =:= PlayerId],
+  [Player] = [Player || Player <- pewpew_arena_component_data:players(ArenaComponentData), pewpew_player_component:id(Player) =:= PlayerId],
   {reply, Player, ArenaComponentData};
 
 handle_call(players, _, ArenaComponentData) ->
-  {reply, avioneta_arena_component_data:players(ArenaComponentData), ArenaComponentData};
+  {reply, pewpew_arena_component_data:players(ArenaComponentData), ArenaComponentData};
 
 handle_call(positions_left, _, ArenaComponentData) ->
   {reply, real_positions_left(ArenaComponentData), ArenaComponentData}.
 
 real_positions_left(ArenaComponentData) ->
-  avioneta_arena_component_data:max_number_of_players(ArenaComponentData) - number_of_players(ArenaComponentData).
+  pewpew_arena_component_data:max_number_of_players(ArenaComponentData) - number_of_players(ArenaComponentData).
 
 monitor_player_componet(Player) ->
   erlang:monitor(process, Player).
 
 number_of_players(ArenaComponentData) ->
-  erlang:length(avioneta_arena_component_data:players(ArenaComponentData)).
+  erlang:length(pewpew_arena_component_data:players(ArenaComponentData)).
 
 pick_player_color(ArenaComponentData) ->
-  Players       = avioneta_arena_component_data:players(ArenaComponentData),
-  PlayersColors = [ avioneta_player_component:color(Player) || Player <- Players],
+  Players       = pewpew_arena_component_data:players(ArenaComponentData),
+  PlayersColors = [ pewpew_player_component:color(Player) || Player <- Players],
   [Color | _]   = available_colors(?COLORS, PlayersColors),
   Color.
 
@@ -95,8 +95,8 @@ pick_player_coordinates(ArenaComponentData) ->
   %
   % radius : 16
 
-  X = pick_player_x_coordinate(avioneta_arena_component_data:width(ArenaComponentData) - 32) + 16,
-  Y = pick_player_y_coordinate(avioneta_arena_component_data:height(ArenaComponentData) - 32) + 16,
+  X = pick_player_x_coordinate(pewpew_arena_component_data:width(ArenaComponentData) - 32) + 16,
+  Y = pick_player_y_coordinate(pewpew_arena_component_data:height(ArenaComponentData) - 32) + 16,
 
   {x, X, y, Y}.
 

@@ -1,9 +1,9 @@
--module(avioneta_move_player_order).
+-module(pewpew_move_player_order).
 
 -export([new/2, toJSON/1]).
 
-new(AvionetaPlayerComponent, Data) ->
-  avioneta_move_player_order_data:new(?MODULE, [{avioneta_player_component, AvionetaPlayerComponent} | Data]).
+new(PewpewPlayerComponent, Data) ->
+  pewpew_move_player_order_data:new(?MODULE, [{pewpew_player_component, PewpewPlayerComponent} | Data]).
 
 toJSON(OrderData) ->
-  avioneta_move_player_order_serializer:toJSON(OrderData).
+  pewpew_move_player_order_serializer:toJSON(OrderData).

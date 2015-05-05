@@ -1,4 +1,4 @@
--module(avioneta_game).
+-module(pewpew_game).
 -behaviour(gen_server).
 
 -export([start_link/1, arena_component/1]).
@@ -7,33 +7,33 @@
 start_link(GameName) ->
   gen_server:start_link({local, GameName}, ?MODULE, [], []).
 
-arena_component(AvionetaGame) ->
-  gen_server:call(AvionetaGame, arena_component).
+arena_component(PewpewGame) ->
+  gen_server:call(PewpewGame, arena_component).
 
 init(_) ->
-  {ok, EventBus}          = avioneta_event_bus:start_link(),
-  AvionetaGameContextData = avioneta_game_context_data:new([{avioneta_event_bus, EventBus}]),
-  {ok, ArenaComponent}    = avioneta_arena_component:start_link([{avioneta_game_context_data, AvionetaGameContextData}, {width, arena_width()}, {height, arena_height()}]),
-  {ok, avioneta_game_state_data:new([{avioneta_arena_component, ArenaComponent}, {avioneta_game_context_data, AvionetaGameContextData}]), 0}.
+  {ok, EventBus}          = pewpew_event_bus:start_link(),
+  PewpewGameContextData = pewpew_game_context_data:new([{pewpew_event_bus, EventBus}]),
+  {ok, ArenaComponent}    = pewpew_arena_component:start_link([{pewpew_game_context_data, PewpewGameContextData}, {width, arena_width()}, {height, arena_height()}]),
+  {ok, pewpew_game_state_data:new([{pewpew_arena_component, ArenaComponent}, {pewpew_game_context_data, PewpewGameContextData}]), 0}.
 
-handle_info(timeout, AvionetaGameStateData) ->
-  avioneta_event_bus:on(avioneta_event_bus(AvionetaGameStateData), <<"player.disconnected">>, fun(Data) ->
+handle_info(timeout, PewpewGameStateData) ->
+  pewpew_event_bus:on(pewpew_event_bus(PewpewGameStateData), <<"player.disconnected">>, fun(Data) ->
         spawn(fun() ->
               JSON = jiffy:encode({[{type, <<"DisconnectPlayerOrder">>}, {data, {[{id, proplists:get_value(id, Data)}]}}]}),
-              avioneta_multicast:publish(JSON, avioneta_registry:entries())
+              pewpew_multicast:publish(JSON, pewpew_registry:entries())
           end)
   end),
-  {noreply, AvionetaGameStateData}.
+  {noreply, PewpewGameStateData}.
 
-handle_call(arena_component, _, AvionetaGameStateData) ->
-  {reply, avioneta_game_state_data:avioneta_arena_component(AvionetaGameStateData), AvionetaGameStateData}.
+handle_call(arena_component, _, PewpewGameStateData) ->
+  {reply, pewpew_game_state_data:pewpew_arena_component(PewpewGameStateData), PewpewGameStateData}.
 
-avioneta_event_bus(AvionetaGameStateData) ->
-  AvionetaGameContextData = avioneta_game_state_data:avioneta_game_context_data(AvionetaGameStateData),
-  avioneta_game_context_data:avioneta_event_bus(AvionetaGameContextData).
+pewpew_event_bus(PewpewGameStateData) ->
+  PewpewGameContextData = pewpew_game_state_data:pewpew_game_context_data(PewpewGameStateData),
+  pewpew_game_context_data:pewpew_event_bus(PewpewGameContextData).
 
 arena_width() ->
-  avioneta_config:get('arena.width').
+  pewpew_config:get('arena.width').
 
 arena_height() ->
-  avioneta_config:get('arena.height').
+  pewpew_config:get('arena.height').

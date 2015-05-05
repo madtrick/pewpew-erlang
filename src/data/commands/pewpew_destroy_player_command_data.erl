@@ -1,17 +1,17 @@
--module(avioneta_destroy_player_command_data).
+-module(pewpew_destroy_player_command_data).
 
 -export([new/2]).
 -export([id/1]).
 
--record(avioneta_destroy_player_command_data, {
+-record(pewpew_destroy_player_command_data, {
     id
   }).
 
 new(Runner, Data) ->
-  CommandData = #avioneta_destroy_player_command_data{
+  CommandData = #pewpew_destroy_player_command_data{
     id = proplists:get_value(id, Data)
   },
 
-  avioneta_command_data:new(Runner, CommandData).
+  pewpew_command_data:new(Runner, CommandData).
 
-id(#avioneta_destroy_player_command_data{ id = Id }) -> Id.
+id(#pewpew_destroy_player_command_data{ id = Id }) -> Id.

@@ -1,17 +1,17 @@
--module(avioneta_shoot_player_command).
+-module(pewpew_shoot_player_command).
 
 -export([fromJSON/1, run/2]).
 
 % {player : }
 fromJSON(JSON) ->
   {[{<<"player">>, Id}]} = JSON,
-  avioneta_shoot_player_command_data:new(?MODULE, [{id, Id}]).
+  pewpew_shoot_player_command_data:new(?MODULE, [{id, Id}]).
 
 run(CommandData, _ContextData) ->
   lager:debug("Running shoot_player_command"),
-  avioneta_shot_data:new(
+  pewpew_shot_data:new(
     [
-      {id, avioneta_shoot_player_command_data:id(CommandData)},
+      {id, pewpew_shoot_player_command_data:id(CommandData)},
       {shot_id, shoot_id()}
     ]
   ).

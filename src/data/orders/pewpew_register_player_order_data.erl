@@ -1,20 +1,20 @@
--module(avioneta_register_player_order_data).
+-module(pewpew_register_player_order_data).
 
 -export([new/2]).
--export([avioneta_player_component/1, remote/1]).
+-export([pewpew_player_component/1, remote/1]).
 
--record(avioneta_register_player_order_data, {
+-record(pewpew_register_player_order_data, {
     remote,
-    avioneta_player_component
+    pewpew_player_component
   }).
 
 new(Order, Data) ->
-  OrderData = #avioneta_register_player_order_data{
+  OrderData = #pewpew_register_player_order_data{
     remote = proplists:get_value(remote, Data),
-    avioneta_player_component = proplists:get_value(avioneta_player_component, Data)
+    pewpew_player_component = proplists:get_value(pewpew_player_component, Data)
   },
 
-  avioneta_message_data:new(Order, OrderData).
+  pewpew_message_data:new(Order, OrderData).
 
-remote(#avioneta_register_player_order_data{ remote = Remote }) -> Remote.
-avioneta_player_component(#avioneta_register_player_order_data{ avioneta_player_component = PlayerComponent }) -> PlayerComponent.
+remote(#pewpew_register_player_order_data{ remote = Remote }) -> Remote.
+pewpew_player_component(#pewpew_register_player_order_data{ pewpew_player_component = PlayerComponent }) -> PlayerComponent.

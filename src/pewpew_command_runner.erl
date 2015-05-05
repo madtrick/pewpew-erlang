@@ -1,15 +1,15 @@
--module(avioneta_command_runner).
+-module(pewpew_command_runner).
 
 -export([run/3]).
 
-run(CommandContexts, AvionetaGame, Origin) ->
-  run(CommandContexts, AvionetaGame, Origin, []).
+run(CommandContexts, PewpewGame, Origin) ->
+  run(CommandContexts, PewpewGame, Origin, []).
 
-run([], AvionetaGame, Origin, Orders) ->
+run([], PewpewGame, Origin, Orders) ->
   lists:flatten(Orders);
-run([CommandContext | CommandContexts], AvionetaGame, Origin,  Orders) ->
-  NewOrders = call_context(CommandContext, AvionetaGame, Origin),
-  run(CommandContexts, AvionetaGame, Origin, [NewOrders | Orders]).
+run([CommandContext | CommandContexts], PewpewGame, Origin,  Orders) ->
+  NewOrders = call_context(CommandContext, PewpewGame, Origin),
+  run(CommandContexts, PewpewGame, Origin, [NewOrders | Orders]).
 
-call_context(CommandContext, AvionetaGame, Origin) ->
-  (avioneta_command_context_data:context(CommandContext)):call(CommandContext, AvionetaGame, Origin).
+call_context(CommandContext, PewpewGame, Origin) ->
+  (pewpew_command_context_data:context(CommandContext)):call(CommandContext, PewpewGame, Origin).

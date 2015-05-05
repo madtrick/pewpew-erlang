@@ -1,4 +1,4 @@
--module(avioneta_multicast).
+-module(pewpew_multicast).
 -behaviour(gen_server).
 
 -export([start_link/0, publish/2]).
@@ -28,7 +28,7 @@ publish_data_to_channels(Data, [Channel | Tail]) ->
   publish_data_to_channel(Data, Channel),
   publish_data_to_channels(Data, Tail).
 publish_data_to_channel(Data, Channel) ->
-  avioneta_channel:send(Channel, Data).
+  pewpew_channel:send(Channel, Data).
 
 terminate(_Reason, _State) ->
   die.
