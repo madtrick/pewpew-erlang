@@ -8,7 +8,7 @@ it_creates_a_channel_when_initialized_test_() ->
         meck:expect(pewpew_channel, create, 1, {ok, ch1})
     end,
     fun(_) ->
-        meck:unload([pewpew_channel])
+        meck:unload([pewpew_channel, pewpew_registry])
     end,
     fun(_) ->
         pewpew_handler:init([{worker, wk1}]),
@@ -30,8 +30,9 @@ passes_messages_to_core_for_processing_test_() ->
         meck:unload([pewpew_channel, pewpew_core])
     end,
     fun(State) ->
-        pewpew_handler:handle(message, State),
+        Message = {text, message},
+        pewpew_handler:handle(Message, State),
         [
-          ?_assertEqual(meck:called(pewpew_core, process_message, [message, ch1]), true)
+          ?_assertEqual(meck:called(pewpew_core, process_message, [Message, ch1]), true)
         ]
     end}.

@@ -25,18 +25,18 @@ it_registers_it_self_test() ->
 it_sends_given_data_test_() ->
   {setup,
     fun () ->
-        meck:new(wsworker),
-        meck:expect(wsworker, send, 2, ok),
+        meck:new(wsserver_worker_websocket),
+        meck:expect(wsserver_worker_websocket, send, 2, ok),
         {ok, Pid} = pewpew_channel:create(worker),
         Pid
     end,
     fun (_) ->
-        meck:unload(wsworker)
+        meck:unload(wsserver_worker_websocket)
     end,
     fun (Pid) ->
         pewpew_channel:send(Pid, data),
         timer:sleep(100),
         [
-          ?_assertEqual(meck:called(wsworker, send, [worker, data]), true)
+          ?_assertEqual(meck:called(wsserver_worker_websocket, send, [worker, data]), true)
         ]
     end}.
