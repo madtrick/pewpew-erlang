@@ -2,17 +2,22 @@
 -behaviour(gen_server).
 
 -export([start_link/0, process_message/2]).
--export([init/1, handle_cast/2, terminate/2]).
+-export([init/1, handle_cast/2, handle_call/3, terminate/2]).
 
--record(pewpew_core_state, {
-    pewpew_game
-  }).
+% Testing only
+-export([number_of_pending_messages/0, number_of_pending_messages_per_channel/1]).
 
 start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 process_message(Message, OriginChannel) ->
   gen_server:cast(?MODULE, {process_message, OriginChannel, Message}).
+
+number_of_pending_messages() ->
+  gen_server:call(?MODULE, number_of_pending_messages).
+
+number_of_pending_messages_per_channel(Channel) ->
+  gen_server:call(?MODULE, {number_of_pending_messages_per_channel, Channel}).
 
 init(_) ->
   {ok, build_pewpew_core_state()}.
@@ -23,13 +28,46 @@ handle_cast({process_message, OriginChannel, Message}, State) ->
   NewPewpewCoreStateData = handle_process_message(OriginChannel, Message, State),
   {noreply, NewPewpewCoreStateData}.
 
-handle_process_message(OriginChannel, {text, Message}, State) ->
-  CommandContexts = pewpew_command_parser:parse(Message),
-  evaluate_command_return_values(
-    pewpew_command_runner:run(CommandContexts, pewpew_game(State), OriginChannel),
-    OriginChannel
-  ),
-  State.
+handle_call(number_of_pending_messages, _, State) ->
+  PendingMessages = pewpew_core_state_data:pending_messages(State),
+  NumberOfPendingMessages = internal_number_of_pending_messages(PendingMessages),
+  %PendingMessages = pewpew_core_state_data:pending_messages(State),
+  {reply, NumberOfPendingMessages, State};
+handle_call({number_of_pending_messages_per_channel, Channel}, _, State) ->
+  PendingMessages = pewpew_core_state_data:pending_messages(State),
+  NumberOfPendingMessages = internal_number_of_pending_messages_per_channel(Channel, PendingMessages),
+  {reply, NumberOfPendingMessages, State}.
+
+handle_process_message(OriginChannel, Message ={text, _}, State) ->
+  %CommandContexts = pewpew_command_parser:parse(Message),
+  %evaluate_command_return_values(
+  %  pewpew_command_runner:run(CommandContexts, pewpew_game(State), OriginChannel),
+  %  OriginChannel
+  %),
+  PendingMessages            = pewpew_core_state_data:pending_messages(State),
+  UpdatedPendingMessagesList = maybe_update_pending_messages_list(OriginChannel, PendingMessages, Message),
+  UpdatedState               = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
+  UpdatedState.
+
+internal_number_of_pending_messages(PendingMessages) ->
+  erlang:length(PendingMessages).
+
+internal_number_of_pending_messages_per_channel(Channel, PendingMessages) ->
+  PendingMessagesForChannel = pending_messages_per_channel(Channel, PendingMessages),
+  internal_number_of_pending_messages(PendingMessagesForChannel).
+
+pending_messages_per_channel(Channel, PendingMessages) ->
+  proplists:get_value(Channel, PendingMessages, []).
+
+maybe_update_pending_messages_list(Channel, PendingMessages, Message, []) ->
+  [{Channel, [Message]} | PendingMessages];
+maybe_update_pending_messages_list(_, PendingMessages, _, _) ->
+  PendingMessages. %Discard the message
+
+maybe_update_pending_messages_list(Channel, PendingMessages, Message) ->
+  PendingMessagesForChannel = pending_messages_per_channel(Channel, PendingMessages),
+  maybe_update_pending_messages_list(Channel, PendingMessages, Message, PendingMessagesForChannel).
+
 
 evaluate_command_return_values([], _) ->
   ok;
