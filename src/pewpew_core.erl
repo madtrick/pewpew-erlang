@@ -5,13 +5,20 @@
 -export([init/1, handle_cast/2, handle_call/3, terminate/2]).
 
 % Testing only
--export([number_of_pending_messages/0, number_of_pending_messages_per_channel/1]).
+-export([
+          number_of_pending_messages/0,
+          number_of_pending_messages_per_channel/1,
+          next_cycle/0
+        ]).
 
 start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 process_message(Message, OriginChannel) ->
   gen_server:cast(?MODULE, {process_message, OriginChannel, Message}).
+
+next_cycle() ->
+  gen_server:call(?MODULE, next_cycle).
 
 number_of_pending_messages() ->
   gen_server:call(?MODULE, number_of_pending_messages).
@@ -36,7 +43,12 @@ handle_call(number_of_pending_messages, _, State) ->
 handle_call({number_of_pending_messages_per_channel, Channel}, _, State) ->
   PendingMessages = pewpew_core_state_data:pending_messages(State),
   NumberOfPendingMessages = internal_number_of_pending_messages_per_channel(Channel, PendingMessages),
-  {reply, NumberOfPendingMessages, State}.
+  {reply, NumberOfPendingMessages, State};
+handle_call(next_cycle, _, State) ->
+  PendingMessages            = pewpew_core_state_data:pending_messages(State),
+  UpdatedPendingMessagesList = next_cycle(PendingMessages),
+  UpdatedState               = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
+  {reply, ok, UpdatedState}.
 
 handle_process_message(OriginChannel, Message ={text, _}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),
@@ -68,6 +80,8 @@ maybe_update_pending_messages_list(Channel, PendingMessages, Message) ->
   PendingMessagesForChannel = pending_messages_per_channel(Channel, PendingMessages),
   maybe_update_pending_messages_list(Channel, PendingMessages, Message, PendingMessagesForChannel).
 
+next_cycle(_) ->
+  [].
 
 evaluate_command_return_values([], _) ->
   ok;
