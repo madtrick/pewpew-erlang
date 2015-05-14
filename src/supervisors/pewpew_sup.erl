@@ -12,6 +12,7 @@ start_link() ->
 init([]) ->
   {ok, { {one_for_one, 5, 10}, [
         ?CHILD(wsserver_server, worker, [pewpew_wsserver:config()]),
+        ?CHILD(pewpew_timer, worker, []),
         ?CHILD(pewpew_registry, worker, []),
         ?CHILD(pewpew_multicast, worker, []),
         ?CHILD(pewpew_games_sup, supervisor, []),

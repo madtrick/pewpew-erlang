@@ -2,8 +2,27 @@
 -behaviour(gen_server).
 
 -export([start_link/2]).
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2]).
--export([id/1, x/1, y/1, move/2, destroy/1, color/1, name/1, hit/1, life/1, rotate/2, rotation/1]).
+-export([
+  init/1,
+  handle_call/3,
+  handle_cast/2,
+  handle_info/2,
+  terminate/2
+]).
+-export([
+  id/1,
+  x/1,
+  y/1,
+  move/2,
+  destroy/1,
+  color/1,
+  name/1,
+  hit/1,
+  life/1,
+  rotate/2,
+  rotation/1,
+  channel/1
+]).
 
 -define(PROCESS_DOWN(Pid), {'DOWN', _MonitorRef, process, Pid, _}).
 -define(MOVEMENT_SPEED, 1).
@@ -44,6 +63,9 @@ rotate(PlayerComponent, Data) ->
 rotation(PlayerComponent) ->
   gen_server:call(PlayerComponent, rotation).
 
+channel(PlayerComponent) ->
+  gen_server:call(PlayerComponent, channel).
+
 init([PewpewGameContextData, PlayerData]) ->
   PlayerComponentData = pewpew_player_component_data:new(
     [{pewpew_game_context_data, PewpewGameContextData} | PlayerData]
@@ -77,7 +99,9 @@ handle_call(life, _, PlayerComponentData) ->
 handle_call(name, _, PlayerComponentData) ->
   {reply, pewpew_player_component_data:name(PlayerComponentData), PlayerComponentData};
 handle_call(rotation, _, PlayerComponentData) ->
-  {reply, pewpew_player_component_data:rotation(PlayerComponentData), PlayerComponentData}.
+  {reply, pewpew_player_component_data:rotation(PlayerComponentData), PlayerComponentData};
+handle_call(channel, _, PlayerComponentData) ->
+  {reply, pewpew_player_component_data:origin(PlayerComponentData), PlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->
   die.

@@ -8,6 +8,8 @@ init(Options) ->
   {ok, Channel} = pewpew_channel:create(Worker),
   #pewpew_state{pewpew_channel = Channel}.
 
+handle({close, _}, State) ->
+  {close, State};
 handle({pong, _}, State) ->
   {noreply, State};
 handle(Message = {text, _}, State) ->
