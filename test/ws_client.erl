@@ -52,7 +52,7 @@ recv(Pid, Timeout) ->
   receive
     M -> M
   after
-    Timeout -> error
+    Timeout -> {error, timeout}
   end.
 
 init(_, _WSReq) ->
