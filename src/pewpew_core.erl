@@ -27,6 +27,7 @@ number_of_pending_messages_per_channel(Channel) ->
   gen_server:call(?MODULE, {number_of_pending_messages_per_channel, Channel}).
 
 init(_) ->
+  pewpew_timer:tick_every(?MODULE, next_cycle),
   {ok, build_pewpew_core_state()}.
 
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
@@ -45,12 +46,15 @@ handle_call({number_of_pending_messages_per_channel, Channel}, _, State) ->
   NumberOfPendingMessages = internal_number_of_pending_messages_per_channel(Channel, PendingMessages),
   {reply, NumberOfPendingMessages, State};
 handle_call(next_cycle, _, State) ->
-  PendingMessages            = pewpew_core_state_data:pending_messages(State),
-  UpdatedPendingMessagesList = next_cycle(PendingMessages),
-  UpdatedState               = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
-  {reply, ok, UpdatedState}.
+  PendingMessages              = pewpew_core_state_data:pending_messages(State),
+  ReversedPendingMessages      = lists:reverse(PendingMessages),
+  {_UpdatedGameState, Replies} = next_cycle(ReversedPendingMessages, pewpew_game(State)),
+  %UpdatedState                = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
+  %{reply, ok, UpdatedState}.
+  ok = send_replies(Replies),
+  {reply, ok, State}.
 
-handle_process_message(OriginChannel, Message ={text, _}, State) ->
+handle_process_message(OriginChannel, {text, Message}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),
   %evaluate_command_return_values(
   %  pewpew_command_runner:run(CommandContexts, pewpew_game(State), OriginChannel),
@@ -72,6 +76,9 @@ pending_messages_per_channel(Channel, PendingMessages) ->
   proplists:get_value(Channel, PendingMessages, []).
 
 maybe_update_pending_messages_list(Channel, PendingMessages, Message, []) ->
+  % TODO: check that inside the message there's only one command and not
+  % a more that one command packaged inside one message. This might mean
+  % parsin the messages at this point
   [{Channel, [Message]} | PendingMessages];
 maybe_update_pending_messages_list(_, PendingMessages, _, _) ->
   PendingMessages. %Discard the message
@@ -80,35 +87,57 @@ maybe_update_pending_messages_list(Channel, PendingMessages, Message) ->
   PendingMessagesForChannel = pending_messages_per_channel(Channel, PendingMessages),
   maybe_update_pending_messages_list(Channel, PendingMessages, Message, PendingMessagesForChannel).
 
-next_cycle(_) ->
-  [].
+next_cycle(Messages, GameState) ->
+  % TODO:
+  % - update state after evaluating a message
+  evaluate_messages(Messages, GameState).
 
-evaluate_command_return_values([], _) ->
+evaluate_messages(Messages, GameState) ->
+  evaluate_messages(Messages, GameState, []).
+
+evaluate_messages([], GameState, Replies) ->
+  {GameState, lists:reverse(Replies)};
+evaluate_messages([MessagesPerChannel | Tail], GameState, Replies) ->
+  % TODO:
+  % - pass the valid origin channel
+
+  {Channel, [Message]}  = MessagesPerChannel,
+  CommandContext        = pewpew_command_parser:parse(Message),
+  UpdatedCommandContext = pewpew_command_context_data:update(CommandContext, [{origin, Channel}, {pewpew_game, GameState}]),
+  %Reply                = evaluate_command_return_values(
+  %  pewpew_command_runner:run(CommandContexts, GameState, origin),
+  %  origin
+  %),
+  Reply = pewpew_command_runner:run(UpdatedCommandContext),
+
+  evaluate_messages(Tail, GameState, [Reply | Replies]).
+
+send_replies([]) ->
   ok;
-evaluate_command_return_values([ReturnValue |  Tail], OriginChannel) ->
+send_replies([ReturnValue |  Tail]) ->
   case ReturnValue of
     noreply ->
-      evaluate_command_return_values(Tail, OriginChannel);
+      send_replies(Tail);
     {reply, Messages} ->
-      dispatch_messages(Messages, OriginChannel, filter_origin_channel(OriginChannel, all_channels())),
-      evaluate_command_return_values(Tail, OriginChannel);
+      dispatch_messages(Messages, all_channels_placeholder),
+      send_replies(Tail);
     close ->
-      pewpew_channel:close(OriginChannel),
+      pewpew_channel:close(channel_placeholder),
       ok; %Discard all pending values
     {close, Messages} ->
-      dispatch_messages(Messages, OriginChannel, filter_origin_channel(OriginChannel, all_channels())),
-      pewpew_channel:close(OriginChannel),
+      dispatch_messages(Messages, all_channels_placeholder),
+      pewpew_channel:close(channel_placeholder),
       ok %Discard all pending values
   end.
 
-dispatch_messages(Messages, OriginChannel, OtherChannels) ->
-  pewpew_message_dispatcher:dispatch(Messages, OriginChannel, OtherChannels ).
+dispatch_messages(Messages, OtherChannels) ->
+  pewpew_message_dispatcher:dispatch(Messages, OtherChannels ).
 
-filter_origin_channel(OriginChannel, Channels) ->
-  lists:filter(fun(Element) -> Element =/= OriginChannel end, Channels).
+%filter_origin_channel(OriginChannel, Channels) ->
+%  lists:filter(fun(Element) -> Element =/= OriginChannel end, Channels).
 
-all_channels() ->
-  pewpew_registry:entries().
+%all_channels() ->
+%  pewpew_registry:entries().
 
 terminate(_Reason, _State) ->
   die.

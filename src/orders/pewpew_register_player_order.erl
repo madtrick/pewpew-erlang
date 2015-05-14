@@ -7,6 +7,3 @@ new(PlayerComponent, Data) ->
 
 toJSON(OrderData) ->
   pewpew_register_player_order_serializer:toJSON(OrderData).
-
-
-

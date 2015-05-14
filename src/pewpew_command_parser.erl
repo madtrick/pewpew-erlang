@@ -10,18 +10,10 @@ parse([]) ->
   [];
 parse(Data) ->
   JSON = jiffy:decode(Data),
-  extract_commands_from_json(JSON).
+  extract_command_from_json(JSON).
 
-
-extract_commands_from_json(JSON) ->
-  extract_commands_from_json(JSON, []).
-
-extract_commands_from_json([], Acc) ->
-  lists:reverse(Acc);
-extract_commands_from_json([ JSONElement | JSONElements ], Acc) ->
-  extract_commands_from_json(JSONElements, extract_commands_from_json(JSONElement, Acc));
-extract_commands_from_json(Command = {_}, Acc) ->
-  [build_command(Command) | Acc].
+extract_command_from_json(JSON) ->
+  build_command(JSON).
 
 
 build_command(?COMMAND("ShotHitPlayerCommand", Data)) ->
