@@ -2,10 +2,15 @@
 
 -export([toJSON/1]).
 
-toJSON(_RegisterPlayerAckData) ->
-  %PlayerComponent = pewpew_move_player_order_data:pewpew_player_component(MovePlayerOrderData),
+toJSON(RegisterPlayerAckData) ->
+  PlayerComponent = pewpew_register_player_ack_data:player_component(RegisterPlayerAckData),
   Struct = {[
       {type, <<"RegisterPlayerAck">>},
-      {data, {[]}}
+      {data, {[
+             {id, pewpew_player_component:id(PlayerComponent)},
+             {x, pewpew_player_component:x(PlayerComponent)},
+             {y, pewpew_player_component:y(PlayerComponent)},
+             {life, pewpew_player_component:life(PlayerComponent)}
+            ]}}
     ]},
   jiffy:encode(Struct).

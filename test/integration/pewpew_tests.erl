@@ -18,7 +18,12 @@ register_player_command_test_() ->
         {text, Ack} = ws_client:recv(Client),
         JSON = jiffy:decode(Ack, [return_maps]),
 
-        #{<<"type">> := AckType} = JSON,
+        #{<<"type">> := AckType, <<"data">> := Data} = JSON,
+        #{<<"id">> := Id, <<"x">> := X, <<"y">> := Y, <<"life">> := Life} = Data,
 
-        ?_assertEqual(<<"RegisterPlayerAck">>, AckType)
+        ?_assertEqual(<<"RegisterPlayerAck">>, AckType),
+        ?_assert(is_integer(Id)),
+        ?_assert(is_integer(X)),
+        ?_assert(is_integer(Y)),
+        ?_assert(is_integer(Life))
     end}.

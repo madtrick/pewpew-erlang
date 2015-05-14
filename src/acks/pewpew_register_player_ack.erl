@@ -2,8 +2,12 @@
 
 -export([new/2, toJSON/1]).
 
-new(_PlayerComponent, Channel) ->
-  pewpew_register_player_ack_data:new(?MODULE, Channel, []).
+new(PlayerComponent, Channel) ->
+  Values = [
+    {channel, Channel},
+    {player_component, PlayerComponent}
+  ],
+  pewpew_register_player_ack_data:new(?MODULE, Values).
 
 toJSON(AckData) ->
   pewpew_register_player_ack_serializer:toJSON(AckData).
