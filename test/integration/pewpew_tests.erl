@@ -95,3 +95,28 @@ reject_start_game_command_when_invalid_origin_test_() ->
 
         ?_assertEqual(<<"InvalidCommandError">>, AckType)
     end}.
+
+reject_start_game_command_when_already_started_test_() ->
+  {setup,
+    fun() ->
+        application:set_env(pewpew, execution_mode, test),
+        pewpew:start(),
+        {ok, ControlClient} = ws_client:start_link(4321),
+        ControlClient
+    end,
+    fun(ControlClient) ->
+        ws_client:stop(ControlClient),
+        pewpew:stop()
+    end,
+    fun(ControlClient) ->
+        ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+        {text, _} = ws_client:recv(ControlClient),
+
+        ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+        {text, Ack} = ws_client:recv(ControlClient),
+        JSON        = jiffy:decode(Ack, [return_maps]),
+
+        #{<<"type">> := AckType} = JSON,
+
+        ?_assertEqual(<<"InvalidCommandError">>, AckType)
+    end}.

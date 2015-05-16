@@ -1,11 +1,28 @@
 -module(pewpew_game).
 -behaviour(gen_server).
 
--export([start_link/1, arena_component/1]).
--export([init/1, handle_call/3, handle_info/2]).
+-export([
+  start_link/1,
+  start_game/1,
+  is_started/1,
+  arena_component/1
+]).
+
+-export([
+  init/1,
+  handle_cast/2,
+  handle_call/3,
+  handle_info/2
+]).
 
 start_link(GameName) ->
   gen_server:start_link({local, GameName}, ?MODULE, [], []).
+
+start_game(PewpewGame) ->
+  gen_server:cast(PewpewGame, start).
+
+is_started(PewpewGame) ->
+  gen_server:call(PewpewGame, is_started).
 
 arena_component(PewpewGame) ->
   gen_server:call(PewpewGame, arena_component).
@@ -25,6 +42,14 @@ handle_info(timeout, PewpewGameStateData) ->
   end),
   {noreply, PewpewGameStateData}.
 
+handle_cast(start, PewpewGameStateData) ->
+  UpdatedPewPewGameStateData = pewpew_game_state_data:update(PewpewGameStateData, [{pewpew_game_status, started}]),
+  {noreply, UpdatedPewPewGameStateData}.
+
+handle_call(is_started, _, PewpewGameStateData) ->
+  GameStatus = pewpew_game_state_data:pewpew_game_status(PewpewGameStateData),
+  IsStarted = GameStatus == started,
+  {reply, IsStarted, PewpewGameStateData};
 handle_call(arena_component, _, PewpewGameStateData) ->
   {reply, pewpew_game_state_data:pewpew_arena_component(PewpewGameStateData), PewpewGameStateData}.
 
