@@ -9,25 +9,12 @@
 -export([update/2]).
 
 new(Options) ->
-  PewPewArenaComponent  = proplists:get_value(pewpew_arena_component, Options),
-  PewPewGameContextData = proplists:get_value(pewpew_game_context_data, Options),
-
-  #{
-    pewpew_arena_component => PewPewArenaComponent,
-    pewpew_game_context_data => PewPewGameContextData,
-    pewpew_game_status => not_started
-   }.
+  UpdatedOptions = [{pewpew_game_status, not_started} | Options],
+  pewpew_map_backed_data:new(UpdatedOptions).
 
 pewpew_arena_component(#{pewpew_arena_component := Value}) -> Value.
 pewpew_game_context_data(#{pewpew_game_context_data := Value }) -> Value.
 pewpew_game_status(#{pewpew_game_status := Value}) -> Value.
 
 update(PewPewGameStateData, Options) ->
-  MapKeys = maps:keys(PewPewGameStateData),
-
-  lists:foldl(fun(Key, Acc) ->
-    Default = maps:get(Key, Acc),
-    MaybeOptionValue = proplists:get_value(Key, Options, Default),
-
-    maps:update(Key, MaybeOptionValue, Acc)
-  end, PewPewGameStateData, MapKeys).
+  pewpew_map_backed_data:update(PewPewGameStateData, Options).
