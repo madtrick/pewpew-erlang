@@ -52,3 +52,24 @@ reject_register_player_twice_test_() ->
         ?_assertEqual({error, timeout}, Recv)
     end}.
 
+start_game_command_test_() ->
+  {setup,
+    fun() ->
+        application:set_env(pewpew, execution_mode, test),
+        pewpew:start(),
+        {ok, ControlClient} = ws_client:start_link(4321),
+        ControlClient
+    end,
+    fun(ControlClient) ->
+        ws_client:stop(ControlClient),
+        pewpew:stop()
+    end,
+    fun(ControlClient) ->
+        ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+        {text, Ack} = ws_client:recv(ControlClient),
+        JSON        = jiffy:decode(Ack, [return_maps]),
+
+        #{<<"type">> := AckType} = JSON,
+
+        ?_assertEqual(<<"StartGameAck">>, AckType)
+    end}.
