@@ -4,32 +4,33 @@
 -behaviour(websocket_client_handler).
 
 -export([
-         start_link/0,
-         start_link/1,
-         send_text/2,
-         send_binary/2,
-         send_ping/2,
-         recv/2,
-         recv/1,
-         stop/1
-        ]).
+  start_link/0,
+  start_link/1,
+  send_text/2,
+  send_binary/2,
+  send_ping/2,
+  recv/2,
+  recv/1,
+  stop/1
+]).
 
 -export([
-         init/2,
-         websocket_handle/3,
-         websocket_info/3,
-         websocket_terminate/3
-        ]).
+  init/2,
+  websocket_handle/3,
+  websocket_info/3,
+  websocket_terminate/3
+]).
 
 -record(state, {
-          buffer = [] :: list(),
-          waiting = undefined :: undefined | pid()
-         }).
+  buffer = [] :: list(),
+  waiting = undefined :: undefined | pid()
+}).
 
 start_link() ->
-  start_link("ws://localhost:8080").
-
-start_link(Url) ->
+  start_link(8080).
+start_link(Port) ->
+  PortAsString = erlang:integer_to_list(Port),
+  Url          = "ws://localhost:" ++ PortAsString,
   websocket_client:start_link(Url, ?MODULE, []).
 
 stop(Pid) ->

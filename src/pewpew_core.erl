@@ -1,21 +1,33 @@
 -module(pewpew_core).
 -behaviour(gen_server).
 
--export([start_link/0, process_message/2]).
--export([init/1, handle_cast/2, handle_call/3, terminate/2]).
+-export([
+  start_link/0,
+  process_player_message/2,
+  process_control_message/2
+]).
+-export([
+  init/1,
+  handle_cast/2,
+  handle_call/3,
+  terminate/2
+]).
 
 % Testing only
 -export([
-          number_of_pending_messages/0,
-          number_of_pending_messages_per_channel/1,
-          next_cycle/0
-        ]).
+  number_of_pending_messages/0,
+  number_of_pending_messages_per_channel/1,
+  next_cycle/0
+]).
 
 start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-process_message(Message, OriginChannel) ->
-  gen_server:cast(?MODULE, {process_message, OriginChannel, Message}).
+process_control_message(Message, OriginChannel) ->
+  gen_server:cast(?MODULE, {process_control_message, OriginChannel, Message}).
+
+process_player_message(Message, OriginChannel) ->
+  gen_server:cast(?MODULE, {process_player_message, OriginChannel, Message}).
 
 next_cycle() ->
   gen_server:call(?MODULE, next_cycle).
@@ -32,7 +44,15 @@ init(_) ->
 
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
   ok;
-handle_cast({process_message, OriginChannel, Message}, State) ->
+handle_cast({process_control_message, Channel, {text, Message}}, State) ->
+
+  Game                  = pewpew_game(State),
+  CommandContext        = pewpew_command_parser:parse(Message),
+  UpdatedCommandContext = pewpew_command_context_data:update(CommandContext, [{origin, Channel}, {pewpew_game, Game}]),
+  Reply                 = pewpew_command_runner:run(UpdatedCommandContext),
+  send_replies([Reply]),
+  {noreply, State};
+handle_cast({process_player_message, OriginChannel, Message}, State) ->
   NewPewpewCoreStateData = handle_process_message(OriginChannel, Message, State),
   {noreply, NewPewpewCoreStateData}.
 
@@ -119,28 +139,19 @@ send_replies([ReturnValue |  Tail]) ->
     noreply ->
       send_replies(Tail);
     {reply, Messages} ->
-      dispatch_messages(Messages, all_channels_placeholder),
+      pewpew_message_dispatcher:dispatch(Messages),
       send_replies(Tail);
     close ->
       pewpew_channel:close(channel_placeholder),
       ok; %Discard all pending values
     {close, Messages} ->
-      dispatch_messages(Messages, all_channels_placeholder),
+      pewpew_message_dispatcher:dispatch(Messages),
       pewpew_channel:close(channel_placeholder),
       ok %Discard all pending values
   end.
 
-dispatch_messages(Messages, OtherChannels) ->
-  pewpew_message_dispatcher:dispatch(Messages, OtherChannels ).
-
-%filter_origin_channel(OriginChannel, Channels) ->
-%  lists:filter(fun(Element) -> Element =/= OriginChannel end, Channels).
-
-%all_channels() ->
-%  pewpew_registry:entries().
-
-terminate(_Reason, _State) ->
-  die.
+terminate(_, _) ->
+  ok.
 
 build_pewpew_core_state() ->
   GameName = random_game_name(),

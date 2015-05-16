@@ -1,33 +1,36 @@
 -module(pewpew_command_context_data).
 
--export([new/2, context/1, command_data/1, pewpew_game/1, origin/1]).
--export([update/2, origin/2]).
-
--record(pewpew_command_context_data, {
-    context,
-    command_data,
-    pewpew_game,
-    origin
-  }).
-
+-export([
+  new/2,
+  context/1,
+  command_data/1,
+  pewpew_game/1,
+  origin/1,
+  players_origins/1
+]).
+-export([update/2]).
 
 new(Context, CommandData) ->
-  #pewpew_command_context_data{
-    context = Context,
-    command_data = CommandData
-  }.
+  Options = [
+    {context, Context},
+    {command_data, CommandData},
+    {pewpew_game, undefined},
+    {origin, undefined}
+  ],
+  pewpew_map_backed_data:new(Options).
 
-context(#pewpew_command_context_data{ context = Context }) -> Context.
-command_data(#pewpew_command_context_data{ command_data = CommandData }) -> CommandData.
-pewpew_game(#pewpew_command_context_data{ pewpew_game = PewpewGame }) -> PewpewGame.
-origin(#pewpew_command_context_data{ origin = Origin }) -> Origin.
+context(#{ context := Context }) -> Context.
+command_data(#{ command_data := CommandData }) -> CommandData.
+pewpew_game(#{ pewpew_game := PewpewGame }) -> PewpewGame.
+origin(#{ origin := Origin }) -> Origin.
+players_origins(CommandContextData) ->
+  PewPewGame     = pewpew_game(CommandContextData),
+  ArenaComponent = pewpew_game:arena_component(PewPewGame),
+  Players        = pewpew_arena_component:players(ArenaComponent),
 
+  lists:map(fun(Player) ->
+    pewpew_player_component:channel(Player)
+  end, Players).
 
-update(PewpewCommandContextData, Data) ->
-  PewpewCommandContextData#pewpew_command_context_data{
-    pewpew_game = proplists:get_value( pewpew_game, Data, PewpewCommandContextData#pewpew_command_context_data.pewpew_game ),
-    origin = proplists:get_value(origin, Data, PewpewCommandContextData#pewpew_command_context_data.origin)
-  }.
-
-origin(PewpewCommandContextData, Origin) ->
-  PewpewCommandContextData#pewpew_command_context_data{ origin = Origin }.
+update(PewPewCommandContextData, Options) ->
+  pewpew_map_backed_data:update(PewPewCommandContextData, Options).
