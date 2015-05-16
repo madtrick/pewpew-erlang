@@ -23,7 +23,7 @@ maybe_eval_command(false, _, _) ->
 
 eval_result_from_command({registered, NewPlayer}, CommandOriginChannel) ->
   RegisterPlayerAck = pewpew_register_player_ack:new(NewPlayer, CommandOriginChannel),
-  {reply, [{send_to_origin, RegisterPlayerAck}]}.
+  {reply, [{send_to, CommandOriginChannel, RegisterPlayerAck}]}.
 
 are_there_other_players_for_this_channel([], _) ->
   false;

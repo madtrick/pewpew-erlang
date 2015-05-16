@@ -5,6 +5,7 @@
 call(CommandContextData) ->
   PewPewGame           = pewpew_command_context_data:pewpew_game(CommandContextData),
   CommandOriginChannel = pewpew_command_context_data:origin(CommandContextData),
+  PlayersOrigins       = pewpew_command_context_data:players_origins(CommandContextData),
   ChannelConfig        = pewpew_channel:config(CommandOriginChannel),
 
   IsControl = proplists:get_value(is_control, ChannelConfig),
@@ -15,16 +16,14 @@ call(CommandContextData) ->
       case IsStarted of
         true ->
           InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
-          {reply, [{send_to_origin, InvalidCommandError}]};
+          {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
         false ->
-          % start game
           pewpew_game:start_game(PewPewGame),
-          StartGameAck = pewpew_start_game_ack:new(CommandOriginChannel),
-          {reply, [{send_to_origin, StartGameAck}]}
-          % send start order to players
+          StartGameAck   = pewpew_start_game_ack:new(CommandOriginChannel),
+          StartGameOrder = pewpew_start_game_order:new(),
+          {reply, [{send_to, CommandOriginChannel, StartGameAck}, {send_to, PlayersOrigins, StartGameOrder}]}
       end;
     false ->
-      % send error
       InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
-      {reply, [{send_to_origin, InvalidCommandError}]}
+      {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}
   end.

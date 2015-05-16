@@ -152,3 +152,25 @@ reject_start_game_command_when_already_started_test_() ->
       ?_assertEqual(<<"InvalidCommandError">>, AckType)
     end
    }).
+
+send_start_game_order_to_players_test_() ->
+  run(#{
+    before => fun(Context) ->
+      #{ws_control_client := ControlClient, ws_player_client := Client} = Context,
+
+      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      _ = ws_client:recv(Client),
+      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      {text, StartGameOrder} = ws_client:recv(Client),
+      JSON = jiffy:decode(StartGameOrder, [return_maps]),
+
+      Context#{json => JSON}
+    end,
+
+    test => fun(Context) ->
+      #{json := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
+
+      ?_assertEqual(<<"StartGameOrder">>, OrderType)
+    end
+   }).

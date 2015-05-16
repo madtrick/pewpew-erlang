@@ -1,6 +1,6 @@
 -module(pewpew_command_context_data).
 
--export([new/2, context/1, command_data/1, pewpew_game/1, origin/1]).
+-export([new/2, context/1, command_data/1, pewpew_game/1, origin/1, players_origins/1]).
 -export([update/2, origin/2]).
 
 -record(pewpew_command_context_data, {
@@ -21,6 +21,14 @@ context(#pewpew_command_context_data{ context = Context }) -> Context.
 command_data(#pewpew_command_context_data{ command_data = CommandData }) -> CommandData.
 pewpew_game(#pewpew_command_context_data{ pewpew_game = PewpewGame }) -> PewpewGame.
 origin(#pewpew_command_context_data{ origin = Origin }) -> Origin.
+players_origins(CommandContextData) ->
+  Game = pewpew_game(CommandContextData),
+  Arena = pewpew_game:arena_component(Game),
+  Players = pewpew_arena_component:players(Arena),
+
+  lists:map(fun(Player) ->
+    pewpew_player_component:channel(Player)
+  end, Players).
 
 
 update(PewpewCommandContextData, Data) ->

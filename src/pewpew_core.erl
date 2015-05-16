@@ -45,6 +45,7 @@ init(_) ->
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
   ok;
 handle_cast({process_control_message, Channel, {text, Message}}, State) ->
+
   Game                  = pewpew_game(State),
   CommandContext        = pewpew_command_parser:parse(Message),
   UpdatedCommandContext = pewpew_command_context_data:update(CommandContext, [{origin, Channel}, {pewpew_game, Game}]),
@@ -138,25 +139,16 @@ send_replies([ReturnValue |  Tail]) ->
     noreply ->
       send_replies(Tail);
     {reply, Messages} ->
-      dispatch_messages(Messages, all_channels_placeholder),
+      pewpew_message_dispatcher:dispatch(Messages),
       send_replies(Tail);
     close ->
       pewpew_channel:close(channel_placeholder),
       ok; %Discard all pending values
     {close, Messages} ->
-      dispatch_messages(Messages, all_channels_placeholder),
+      pewpew_message_dispatcher:dispatch(Messages),
       pewpew_channel:close(channel_placeholder),
       ok %Discard all pending values
   end.
-
-dispatch_messages(Messages, OtherChannels) ->
-  pewpew_message_dispatcher:dispatch(Messages, OtherChannels ).
-
-%filter_origin_channel(OriginChannel, Channels) ->
-%  lists:filter(fun(Element) -> Element =/= OriginChannel end, Channels).
-
-%all_channels() ->
-%  pewpew_registry:entries().
 
 terminate(_Reason, _State) ->
   die.
