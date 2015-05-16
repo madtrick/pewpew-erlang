@@ -31,7 +31,9 @@ init(_) ->
   {ok, EventBus}        = pewpew_event_bus:start_link(),
   PewpewGameContextData = pewpew_game_context_data:new([{pewpew_event_bus, EventBus}]),
   {ok, ArenaComponent}  = pewpew_arena_component:start_link([{pewpew_game_context_data, PewpewGameContextData}, {width, arena_width()}, {height, arena_height()}]),
-  {ok, pewpew_game_state_data:new([{pewpew_arena_component, ArenaComponent}, {pewpew_game_context_data, PewpewGameContextData}]), 0}.
+  PewPewGameStateData   = pewpew_game_state_data:new([{pewpew_arena_component, ArenaComponent}, {pewpew_game_context_data, PewpewGameContextData}]),
+
+  {ok, PewPewGameStateData, 0}.
 
 handle_info(timeout, PewpewGameStateData) ->
   pewpew_event_bus:on(pewpew_event_bus(PewpewGameStateData), <<"player.disconnected">>, fun(Data) ->

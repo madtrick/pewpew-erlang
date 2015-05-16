@@ -8,24 +8,26 @@
 ]).
 -export([update/2]).
 
--record(pewpew_game_state_data,{
-    pewpew_arena_component,
-    pewpew_game_context_data,
-    pewpew_game_status
-  }).
-
 new(Options) ->
-  #pewpew_game_state_data{
-    pewpew_arena_component = proplists:get_value(pewpew_arena_component, Options),
-    pewpew_game_context_data = proplists:get_value(pewpew_game_context_data, Options)
-  }.
+  PewPewArenaComponent  = proplists:get_value(pewpew_arena_component, Options),
+  PewPewGameContextData = proplists:get_value(pewpew_game_context_data, Options),
 
-pewpew_arena_component(#pewpew_game_state_data{ pewpew_arena_component = PewpewArenaComponent }) -> PewpewArenaComponent.
-pewpew_game_context_data(#pewpew_game_state_data{ pewpew_game_context_data = PewpewGameContextData }) -> PewpewGameContextData.
-pewpew_game_status(#pewpew_game_state_data{ pewpew_game_status = PewPewGameStatus }) -> PewPewGameStatus.
+  #{
+    pewpew_arena_component => PewPewArenaComponent,
+    pewpew_game_context_data => PewPewGameContextData,
+    pewpew_game_status => not_started
+   }.
 
-update(PewpewGameStateData, Options) ->
-  PewpewGameStateData#pewpew_game_state_data{
-    pewpew_arena_component = proplists:get_value(pewpew_arena_component, Options, pewpew_arena_component(PewpewGameStateData)),
-    pewpew_game_status = proplists:get_value(pewpew_game_status, Options, pewpew_game_status(PewpewGameStateData))
-  }.
+pewpew_arena_component(#{pewpew_arena_component := Value}) -> Value.
+pewpew_game_context_data(#{pewpew_game_context_data := Value }) -> Value.
+pewpew_game_status(#{pewpew_game_status := Value}) -> Value.
+
+update(PewPewGameStateData, Options) ->
+  MapKeys = maps:keys(PewPewGameStateData),
+
+  lists:foldl(fun(Key, Acc) ->
+    Default = maps:get(Key, Acc),
+    MaybeOptionValue = proplists:get_value(Key, Options, Default),
+
+    maps:update(Key, MaybeOptionValue, Acc)
+  end, PewPewGameStateData, MapKeys).
