@@ -150,8 +150,8 @@ send_replies([ReturnValue |  Tail]) ->
       ok %Discard all pending values
   end.
 
-terminate(_Reason, _State) ->
-  die.
+terminate(_, _) ->
+  ok.
 
 build_pewpew_core_state() ->
   GameName = random_game_name(),

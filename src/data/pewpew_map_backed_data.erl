@@ -12,11 +12,14 @@ new(Options) when is_list(Options) ->
   end, #{}, Options).
 
 update(Data, Proplist) when is_list(Proplist) ->
-  MapKeys = maps:keys(Data),
+  MapKeys  = maps:keys(Data),
+  DataKeys = proplists:get_keys(Proplist),
+  Keys     = lists:usort(lists:flatten([MapKeys | DataKeys])),
+
 
   lists:foldl(fun(Key, Acc) ->
     Default          = maps:get(Key, Acc),
     MaybeOptionValue = proplists:get_value(Key, Proplist, Default),
 
     maps:update(Key, MaybeOptionValue, Acc)
-  end, Data, MapKeys).
+  end, Data, Keys).
