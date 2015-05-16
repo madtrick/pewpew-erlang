@@ -13,9 +13,9 @@ call(CommandContextData) ->
       % start game
       StartGameAck = pewpew_start_game_ack:new(CommandOriginChannel),
       {reply, [{send_to_origin, StartGameAck}]};
-      % return ack
       % send start order to players
     false ->
       % send error
-      nope
+      InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
+      {reply, [{send_to_origin, InvalidCommandError}]}
   end.

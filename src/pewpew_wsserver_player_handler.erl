@@ -5,7 +5,7 @@
 
 init(Options) ->
   Worker        = proplists:get_value(worker, Options),
-  {ok, Channel} = pewpew_channel:create(Worker),
+  {ok, Channel} = pewpew_channel:create(Worker, [{is_control, false}]),
   #pewpew_state{pewpew_channel = Channel}.
 
 handle({close, _}, State) ->
