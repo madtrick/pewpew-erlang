@@ -10,14 +10,14 @@
   init/1,
   handle_cast/2,
   handle_call/3,
-  terminate/2
+  terminate/2,
+  next_cycle/0
 ]).
 
 % Testing only
 -export([
   number_of_pending_messages/0,
-  number_of_pending_messages_per_channel/1,
-  next_cycle/0
+  number_of_pending_messages_per_channel/1
 ]).
 
 start_link() ->
@@ -71,8 +71,9 @@ handle_call(next_cycle, _, State) ->
   {_UpdatedGameState, Replies} = next_cycle(ReversedPendingMessages, pewpew_game(State)),
   %UpdatedState                = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
   %{reply, ok, UpdatedState}.
+  UpdatedState = pewpew_core_state_data:update(State, [{pending_messages, []}]),
   ok = send_replies(Replies),
-  {reply, ok, State}.
+  {reply, ok, UpdatedState}.
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),
