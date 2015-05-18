@@ -5,15 +5,23 @@
 call(CommandContextData) ->
   CommandOriginChannel = pewpew_command_context_data:origin(CommandContextData),
   PewPewGame           = pewpew_command_context_data:pewpew_game(CommandContextData),
+  ArenaComponent       = pewpew_game:arena_component(PewPewGame),
 
   IsStarted = pewpew_game:is_started(PewPewGame),
+  Player    = pewpew_arena_component:get_player(ArenaComponent, CommandOriginChannel),
 
   case IsStarted of
     false ->
       InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
       {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
     true ->
-      ok
+      case Player of
+        undefined ->
+          InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
+          {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
+        _ ->
+          ok
+      end
   end.
 
 

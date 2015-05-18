@@ -56,10 +56,17 @@ handle_call({create_player, Data}, _, ArenaComponentData) ->
   {reply, Player, NewArenaComponentData};
 
 handle_call({get_player, Data}, _, ArenaComponentData) ->
-  PlayerId = Data,
-  [Player] = [Player || Player <- pewpew_arena_component_data:players(ArenaComponentData), pewpew_player_component:id(Player) =:= PlayerId],
-  {reply, Player, ArenaComponentData};
-
+  Result = [Player ||
+              Player <- pewpew_arena_component_data:players(ArenaComponentData),
+              pewpew_player_component:id(Player) =:= Data,
+              pewpew_player_component:channel(Player) =:= Data
+            ],
+  case Result of
+    [] ->
+      {reply, undefined, ArenaComponentData};
+    [Player] ->
+      {reply, Player, ArenaComponentData}
+  end;
 handle_call(players, _, ArenaComponentData) ->
   {reply, pewpew_arena_component_data:players(ArenaComponentData), ArenaComponentData};
 

@@ -180,6 +180,31 @@ reject_move_player_command_when_game_not_started_test_() ->
     before => fun(Context) ->
       #{ws_player_client := Client} = Context,
 
+      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      ws_client:recv(Client),
+      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>),
+      {text, InvalidCommandError} = ws_client:recv(Client),
+      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
+
+      Context#{json => JSON}
+    end,
+
+    test => fun(Context) ->
+      #{json := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
+
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+    end
+   }).
+
+reject_move_player_command_when_the_player_is_not_registered_test_() ->
+  run(#{
+    before => fun(Context) ->
+      #{ws_player_client := Client, ws_control_client := ControlClient} = Context,
+
+      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client:recv(Client),
+
       ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>),
       {text, InvalidCommandError} = ws_client:recv(Client),
       JSON = jiffy:decode(InvalidCommandError, [return_maps]),
