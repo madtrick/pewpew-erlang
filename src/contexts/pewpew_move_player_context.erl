@@ -1,16 +1,29 @@
 -module(pewpew_move_player_context).
 
--export([call/3]).
+-export([call/1]).
 
-call(CommandContextData, PewpewGame, OriginChannel) ->
-  UpdatedCommandContextData = pewpew_command_context_data:update(CommandContextData, [{origin, OriginChannel}, {pewpew_game, PewpewGame}]),
-  CommandData = pewpew_command_context_data:command_data(UpdatedCommandContextData),
+call(CommandContextData) ->
+  CommandOriginChannel = pewpew_command_context_data:origin(CommandContextData),
+  PewPewGame           = pewpew_command_context_data:pewpew_game(CommandContextData),
 
-  Player = (pewpew_command_data:runner(CommandData)):run(
-    pewpew_command_data:runner_data(CommandData), UpdatedCommandContextData
-  ),
+  IsStarted = pewpew_game:is_started(PewPewGame),
 
-  MovePlayerOrder = pewpew_move_player_order:new(Player, [{direction, pewpew_move_player_command_data:direction(pewpew_command_data:runner_data(CommandData))}]),
+  case IsStarted of
+    false ->
+      InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
+      {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
+    true ->
+      ok
+  end.
 
-  {reply, [{send_to_others, [MovePlayerOrder]}]}.
+
+  %CommandData = pewpew_command_context_data:command_data(UpdatedCommandContextData),
+
+  %Player = (pewpew_command_data:runner(CommandData)):run(
+  %  pewpew_command_data:runner_data(CommandData), UpdatedCommandContextData
+  %),
+
+  %MovePlayerOrder = pewpew_move_player_order:new(Player, [{direction, pewpew_move_player_command_data:direction(pewpew_command_data:runner_data(CommandData))}]),
+
+  %{reply, [{send_to_others, [MovePlayerOrder]}]}.
 

@@ -174,3 +174,23 @@ send_start_game_order_to_players_test_() ->
       ?_assertEqual(<<"StartGameOrder">>, OrderType)
     end
    }).
+
+reject_move_player_command_when_game_not_started_test_() ->
+  run(#{
+    before => fun(Context) ->
+      #{ws_player_client := Client} = Context,
+
+      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>),
+      {text, InvalidCommandError} = ws_client:recv(Client),
+      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
+
+      Context#{json => JSON}
+    end,
+
+    test => fun(Context) ->
+      #{json := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
+
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+    end
+   }).
