@@ -9,8 +9,8 @@ get_player(Condition, ArenaComponentData) ->
   MatchinPlayers = find_players_matching_condition(Condition, ArenaComponentData),
 
   case MatchinPlayers of
-    []       -> undefined;
-    [Player] -> Player
+    []       -> {ok, undefined};
+    [Player] -> {ok, Player}
   end.
 
 move_player(Player, Movement, _) ->

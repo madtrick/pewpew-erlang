@@ -66,13 +66,14 @@ handle_call({create_player, Data}, _, ArenaComponentData) ->
   {reply, Player, NewArenaComponentData};
 
 handle_call({get_player, PlayerId}, _, ArenaComponentData) ->
-  Player = pewpew_arena_component_mod:get_player(PlayerId, ArenaComponentData),
+  {ok, Player} = pewpew_arena_component_mod:get_player(PlayerId, ArenaComponentData),
   {reply, Player, ArenaComponentData};
 
 handle_call({move_player, PlayerId, Data}, _, ArenaComponentData) ->
-  Player = pewpew_arena_component_mod:get_player(PlayerId, ArenaComponentData),
-  Result = pewpew_arena_component_mod:move_player(Player, Data, ArenaComponentData),
-  {reply, Result, ArenaComponentData};
+  {ok, Player} = pewpew_arena_component_mod:get_player(PlayerId, ArenaComponentData),
+  ok           = pewpew_arena_component_mod:move_player(Player, Data, ArenaComponentData),
+
+  {reply, ok, ArenaComponentData};
 
 handle_call(players, _, ArenaComponentData) ->
   {reply, pewpew_arena_component_data:players(ArenaComponentData), ArenaComponentData};
