@@ -1,17 +1,17 @@
 -module(pewpew_command_data).
 
--export([new/2, runner/1, runner_data/1]).
+-export([new/2, command_module/1, command_data/1]).
 
 -record(pewpew_command_data, {
-    runner,
-    runner_data
+    command_module,
+    command_data
   }).
 
-new(Runner, RunnerData) ->
+new(CommandModule, Data) ->
   #pewpew_command_data{
-    runner      = Runner,
-    runner_data = RunnerData
+    command_module = CommandModule,
+    command_data   = Data
   }.
 
-runner(#pewpew_command_data{ runner = Runner}) -> Runner.
-runner_data(#pewpew_command_data{ runner_data = RunnerData}) -> RunnerData.
+command_module(#pewpew_command_data{ command_module = Module}) -> Module.
+command_data(#pewpew_command_data{ command_data = Data}) -> Data.

@@ -15,8 +15,8 @@ maybe_eval_command(true, CommandContextData, CommandOriginChannel) ->
   CommandData = pewpew_command_context_data:command_data(CommandContextData),
 
   eval_result_from_command(
-    (pewpew_command_data:runner(CommandData)):run(
-    pewpew_command_data:runner_data(CommandData), CommandContextData
+    (pewpew_command_data:command_module(CommandData)):run(
+    pewpew_command_data:command_data(CommandData), CommandContextData
   ), CommandOriginChannel);
 maybe_eval_command(false, _, _) ->
   noreply.
