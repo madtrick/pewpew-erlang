@@ -67,6 +67,7 @@ channel(PlayerComponent) ->
   gen_server:call(PlayerComponent, channel).
 
 init([PewpewGameContextData, PlayerData]) ->
+  %TODO: check if the player uses the game context data for anything
   PlayerComponentData = pewpew_player_component_data:new(
     [{pewpew_game_context_data, PewpewGameContextData} | PlayerData]
   ),

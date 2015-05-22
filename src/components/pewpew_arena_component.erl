@@ -2,7 +2,13 @@
 -behaviour(gen_server).
 
 -export([start_link/1]).
--export([get_player/2, players/1, positions_left/1, create_player/2]).
+-export([
+  get_player/2,
+  players/1,
+  positions_left/1,
+  create_player/2,
+  move_player/2
+]).
 -export([init/1, handle_call/3, handle_info/2]).
 
 -define(PLAYER_DOWN(Pid), {'DOWN', _, process, Pid, _}).
@@ -19,6 +25,9 @@ create_player(ArenaComponent, Data) ->
 
 get_player(ArenaComponent, Data) ->
   gen_server:call(ArenaComponent, {get_player, Data}).
+
+move_player(ArenaComponent, Data) ->
+  gen_server:call(ArenaComponent, {move_player, Data}).
 
 players(ArenaComponent) ->
   gen_server:call(ArenaComponent, players).
@@ -43,11 +52,12 @@ handle_call({create_player, Data}, _, ArenaComponentData) ->
   Id           = pick_player_id(ArenaComponentData),
   {x, X, y, Y} = pick_player_coordinates(ArenaComponentData),
   Name         = pick_player_name(ArenaComponentData),
+  Radius       = pick_player_radius(),
 
   {ok, Player}                = pewpew_player_component_sup:add_player(
     pewpew_arena_component_data:pewpew_player_component_sup(ArenaComponentData),
     pewpew_arena_component_data:pewpew_game_context_data(ArenaComponentData),
-    [{color, Color}, {id, Id}, {x, X}, {y, Y}, {name, Name} | Data]
+    [{color, Color}, {id, Id}, {x, X}, {y, Y}, {name, Name}, {radius, Radius} | Data]
   ),
 
   monitor_player_componet(Player),
@@ -55,18 +65,15 @@ handle_call({create_player, Data}, _, ArenaComponentData) ->
   NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, [Player | Players]}]),
   {reply, Player, NewArenaComponentData};
 
-handle_call({get_player, Data}, _, ArenaComponentData) ->
-  Result = [Player ||
-              Player <- pewpew_arena_component_data:players(ArenaComponentData),
-              pewpew_player_component:id(Player) =:= Data,
-              pewpew_player_component:channel(Player) =:= Data
-            ],
-  case Result of
-    [] ->
-      {reply, undefined, ArenaComponentData};
-    [Player] ->
-      {reply, Player, ArenaComponentData}
-  end;
+handle_call({get_player, PlayerId}, _, ArenaComponentData) ->
+  Player = pewpew_arena_component_mod:get_player(PlayerId, ArenaComponentData),
+  {reply, Player, ArenaComponentData};
+
+handle_call({move_player, PlayerId, Data}, _, ArenaComponentData) ->
+  Player = pewpew_arena_component_mod:get_player(PlayerId, ArenaComponentData),
+  Result = pewpew_arena_component_mod:move_player(Player, Data, ArenaComponentData),
+  {reply, Result, ArenaComponentData};
+
 handle_call(players, _, ArenaComponentData) ->
   {reply, pewpew_arena_component_data:players(ArenaComponentData), ArenaComponentData};
 
@@ -115,3 +122,6 @@ pick_player_y_coordinate(MaxY) ->
 
 pick_player_name(_ArenaComponentData) ->
   <<"Player">>.
+
+pick_player_radius() ->
+  5. %in px
