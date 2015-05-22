@@ -25,7 +25,6 @@
 ]).
 
 -define(PROCESS_DOWN(Pid), {'DOWN', _MonitorRef, process, Pid, _}).
--define(MOVEMENT_SPEED, 1).
 
 start_link(PewpewGameContextData, PlayerData) ->
   gen_server:start_link(?MODULE, [PewpewGameContextData, PlayerData], []).
@@ -82,7 +81,7 @@ handle_cast(destroy, PlayerComponentData) ->
 handle_cast(hit, PlayerComponentData) ->
   {noreply, hit2(PlayerComponentData)};
 handle_cast({move, Data}, PlayerComponentData) ->
-  [{direction, Direction}] = Data,
+  {direction, Direction} = Data,
   {noreply, move2(Direction, PlayerComponentData)};
 handle_cast({rotate, Data}, PlayerComponentData) ->
   {noreply, pewpew_player_component_data:update(PlayerComponentData, [{rotation, Data}])}.
@@ -107,28 +106,8 @@ handle_call(channel, _, PlayerComponentData) ->
 terminate(_Repos, _PlayerComponentData) ->
   die.
 
-move2(<<"up">>, PlayerComponentData) ->
-  DX = ?MOVEMENT_SPEED * math:cos(-pewpew_player_component_data:rotation(PlayerComponentData)),
-  DY = ?MOVEMENT_SPEED * math:sin(-pewpew_player_component_data:rotation(PlayerComponentData)),
-  move(<<"x">>, pewpew_player_component_data:x(PlayerComponentData) + DX, PlayerComponentData),
-  move(<<"y">>, pewpew_player_component_data:y(PlayerComponentData) + DY, PlayerComponentData);
-move2(<<"down">>, PlayerComponentData) ->
-  DX = ?MOVEMENT_SPEED * math:cos(-pewpew_player_component_data:rotation(PlayerComponentData)),
-  DY = ?MOVEMENT_SPEED * math:sin(-pewpew_player_component_data:rotation(PlayerComponentData)),
-  move(<<"x">>, pewpew_player_component_data:x(PlayerComponentData) - DX, PlayerComponentData),
-  move(<<"y">>, pewpew_player_component_data:y(PlayerComponentData) - DY, PlayerComponentData).
-
-move(<<"x">>, Value, PlayerComponentData) ->
-  pewpew_player_component_data:update(
-    PlayerComponentData,
-    [{x, Value}]
-  );
-
-move(<<"y">>, Value, PlayerComponentData) ->
-  pewpew_player_component_data:update(
-    PlayerComponentData,
-    [{y, Value}]
-  ).
+move2(Direction, PlayerComponentData) ->
+  pewpew_player_component_mod:move(Direction, PlayerComponentData).
 
 hit2(PlayerComponentData) ->
   pewpew_player_component_data:update(
