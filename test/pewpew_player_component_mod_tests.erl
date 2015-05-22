@@ -1,46 +1,26 @@
 -module(pewpew_player_component_mod_tests).
 -include_lib("eunit/include/eunit.hrl").
 
-move_up_player_test_() ->
+move_player_test(OriginX, OriginY, Direction, ExpectedX, ExpectedY) ->
   PlayerOptions = [
-                   {color, red},
-                   {id, player_id},
-                   {x, 0},
-                   {y, 0},
-                   {radius, 5},
-                   {origin, fake_origin},
+                   {x, OriginX},
+                   {y, OriginY},
                    {rotation, 0}
                   ],
 
   PlayerComponentData          = pewpew_player_component_data:new(PlayerOptions),
-  {ok, NewPlayerComponentData} = pewpew_player_component_mod:move(<<"up">>, PlayerComponentData),
+  {ok, NewPlayerComponentData} = pewpew_player_component_mod:move(Direction, PlayerComponentData),
 
   NewX = pewpew_player_component_data:x(NewPlayerComponentData),
   NewY = pewpew_player_component_data:y(NewPlayerComponentData),
 
   [
-    ?_assertEqual(1.0, NewX),
-    ?_assertEqual(0.0, NewY)
+    ?_assertEqual(ExpectedX, NewX),
+    ?_assertEqual(ExpectedY, NewY)
   ].
 
-move_down_player_test_() ->
-  PlayerOptions = [
-                   {color, red},
-                   {id, player_id},
-                   {x, 0},
-                   {y, 0},
-                   {radius, 5},
-                   {origin, fake_origin},
-                   {rotation, 0}
-                  ],
-
-  PlayerComponentData          = pewpew_player_component_data:new(PlayerOptions),
-  {ok, NewPlayerComponentData} = pewpew_player_component_mod:move(<<"down">>, PlayerComponentData),
-
-  NewX = pewpew_player_component_data:x(NewPlayerComponentData),
-  NewY = pewpew_player_component_data:y(NewPlayerComponentData),
-
+move_player_test_() ->
   [
-    ?_assertEqual(-1.0, NewX),
-    ?_assertEqual(0.0, NewY)
+   move_player_test(0, 0, <<"up">>, 1.0, 0.0),
+   move_player_test(0, 0, <<"down">>, -1.0, 0.0)
   ].
