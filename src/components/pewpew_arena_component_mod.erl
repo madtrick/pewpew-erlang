@@ -6,9 +6,9 @@
 ]).
 
 get_player(Condition, ArenaComponentData) ->
-  MatchinPlayers = find_players_matching_condition(Condition, ArenaComponentData),
+  MatchingPlayers = find_players_matching_condition(Condition, ArenaComponentData),
 
-  case MatchinPlayers of
+  case MatchingPlayers of
     []       -> {ok, undefined};
     [Player] -> {ok, Player}
   end.
@@ -25,6 +25,6 @@ find_players_matching_condition(Condition, ArenaComponentData) ->
   [
    Player ||
    Player <- pewpew_arena_component_data:players(ArenaComponentData),
-   pewpew_player_component:id(Player) =:= Condition,
-   pewpew_player_component:channel(Player) =:= Condition
+   (pewpew_player_component:id(Player) =:= Condition) or
+   (pewpew_player_component:channel(Player) =:= Condition)
   ].
