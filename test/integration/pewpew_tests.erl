@@ -8,10 +8,12 @@ run(Config) ->
       pewpew:start(),
       {ok, Client}        = ws_client:start_link(),
       {ok, ControlClient} = ws_client:start_link(4321),
+      [PewPewGame]        = pewpew_core:get_games(),
 
       #{
         ws_player_client => Client,
-        ws_control_client => ControlClient
+        ws_control_client => ControlClient,
+        pewpew_game => PewPewGame
       }
     end,
     fun(Context) ->
@@ -206,6 +208,107 @@ reject_move_player_command_when_the_player_is_not_registered_test_() ->
       ws_client:recv(Client),
 
       ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>),
+      {text, InvalidCommandError} = ws_client:recv(Client),
+      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
+
+      Context#{json => JSON}
+    end,
+
+    test => fun(Context) ->
+      #{json := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
+
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+    end
+   }).
+
+reject_move_player_command_when_player_hits_arena_edges_test_() ->
+  run(#{
+    before => fun(Context) ->
+      #{
+        ws_player_client := Client,
+        ws_control_client := ControlClient,
+        pewpew_game := Game
+      } = Context,
+
+      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      ws_client:recv(Client),
+      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client:recv(Client),
+
+      ArenaComponent       = pewpew_game:arena_component(Game),
+      {width, Width, _, _} = pewpew_arena_component:dimensions(ArenaComponent),
+      [Player]             = pewpew_arena_component:players(ArenaComponent),
+      pewpew_player_component:set_coordinates(Player, [{x, Width}]),
+
+      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"up\"}}">>),
+      {text, InvalidCommandError} = ws_client:recv(Client),
+      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
+
+      Context#{json => JSON}
+    end,
+
+    test => fun(Context) ->
+      #{json := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
+
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+    end
+   }).
+
+reject_move_player_command_when_player_hits_arena_edges_include_radius_test_() ->
+  run(#{
+    before => fun(Context) ->
+      #{
+        ws_player_client := Client,
+        ws_control_client := ControlClient,
+        pewpew_game := Game
+      } = Context,
+
+      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      ws_client:recv(Client),
+      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client:recv(Client),
+
+      ArenaComponent       = pewpew_game:arena_component(Game),
+      {width, Width, _, _} = pewpew_arena_component:dimensions(ArenaComponent),
+      [Player]             = pewpew_arena_component:players(ArenaComponent),
+      pewpew_player_component:set_coordinates(Player, [{x, Width - 2}]),
+
+      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"up\"}}">>),
+      {text, InvalidCommandError} = ws_client:recv(Client),
+      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
+
+      Context#{json => JSON}
+    end,
+
+    test => fun(Context) ->
+      #{json := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
+
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+    end
+   }).
+
+reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
+  run(#{
+    before => fun(Context) ->
+      #{
+        ws_player_client := Client,
+        ws_control_client := ControlClient,
+        pewpew_game := Game
+      } = Context,
+
+      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      ws_client:recv(Client),
+      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client:recv(Client),
+
+      ArenaComponent       = pewpew_game:arena_component(Game),
+      [Player]             = pewpew_arena_component:players(ArenaComponent),
+      pewpew_player_component:set_coordinates(Player, [{x, 0}]),
+
+      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"down\"}}">>),
       {text, InvalidCommandError} = ws_client:recv(Client),
       JSON = jiffy:decode(InvalidCommandError, [return_maps]),
 

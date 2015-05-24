@@ -16,6 +16,7 @@
 
 % Testing only
 -export([
+  get_games/0,
   number_of_pending_messages/0,
   number_of_pending_messages_per_channel/1
 ]).
@@ -37,6 +38,9 @@ number_of_pending_messages() ->
 
 number_of_pending_messages_per_channel(Channel) ->
   gen_server:call(?MODULE, {number_of_pending_messages_per_channel, Channel}).
+
+get_games() ->
+  gen_server:call(?MODULE, get_games).
 
 init(_) ->
   pewpew_timer:tick_every(?MODULE, next_cycle),
@@ -73,7 +77,10 @@ handle_call(next_cycle, _, State) ->
   %{reply, ok, UpdatedState}.
   UpdatedState = pewpew_core_state_data:update(State, [{pending_messages, []}]),
   ok = send_replies(Replies),
-  {reply, ok, UpdatedState}.
+  {reply, ok, UpdatedState};
+handle_call(get_games, _, State) ->
+  PewPewGame = pewpew_core_state_data:pewpew_game(State),
+  {reply, [PewPewGame], State}.
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),

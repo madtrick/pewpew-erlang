@@ -7,6 +7,7 @@ call(CommandContextData) ->
   PewPewGame           = pewpew_command_context_data:pewpew_game(CommandContextData),
   ArenaComponent       = pewpew_game:arena_component(PewPewGame),
 
+
   IsStarted = pewpew_game:is_started(PewPewGame),
   Player    = pewpew_arena_component:get_player(ArenaComponent, CommandOriginChannel),
 
@@ -20,18 +21,40 @@ call(CommandContextData) ->
           InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
           {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
         _ ->
-          ok
+          _PlayerState = pewpew_player_component:get_state(Player),
+          CommandData = pewpew_command_context_data:command_data(CommandContextData),
+          (pewpew_command_data:command_module(CommandData)):run(
+            pewpew_command_data:command_data(CommandData), CommandContextData
+          ),
+
+          case validates(Player, ArenaComponent) of
+            true ->
+              ok;
+            false ->
+              InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
+              {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}
+          end
+
+          % - Get player state
+          % - Move player
+          % - Validate new coordinates
+          %   - If valid return
+          %   - If not reset state and return an error
+          %
+          %PlayerState = pewpew_player_component:get_state(Player),
       end
   end.
 
 
-  %CommandData = pewpew_command_context_data:command_data(UpdatedCommandContextData),
+validates(Player, ArenaComponent) ->
+  Radius = pewpew_player_component:radius(Player),
+  X      = pewpew_player_component:x(Player),
+  Y      = pewpew_player_component:y(Player),
 
-  %Player = (pewpew_command_data:runner(CommandData)):run(
-  %  pewpew_command_data:runner_data(CommandData), UpdatedCommandContextData
-  %),
+  {width, ArenaWidth, height, ArenaHeight} = pewpew_arena_component:dimensions(ArenaComponent),
 
-  %MovePlayerOrder = pewpew_move_player_order:new(Player, [{direction, pewpew_move_player_command_data:direction(pewpew_command_data:runner_data(CommandData))}]),
 
-  %{reply, [{send_to_others, [MovePlayerOrder]}]}.
-
+  ((X + Radius) < ArenaWidth) andalso
+  ((Y + Radius) < ArenaHeight) andalso
+  ((X - Radius) > 0) andalso
+  ((Y - Radius) > 0).

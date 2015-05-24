@@ -1,7 +1,18 @@
 -module(pewpew_player_component_data).
 
 -export([new/1]).
--export([id/1, x/1, y/1, origin/1, pewpew_game_context_data/1, color/1, name/1, life/1, rotation/1]).
+-export([
+  id/1,
+  x/1,
+  y/1,
+  origin/1,
+  pewpew_game_context_data/1,
+  color/1,
+  name/1,
+  life/1,
+  rotation/1,
+  radius/1
+]).
 -export([update/2]).
 
 new(Data) ->
@@ -17,6 +28,7 @@ life(#{ life := Life }) -> Life.
 origin(#{ origin := Origin }) -> Origin.
 rotation(#{ rotation := Rotation }) -> Rotation.
 pewpew_game_context_data(#{ pewpew_game_context_data := Data }) -> Data.
+radius(#{ radius := Value }) -> Value.
 
 update(PewPewPlayerComponentData, Data) ->
   pewpew_map_backed_data:update(PewPewPlayerComponentData, Data).

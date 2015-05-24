@@ -7,7 +7,8 @@
   players/1,
   positions_left/1,
   create_player/2,
-  move_player/2
+  move_player/2,
+  dimensions/1
 ]).
 -export([init/1, handle_call/3, handle_info/2]).
 
@@ -28,6 +29,9 @@ get_player(ArenaComponent, Data) ->
 
 move_player(ArenaComponent, Data) ->
   gen_server:call(ArenaComponent, {move_player, Data}).
+
+dimensions(ArenaComponent) ->
+  gen_server:call(ArenaComponent, dimensions).
 
 players(ArenaComponent) ->
   gen_server:call(ArenaComponent, players).
@@ -79,7 +83,12 @@ handle_call(players, _, ArenaComponentData) ->
   {reply, pewpew_arena_component_data:players(ArenaComponentData), ArenaComponentData};
 
 handle_call(positions_left, _, ArenaComponentData) ->
-  {reply, real_positions_left(ArenaComponentData), ArenaComponentData}.
+  {reply, real_positions_left(ArenaComponentData), ArenaComponentData};
+
+handle_call(dimensions, _, ArenaComponentData) ->
+  {ok, Dimensions} = pewpew_arena_component_mod:dimensions(ArenaComponentData),
+
+  {reply, Dimensions, ArenaComponentData}.
 
 real_positions_left(ArenaComponentData) ->
   pewpew_arena_component_data:max_number_of_players(ArenaComponentData) - number_of_players(ArenaComponentData).

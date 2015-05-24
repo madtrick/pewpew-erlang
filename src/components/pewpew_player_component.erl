@@ -10,6 +10,7 @@
   terminate/2
 ]).
 -export([
+  get_state/1,
   id/1,
   x/1,
   y/1,
@@ -21,13 +22,22 @@
   life/1,
   rotate/2,
   rotation/1,
-  channel/1
+  channel/1,
+  radius/1
+]).
+
+% Exported only for testing
+-export([
+  set_coordinates/2
 ]).
 
 -define(PROCESS_DOWN(Pid), {'DOWN', _MonitorRef, process, Pid, _}).
 
 start_link(PewpewGameContextData, PlayerData) ->
   gen_server:start_link(?MODULE, [PewpewGameContextData, PlayerData], []).
+
+get_state(PlayerComponent) ->
+  gen_server:call(PlayerComponent, get_state).
 
 id(PlayerComponent) ->
   gen_server:call(PlayerComponent, id).
@@ -65,6 +75,12 @@ rotation(PlayerComponent) ->
 channel(PlayerComponent) ->
   gen_server:call(PlayerComponent, channel).
 
+radius(PlayerComponent) ->
+  gen_server:call(PlayerComponent, radius).
+
+set_coordinates(PlayerComponent, Coordinates) ->
+  gen_server:cast(PlayerComponent, {set_coordinates, Coordinates}).
+
 init([PewpewGameContextData, PlayerData]) ->
   %TODO: check if the player uses the game context data for anything
   PlayerComponentData = pewpew_player_component_data:new(
@@ -81,11 +97,17 @@ handle_cast(destroy, PlayerComponentData) ->
 handle_cast(hit, PlayerComponentData) ->
   {noreply, hit2(PlayerComponentData)};
 handle_cast({move, Data}, PlayerComponentData) ->
-  {direction, Direction} = Data,
-  {noreply, move2(Direction, PlayerComponentData)};
+  [{direction, Direction}]     = Data,
+  {ok, NewPlayerComponentData} = pewpew_player_component_mod:move(Direction, PlayerComponentData),
+  {noreply, NewPlayerComponentData};
 handle_cast({rotate, Data}, PlayerComponentData) ->
-  {noreply, pewpew_player_component_data:update(PlayerComponentData, [{rotation, Data}])}.
+  {noreply, pewpew_player_component_data:update(PlayerComponentData, [{rotation, Data}])};
+handle_cast({set_coordinates, Coordinates}, PlayerComponentData) ->
+  {ok, NewPlayerComponentData} = pewpew_player_component_mod:set_coordinates(PlayerComponentData, Coordinates),
+  {noreply, NewPlayerComponentData}.
 
+handle_call(get_state, _, PlayerComponentData) ->
+  {reply, PlayerComponentData, PlayerComponentData};
 handle_call(id, _, PlayerComponentData) ->
   {reply, pewpew_player_component_data:id(PlayerComponentData), PlayerComponentData};
 handle_call(x, _, PlayerComponentData) ->
@@ -101,13 +123,12 @@ handle_call(name, _, PlayerComponentData) ->
 handle_call(rotation, _, PlayerComponentData) ->
   {reply, pewpew_player_component_data:rotation(PlayerComponentData), PlayerComponentData};
 handle_call(channel, _, PlayerComponentData) ->
-  {reply, pewpew_player_component_data:origin(PlayerComponentData), PlayerComponentData}.
+  {reply, pewpew_player_component_data:origin(PlayerComponentData), PlayerComponentData};
+handle_call(radius, _, PlayerComponentData) ->
+  {reply, pewpew_player_component_data:radius(PlayerComponentData), PlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->
   die.
-
-move2(Direction, PlayerComponentData) ->
-  pewpew_player_component_mod:move(Direction, PlayerComponentData).
 
 hit2(PlayerComponentData) ->
   pewpew_player_component_data:update(

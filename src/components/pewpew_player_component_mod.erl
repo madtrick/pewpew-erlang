@@ -1,10 +1,15 @@
 -module(pewpew_player_component_mod).
 
 -export([
+  set_coordinates/2,
   move/2
 ]).
 
 -define(MOVEMENT_SPEED, 1).
+
+set_coordinates(Coordinates, PlayerComponentData) ->
+  NewPlayerComponentData = pewpew_player_component_data:update(Coordinates, PlayerComponentData),
+  {ok, NewPlayerComponentData}.
 
 %TODO: replace "up" with "forward"
 %TODO: replace "down" with "backwards"
@@ -16,7 +21,6 @@ move(<<"down">>, PlayerComponentData) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%
 move_player(Sign, PlayerComponentData) ->
   NewCoordinates         = calculate_new_coordinates(Sign, ?MOVEMENT_SPEED, PlayerComponentData),
   NewPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, NewCoordinates),
