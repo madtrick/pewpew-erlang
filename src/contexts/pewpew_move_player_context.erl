@@ -21,7 +21,7 @@ call(CommandContextData) ->
           InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
           {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
         _ ->
-          _PlayerState = pewpew_player_component:get_state(Player),
+          PlayerState = pewpew_player_component:get_state(Player),
           CommandData = pewpew_command_context_data:command_data(CommandContextData),
           (pewpew_command_data:command_module(CommandData)):run(
             pewpew_command_data:command_data(CommandData), CommandContextData
@@ -31,17 +31,10 @@ call(CommandContextData) ->
             true ->
               ok;
             false ->
+              pewpew_player_component:set_state(Player, PlayerState),
               InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
               {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}
           end
-
-          % - Get player state
-          % - Move player
-          % - Validate new coordinates
-          %   - If valid return
-          %   - If not reset state and return an error
-          %
-          %PlayerState = pewpew_player_component:get_state(Player),
       end
   end.
 

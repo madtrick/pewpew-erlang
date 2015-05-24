@@ -240,19 +240,32 @@ reject_move_player_command_when_player_hits_arena_edges_test_() ->
       {width, Width, _, _} = pewpew_arena_component:dimensions(ArenaComponent),
       [Player]             = pewpew_arena_component:players(ArenaComponent),
       pewpew_player_component:set_coordinates(Player, [{x, Width}]),
+      PlayerCoordinatesBeforeMove = pewpew_player_component:coordinates(Player),
+
 
       ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"up\"}}">>),
       {text, InvalidCommandError} = ws_client:recv(Client),
       JSON = jiffy:decode(InvalidCommandError, [return_maps]),
+      PlayerCoordinatesAfterMove = pewpew_player_component:coordinates(Player),
 
-      Context#{json => JSON}
+      Context#{
+        json => JSON,
+        coordinates_before_move => PlayerCoordinatesBeforeMove,
+        coordinates_after_move => PlayerCoordinatesAfterMove
+       }
     end,
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{
+        json := JSON,
+        coordinates_before_move := CoordinatesBeforeMove,
+        coordinates_after_move := CoordinatesAfterMove
+      } = Context,
+
       #{<<"type">> := OrderType} = JSON,
 
-      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType),
+      ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
     end
    }).
 
@@ -274,19 +287,32 @@ reject_move_player_command_when_player_hits_arena_edges_include_radius_test_() -
       {width, Width, _, _} = pewpew_arena_component:dimensions(ArenaComponent),
       [Player]             = pewpew_arena_component:players(ArenaComponent),
       pewpew_player_component:set_coordinates(Player, [{x, Width - 2}]),
+      PlayerCoordinatesBeforeMove = pewpew_player_component:coordinates(Player),
+
 
       ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"up\"}}">>),
       {text, InvalidCommandError} = ws_client:recv(Client),
       JSON = jiffy:decode(InvalidCommandError, [return_maps]),
+      PlayerCoordinatesAfterMove = pewpew_player_component:coordinates(Player),
 
-      Context#{json => JSON}
+      Context#{
+        json => JSON,
+        coordinates_before_move => PlayerCoordinatesBeforeMove,
+        coordinates_after_move => PlayerCoordinatesAfterMove
+       }
     end,
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{
+        json := JSON,
+        coordinates_before_move := CoordinatesBeforeMove,
+        coordinates_after_move := CoordinatesAfterMove
+      } = Context,
+
       #{<<"type">> := OrderType} = JSON,
 
-      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType),
+      ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
     end
    }).
 
@@ -304,21 +330,34 @@ reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
       ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
       ws_client:recv(Client),
 
-      ArenaComponent       = pewpew_game:arena_component(Game),
-      [Player]             = pewpew_arena_component:players(ArenaComponent),
-      pewpew_player_component:set_coordinates(Player, [{x, 0}]),
+      ArenaComponent              = pewpew_game:arena_component(Game),
+      [Player]                    = pewpew_arena_component:players(ArenaComponent),
+      pewpew_player_component:set_coordinates(Player, [{x, 5}, {y, 5}]),
+      PlayerCoordinatesBeforeMove = pewpew_player_component:coordinates(Player),
 
       ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"down\"}}">>),
       {text, InvalidCommandError} = ws_client:recv(Client),
       JSON = jiffy:decode(InvalidCommandError, [return_maps]),
+      PlayerCoordinatesAfterMove = pewpew_player_component:coordinates(Player),
 
-      Context#{json => JSON}
+      Context#{
+        json => JSON,
+        coordinates_before_move => PlayerCoordinatesBeforeMove,
+        coordinates_after_move => PlayerCoordinatesAfterMove
+       }
     end,
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{
+        json := JSON,
+        coordinates_before_move := CoordinatesBeforeMove,
+        coordinates_after_move := CoordinatesAfterMove
+      } = Context,
+
       #{<<"type">> := OrderType} = JSON,
 
-      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType),
+      ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
     end
    }).
+

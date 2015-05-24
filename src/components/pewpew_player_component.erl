@@ -11,6 +11,7 @@
 ]).
 -export([
   get_state/1,
+  set_state/2,
   id/1,
   x/1,
   y/1,
@@ -23,7 +24,8 @@
   rotate/2,
   rotation/1,
   channel/1,
-  radius/1
+  radius/1,
+  coordinates/1
 ]).
 
 % Exported only for testing
@@ -39,14 +41,19 @@ start_link(PewpewGameContextData, PlayerData) ->
 get_state(PlayerComponent) ->
   gen_server:call(PlayerComponent, get_state).
 
+set_state(PlayerComponent, Data) ->
+  gen_server:cast(PlayerComponent, {set_state, Data}).
+
 id(PlayerComponent) ->
   gen_server:call(PlayerComponent, id).
 
 x(PlayerComponent) ->
-  gen_server:call(PlayerComponent, x).
+  {x, X, _, _} = coordinates(PlayerComponent),
+  X.
 
 y(PlayerComponent) ->
-  gen_server:call(PlayerComponent, y).
+  {_, _, y, Y} = coordinates(PlayerComponent),
+  Y.
 
 hit(PlayerComponent) ->
   gen_server:cast(PlayerComponent, hit).
@@ -81,6 +88,9 @@ radius(PlayerComponent) ->
 set_coordinates(PlayerComponent, Coordinates) ->
   gen_server:cast(PlayerComponent, {set_coordinates, Coordinates}).
 
+coordinates(PlayerComponent) ->
+  gen_server:call(PlayerComponent, coordinates).
+
 init([PewpewGameContextData, PlayerData]) ->
   %TODO: check if the player uses the game context data for anything
   PlayerComponentData = pewpew_player_component_data:new(
@@ -104,16 +114,14 @@ handle_cast({rotate, Data}, PlayerComponentData) ->
   {noreply, pewpew_player_component_data:update(PlayerComponentData, [{rotation, Data}])};
 handle_cast({set_coordinates, Coordinates}, PlayerComponentData) ->
   {ok, NewPlayerComponentData} = pewpew_player_component_mod:set_coordinates(PlayerComponentData, Coordinates),
-  {noreply, NewPlayerComponentData}.
+  {noreply, NewPlayerComponentData};
+handle_cast({set_state, Data}, _) ->
+  {noreply, Data}.
 
 handle_call(get_state, _, PlayerComponentData) ->
   {reply, PlayerComponentData, PlayerComponentData};
 handle_call(id, _, PlayerComponentData) ->
   {reply, pewpew_player_component_data:id(PlayerComponentData), PlayerComponentData};
-handle_call(x, _, PlayerComponentData) ->
-  {reply, pewpew_player_component_data:x(PlayerComponentData), PlayerComponentData};
-handle_call(y, _, PlayerComponentData) ->
-  {reply, pewpew_player_component_data:y(PlayerComponentData), PlayerComponentData};
 handle_call(color, _, PlayerComponentData) ->
   {reply, pewpew_player_component_data:color(PlayerComponentData), PlayerComponentData};
 handle_call(life, _, PlayerComponentData) ->
@@ -125,7 +133,11 @@ handle_call(rotation, _, PlayerComponentData) ->
 handle_call(channel, _, PlayerComponentData) ->
   {reply, pewpew_player_component_data:origin(PlayerComponentData), PlayerComponentData};
 handle_call(radius, _, PlayerComponentData) ->
-  {reply, pewpew_player_component_data:radius(PlayerComponentData), PlayerComponentData}.
+  {reply, pewpew_player_component_data:radius(PlayerComponentData), PlayerComponentData};
+handle_call(coordinates, _, PlayerComponentData) ->
+  {ok, Coordinates} = pewpew_player_component_mod:get_coordinates(PlayerComponentData),
+  {reply, Coordinates, PlayerComponentData}.
+
 
 terminate(_Repos, _PlayerComponentData) ->
   die.
