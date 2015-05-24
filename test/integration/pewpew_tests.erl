@@ -1,6 +1,35 @@
 -module(pewpew_tests).
 -include_lib("eunit/include/eunit.hrl").
 
+execute_steps([], Context) ->
+  #{replies := Replies} = Context,
+
+  [LastReply | _] = Replies,
+  OrderedReplies  = lists:reverse(Replies),
+
+  Context#{
+    replies => OrderedReplies,
+    last_reply => LastReply
+   };
+execute_steps([Step | Tail], Context) ->
+  UpdatedContext = execute_step(Step, Context),
+  execute_steps(Tail, UpdatedContext).
+
+execute_step(Fun, Context) ->
+  Result = Fun(Context),
+
+  case Result of
+    {reply, Reply} ->
+      JSON = jiffy:decode(Reply, [return_maps]),
+
+      #{replies := CurrentReplies} = Context,
+      Context#{replies => [JSON | CurrentReplies]};
+    {context, UpdatedContext} ->
+      UpdatedContext;
+    _ -> Context
+  end.
+
+
 run(Config) ->
   {setup,
     fun() ->
@@ -13,7 +42,8 @@ run(Config) ->
       #{
         ws_player_client => Client,
         ws_control_client => ControlClient,
-        pewpew_game => PewPewGame
+        pewpew_game => PewPewGame,
+        replies => []
       }
     end,
     fun(Context) ->
@@ -28,33 +58,47 @@ run(Config) ->
       pewpew:stop()
     end,
     fun(Context) ->
-      Test = maps:get(test, Config),
+      Test   = maps:get(test, Config),
+      Before = maps:get(before, Config, undefined),
+      Steps  = maps:get(steps, Config, undefined),
 
-      try maps:get(before, Config) of
-        Before ->
-          UpdatedContext = Before(Context),
-          Test(UpdatedContext)
-      catch
+      case Before of
+        undefined ->
+          case Steps of
+            undefined ->
+              Test(Context);
+            _ ->
+
+             StepsList = case is_function(Steps) of
+               true -> Steps(Context);
+               false -> Steps
+             end,
+
+             NewContext = execute_steps(StepsList, Context),
+             Test(NewContext)
+          end;
         _ ->
-          Test(Context)
+          case Steps of
+            undefined ->
+              UpdatedContext = Before(Context),
+              Test(UpdatedContext);
+            _ ->
+              UpdatedContext = Before(Context),
+             NewContext      = execute_steps(Steps(UpdatedContext), UpdatedContext),
+             Test(NewContext)
+          end
       end
     end
     }.
 
 register_player_command_test_() ->
   run(#{
-    before => fun(Context) ->
-      #{ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      {text, Ack} = ws_client:recv(Client),
-      JSON        = jiffy:decode(Ack, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+    steps => [
+      send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{last_reply := JSON} = Context,
 
       #{<<"type">> := AckType, <<"data">> := Data} = JSON,
       #{<<"id">> := Id, <<"x">> := X, <<"y">> := Y, <<"life">> := Life} = Data,
@@ -71,41 +115,26 @@ register_player_command_test_() ->
 
 reject_register_player_twice_test_() ->
   run(#{
-    before => fun(Context) ->
-      #{ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      {text, _Ack} = ws_client:recv(Client),
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      Recv = ws_client:recv(Client),
-
-      Context#{recv => Recv }
-    end,
+    steps => [
+      send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{recv := Recv} = Context,
+      #{last_reply := #{<<"type">> := Type}} = Context,
 
-      ?_assertEqual({error, timeout}, Recv)
+      ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
  }).
 
 start_game_command_test_() ->
   run(#{
-    before => fun(Context) ->
-      #{ws_control_client := ControlClient} = Context,
-
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, Ack} = ws_client:recv(ControlClient),
-      JSON        = jiffy:decode(Ack, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+    steps => [
+      send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
-
-      #{<<"type">> := AckType} = JSON,
+      #{last_reply := #{<<"type">> := AckType}} = Context,
 
       ?_assertEqual(<<"StartGameAck">>, AckType)
     end
@@ -113,86 +142,72 @@ start_game_command_test_() ->
 
 reject_start_game_command_when_invalid_origin_test_() ->
   run(#{
-    before => fun(Context) ->
-      #{ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, Ack} = ws_client:recv(Client),
-      JSON        = jiffy:decode(Ack, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+    steps => [
+      send(ws_player_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{last_reply := #{<<"type">> := Type}} = Context,
 
-      #{<<"type">> := AckType} = JSON,
-
-      ?_assertEqual(<<"InvalidCommandError">>, AckType)
+      ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
    }).
 
 reject_start_game_command_when_already_started_test_() ->
   run(#{
-    before => fun(Context) ->
-      #{ws_control_client := ControlClient} = Context,
-
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, _} = ws_client:recv(ControlClient),
-
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, Ack} = ws_client:recv(ControlClient),
-      JSON        = jiffy:decode(Ack, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+    steps => [
+      send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
-      #{<<"type">> := AckType} = JSON,
+      #{last_reply := #{<<"type">> := Type}} = Context,
 
-      ?_assertEqual(<<"InvalidCommandError">>, AckType)
+      ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
    }).
 
 send_start_game_order_to_players_test_() ->
   run(#{
-    before => fun(Context) ->
-      #{ws_control_client := ControlClient, ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      _ = ws_client:recv(Client),
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, StartGameOrder} = ws_client:recv(Client),
-      JSON = jiffy:decode(StartGameOrder, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+    steps => [
+      send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      recv(ws_player_client)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{last_reply := JSON} = Context,
       #{<<"type">> := OrderType} = JSON,
 
       ?_assertEqual(<<"StartGameOrder">>, OrderType)
     end
    }).
 
+recv(ClientId) ->
+  fun(Context) ->
+    Client = maps:get(ClientId, Context),
+    {text, Reply} = ws_client:recv(Client),
+    {reply, Reply}
+  end.
+
+send(ClientId, Message) ->
+  fun(Context) ->
+      Client = maps:get(ClientId, Context),
+
+      ws_client:send_text(Client, Message),
+      {text, Reply} = ws_client:recv(Client),
+      {reply, Reply}
+  end.
+
 reject_move_player_command_when_game_not_started_test_() ->
   run(#{
-    before => fun(Context) ->
-      #{ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      ws_client:recv(Client),
-      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>),
-      {text, InvalidCommandError} = ws_client:recv(Client),
-      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+    steps => [
+        send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+        send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>)
+      ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{last_reply := JSON} = Context,
       #{<<"type">> := OrderType} = JSON,
 
       ?_assertEqual(<<"InvalidCommandError">>, OrderType)
@@ -201,63 +216,55 @@ reject_move_player_command_when_game_not_started_test_() ->
 
 reject_move_player_command_when_the_player_is_not_registered_test_() ->
   run(#{
-    before => fun(Context) ->
-      #{ws_player_client := Client, ws_control_client := ControlClient} = Context,
-
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client:recv(Client),
-
-      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>),
-      {text, InvalidCommandError} = ws_client:recv(Client),
-      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+    steps => [
+        send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+        send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>)
+      ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{last_reply := JSON} = Context,
       #{<<"type">> := OrderType} = JSON,
 
       ?_assertEqual(<<"InvalidCommandError">>, OrderType)
     end
    }).
 
-reject_move_player_command_when_player_hits_arena_edges_test_() ->
+generate_reject_move_command_test(Cb) ->
   run(#{
-    before => fun(Context) ->
-      #{
-        ws_player_client := Client,
-        ws_control_client := ControlClient,
-        pewpew_game := Game
-      } = Context,
+    steps => fun(Context) ->
+      #{ pewpew_game := Game } = Context,
+      ArenaComponent                 = pewpew_game:arena_component(Game),
+      {width, Width, height, Height} = pewpew_arena_component:dimensions(ArenaComponent),
 
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      ws_client:recv(Client),
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client:recv(Client),
+      SetPlayerCoordinates = fun(_) ->
+        [Player]               = pewpew_arena_component:players(ArenaComponent),
+        Coordinates = Cb(Width, Height),
+        pewpew_player_component:set_coordinates(Player, [Coordinates])
+      end,
 
-      ArenaComponent       = pewpew_game:arena_component(Game),
-      {width, Width, _, _} = pewpew_arena_component:dimensions(ArenaComponent),
-      [Player]             = pewpew_arena_component:players(ArenaComponent),
-      pewpew_player_component:set_coordinates(Player, [{x, Width}]),
-      PlayerCoordinatesBeforeMove = pewpew_player_component:coordinates(Player),
+      GetPlayerCoordinates = fun(Tag) ->
+        fun(Context_2) ->
+          [Player]       = pewpew_arena_component:players(ArenaComponent),
+          Coordinates    = pewpew_player_component:coordinates(Player),
+          UpdatedContext = maps:put(Tag, Coordinates, Context_2),
+          {context, UpdatedContext}
+        end
+      end,
 
-
-      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"up\"}}">>),
-      {text, InvalidCommandError} = ws_client:recv(Client),
-      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
-      PlayerCoordinatesAfterMove = pewpew_player_component:coordinates(Player),
-
-      Context#{
-        json => JSON,
-        coordinates_before_move => PlayerCoordinatesBeforeMove,
-        coordinates_after_move => PlayerCoordinatesAfterMove
-       }
+    [
+      send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      SetPlayerCoordinates,
+      send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      GetPlayerCoordinates(coordinates_before_move),
+      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"up\"}}">>),
+      GetPlayerCoordinates(coordinates_after_move)
+    ]
     end,
+
 
     test => fun(Context) ->
       #{
-        json := JSON,
+        last_reply := JSON,
         coordinates_before_move := CoordinatesBeforeMove,
         coordinates_after_move := CoordinatesAfterMove
       } = Context,
@@ -268,96 +275,19 @@ reject_move_player_command_when_player_hits_arena_edges_test_() ->
       ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
     end
    }).
+
+
+reject_move_player_command_when_player_hits_arena_edges_test_() ->
+  generate_reject_move_command_test(fun(ArenaWidth, _) ->
+    {x, ArenaWidth}
+  end).
 
 reject_move_player_command_when_player_hits_arena_edges_include_radius_test_() ->
-  run(#{
-    before => fun(Context) ->
-      #{
-        ws_player_client := Client,
-        ws_control_client := ControlClient,
-        pewpew_game := Game
-      } = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      ws_client:recv(Client),
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client:recv(Client),
-
-      ArenaComponent       = pewpew_game:arena_component(Game),
-      {width, Width, _, _} = pewpew_arena_component:dimensions(ArenaComponent),
-      [Player]             = pewpew_arena_component:players(ArenaComponent),
-      pewpew_player_component:set_coordinates(Player, [{x, Width - 2}]),
-      PlayerCoordinatesBeforeMove = pewpew_player_component:coordinates(Player),
-
-
-      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"up\"}}">>),
-      {text, InvalidCommandError} = ws_client:recv(Client),
-      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
-      PlayerCoordinatesAfterMove = pewpew_player_component:coordinates(Player),
-
-      Context#{
-        json => JSON,
-        coordinates_before_move => PlayerCoordinatesBeforeMove,
-        coordinates_after_move => PlayerCoordinatesAfterMove
-       }
-    end,
-
-    test => fun(Context) ->
-      #{
-        json := JSON,
-        coordinates_before_move := CoordinatesBeforeMove,
-        coordinates_after_move := CoordinatesAfterMove
-      } = Context,
-
-      #{<<"type">> := OrderType} = JSON,
-
-      ?_assertEqual(<<"InvalidCommandError">>, OrderType),
-      ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
-    end
-   }).
+  generate_reject_move_command_test(fun(ArenaWidth, _) ->
+    {x, ArenaWidth - 2}
+  end).
 
 reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
-  run(#{
-    before => fun(Context) ->
-      #{
-        ws_player_client := Client,
-        ws_control_client := ControlClient,
-        pewpew_game := Game
-      } = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      ws_client:recv(Client),
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client:recv(Client),
-
-      ArenaComponent              = pewpew_game:arena_component(Game),
-      [Player]                    = pewpew_arena_component:players(ArenaComponent),
-      pewpew_player_component:set_coordinates(Player, [{x, 5}, {y, 5}]),
-      PlayerCoordinatesBeforeMove = pewpew_player_component:coordinates(Player),
-
-      ws_client:send_text(Client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"down\"}}">>),
-      {text, InvalidCommandError} = ws_client:recv(Client),
-      JSON = jiffy:decode(InvalidCommandError, [return_maps]),
-      PlayerCoordinatesAfterMove = pewpew_player_component:coordinates(Player),
-
-      Context#{
-        json => JSON,
-        coordinates_before_move => PlayerCoordinatesBeforeMove,
-        coordinates_after_move => PlayerCoordinatesAfterMove
-       }
-    end,
-
-    test => fun(Context) ->
-      #{
-        json := JSON,
-        coordinates_before_move := CoordinatesBeforeMove,
-        coordinates_after_move := CoordinatesAfterMove
-      } = Context,
-
-      #{<<"type">> := OrderType} = JSON,
-
-      ?_assertEqual(<<"InvalidCommandError">>, OrderType),
-      ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
-    end
-   }).
-
+  generate_reject_move_command_test(fun(_, _) ->
+    {x, 5, y, 5}
+  end).

@@ -18,8 +18,9 @@ maybe_eval_command(true, CommandContextData, CommandOriginChannel) ->
     (pewpew_command_data:command_module(CommandData)):run(
     pewpew_command_data:command_data(CommandData), CommandContextData
   ), CommandOriginChannel);
-maybe_eval_command(false, _, _) ->
-  noreply.
+maybe_eval_command(false, _, CommandOriginChannel) ->
+  InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
+  {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}.
 
 eval_result_from_command({registered, NewPlayer}, CommandOriginChannel) ->
   RegisterPlayerAck = pewpew_register_player_ack:new(NewPlayer, CommandOriginChannel),
