@@ -229,7 +229,13 @@ reject_move_player_command_when_the_player_is_not_registered_test_() ->
     end
    }).
 
-generate_reject_move_command_test(Cb) ->
+generate_move_command(Options) ->
+  #{
+    direction := Direction,
+    test := Test,
+    coordinates := CoordinatesCb
+   } = Options,
+
   run(#{
     steps => fun(Context) ->
       #{ pewpew_game := Game } = Context,
@@ -238,8 +244,8 @@ generate_reject_move_command_test(Cb) ->
 
       SetPlayerCoordinates = fun(_) ->
         [Player]               = pewpew_arena_component:players(ArenaComponent),
-        Coordinates = Cb(Width, Height),
-        pewpew_player_component:set_coordinates(Player, [Coordinates])
+        Coordinates = CoordinatesCb(Width, Height),
+        pewpew_player_component:set_coordinates(Player, Coordinates)
       end,
 
       GetPlayerCoordinates = fun(Tag) ->
@@ -256,12 +262,20 @@ generate_reject_move_command_test(Cb) ->
       SetPlayerCoordinates,
       send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
       GetPlayerCoordinates(coordinates_before_move),
-      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"forward\"}}">>),
+      recv(ws_player_client),
+      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\":\"", Direction/binary, "\"}}">>),
       GetPlayerCoordinates(coordinates_after_move)
     ]
     end,
 
+    test => Test
+   }).
 
+generate_reject_move_command_test(Cb) ->
+  generate_move_command(
+    #{
+    direction => <<"forward">>,
+    coordinates => Cb,
     test => fun(Context) ->
       #{
         last_reply := JSON,
@@ -271,25 +285,27 @@ generate_reject_move_command_test(Cb) ->
 
       #{<<"type">> := OrderType} = JSON,
 
-      ?_assertEqual(<<"InvalidCommandError">>, OrderType),
-      ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
+      [
+       ?_assertEqual(<<"InvalidCommandError">>, OrderType),
+       ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
+      ]
     end
-   }).
+  }).
 
 
 reject_move_player_command_when_player_hits_arena_edges_test_() ->
   generate_reject_move_command_test(fun(ArenaWidth, _) ->
-    {x, ArenaWidth}
+    [{x, ArenaWidth}]
   end).
 
 reject_move_player_command_when_player_hits_arena_edges_include_radius_test_() ->
   generate_reject_move_command_test(fun(ArenaWidth, _) ->
-    {x, ArenaWidth - 2}
+    [{x, ArenaWidth - 2}]
   end).
 
 reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
   generate_reject_move_command_test(fun(_, _) ->
-    {x, 5, y, 5}
+    [{x, 5}, {y, 5}]
   end).
 
 reject_move_player_command_when_direction_is_invalid_test_() ->
@@ -305,5 +321,35 @@ reject_move_player_command_when_direction_is_invalid_test_() ->
       #{last_reply := #{<<"type">> := Type}} = Context,
 
       ?_assertEqual(<<"InvalidCommandError">>, Type)
+    end
+   }).
+
+move_player_forward_test_() ->
+  generate_move_command(
+    #{
+    direction => <<"forward">>,
+    coordinates => fun(_, _) -> [{x, 10}, {y, 10}] end,
+    test => fun(Context) ->
+      #{last_reply := #{<<"type">> := Type, <<"data">> := Data}} = Context,
+
+      [
+       ?_assertEqual(<<"MovePlayerAck">>, Type),
+       ?_assertEqual(#{<<"x">> => 11.0, <<"y">> => 10.0}, Data)
+      ]
+    end
+   }).
+
+move_player_backward_test_() ->
+  generate_move_command(
+    #{
+    direction => <<"backward">>,
+    coordinates => fun(_, _) -> [{x, 10}, {y, 10}] end,
+    test => fun(Context) ->
+      #{last_reply := #{<<"type">> := Type, <<"data">> := Data}} = Context,
+
+      [
+       ?_assertEqual(<<"MovePlayerAck">>, Type),
+       ?_assertEqual(#{<<"x">> => 9.0, <<"y">> => 10.0}, Data)
+      ]
     end
    }).

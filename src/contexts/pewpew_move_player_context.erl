@@ -34,7 +34,9 @@ call(CommandContextData) ->
 
               case validates(Player, ArenaComponent) of
                 true ->
-                  ok;
+                  Coordinates = pewpew_player_component:coordinates(Player),
+                  MovePlayerAck = pewpew_move_player_ack:new(Coordinates, CommandOriginChannel),
+                  {reply, [{send_to, CommandOriginChannel, MovePlayerAck}]};
                 false ->
                   pewpew_player_component:set_state(Player, PlayerState),
                   InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
