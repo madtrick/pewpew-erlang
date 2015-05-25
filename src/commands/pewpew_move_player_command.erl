@@ -15,8 +15,8 @@ is_valid(CommandData) ->
   Direction = pewpew_move_player_command_data:direction(CommandData),
 
   case Direction of
-    <<"up">> -> true;
-    <<"down">> -> true;
+    <<"forward">> -> true;
+    <<"backward">> -> true;
     _ -> false
   end.
 

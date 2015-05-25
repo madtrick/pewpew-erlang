@@ -256,7 +256,7 @@ generate_reject_move_command_test(Cb) ->
       SetPlayerCoordinates,
       send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
       GetPlayerCoordinates(coordinates_before_move),
-      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"up\"}}">>),
+      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": \"forward\"}}">>),
       GetPlayerCoordinates(coordinates_after_move)
     ]
     end,

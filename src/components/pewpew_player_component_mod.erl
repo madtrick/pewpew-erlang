@@ -18,11 +18,9 @@ get_coordinates(PlayerComponentData) ->
 
   {ok, {x, X, y, Y}}.
 
-%TODO: replace "up" with "forward"
-%TODO: replace "down" with "backwards"
-move(<<"up">>, PlayerComponentData) ->
+move(<<"forward">>, PlayerComponentData) ->
   move_player(1, PlayerComponentData);
-move(<<"down">>, PlayerComponentData) ->
+move(<<"backward">>, PlayerComponentData) ->
   move_player(-1, PlayerComponentData).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
