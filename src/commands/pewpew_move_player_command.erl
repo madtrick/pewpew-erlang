@@ -1,11 +1,24 @@
 -module(pewpew_move_player_command).
 
--export([fromJSON/1, run/2]).
+-export([
+  fromJSON/1,
+  run/2,
+  is_valid/1
+]).
 
 % {player : , direction: }
 fromJSON(JSON) ->
   {[{<<"player">>, Id}, {<<"direction">>, Direction}]} = JSON,
   pewpew_move_player_command_data:new(?MODULE, [{id, Id}, {direction, Direction}]).
+
+is_valid(CommandData) ->
+  Direction = pewpew_move_player_command_data:direction(CommandData),
+
+  case Direction of
+    <<"up">> -> true;
+    <<"down">> -> true;
+    _ -> false
+  end.
 
 run(CommandData, ContextData) ->
   lager:debug("Running move_player_command"),

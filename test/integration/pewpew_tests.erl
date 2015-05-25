@@ -291,3 +291,19 @@ reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
   generate_reject_move_command_test(fun(_, _) ->
     {x, 5, y, 5}
   end).
+
+reject_move_player_command_when_direction_is_invalid_test_() ->
+  run(#{
+    steps => [
+      send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>),
+      recv(ws_player_client)
+    ],
+
+    test => fun(Context) ->
+      #{last_reply := #{<<"type">> := Type}} = Context,
+
+      ?_assertEqual(<<"InvalidCommandError">>, Type)
+    end
+   }).
