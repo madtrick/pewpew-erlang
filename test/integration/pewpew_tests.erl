@@ -231,12 +231,13 @@ reject_move_player_command_when_the_player_is_not_registered_test_() ->
 
 generate_move_command(Options) ->
   #{
-    test := Test,
-    coordinates := CoordinatesCb
+    test := Test
    } = Options,
 
-  Movements          = maps:get(movements, Options, <<"[]">>),
-  JSONifiedMovements = jiffy:encode(Movements),
+  DefaultCoordinates   = [{x, 10}, {y, 10}],
+  CoordinatesListOrFun = maps:get(coordinates, Options, DefaultCoordinates),
+  Movements            = maps:get(movements, Options, <<"[]">>),
+  JSONifiedMovements   = jiffy:encode(Movements),
 
   run(#{
     steps => fun(Context) ->
@@ -245,8 +246,11 @@ generate_move_command(Options) ->
       {width, Width, height, Height} = pewpew_arena_component:dimensions(ArenaComponent),
 
       SetPlayerCoordinates = fun(_) ->
-        [Player]               = pewpew_arena_component:players(ArenaComponent),
-        Coordinates = CoordinatesCb(Width, Height),
+        [Player]    = pewpew_arena_component:players(ArenaComponent),
+        Coordinates = case erlang:is_function(CoordinatesListOrFun) of
+                        true -> CoordinatesListOrFun(Width, Height);
+                        false -> CoordinatesListOrFun
+                      end,
         pewpew_player_component:set_coordinates(Player, Coordinates)
       end,
 
@@ -296,57 +300,39 @@ generate_reject_move_command_test(Options) ->
 
 reject_move_player_command_when_player_hits_arena_edges_test_() ->
   generate_reject_move_command_test(#{
-    coordinates => fun(ArenaWidth, _) ->
-      [{x, ArenaWidth}]
-    end,
+    coordinates => fun(ArenaWidth, _) -> [{x, ArenaWidth}] end,
     movements => [#{move => forward}]
    }).
 
 reject_move_player_command_when_player_hits_arena_edges_include_radius_test_() ->
   generate_reject_move_command_test(#{
-    coordinates => fun(ArenaWidth, _) ->
-      [{x, ArenaWidth - 2}]
-    end,
+    coordinates => fun(ArenaWidth, _) -> [{x, ArenaWidth - 2}] end,
     movements => [#{move => forward}]
    }).
 
 reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
   generate_reject_move_command_test(#{
-    coordinates => fun(_, _) ->
-      [{x, 5}, {y, 5}]
-    end,
-    movements => [#{move => forward}]
+    coordinates => [{x, 6}, {y, 6}],
+    movements => [#{move => backward}]
    }).
 
 reject_move_player_command_when_direction_is_invalid_test_() ->
   generate_reject_move_command_test(#{
-    coordinates => fun(_, _) ->
-      [{x, 5}, {y, 5}]
-    end,
     movements => [#{move => invalid_movement}]
    }).
 
 reject_move_player_command_when_rotation_is_invalid_test_() ->
   generate_reject_move_command_test(#{
-    coordinates => fun(_, _) ->
-      [{x, 5}, {y, 5}]
-    end,
-    movements => [#{roration => 2}]
+    movements => [#{rotate => 900}]
    }).
 
 reject_move_player_command_when_two_rotations_test_() ->
   generate_reject_move_command_test(#{
-    coordinates => fun(_, _) ->
-      [{x, 5}, {y, 5}]
-    end,
-    movements => [#{roration => 2}, #{rotation => 2}]
+    movements => [#{rotate => 2}, #{rotate => 2}]
    }).
 
 reject_move_player_command_when_two_moves_test_() ->
   generate_reject_move_command_test(#{
-    coordinates => fun(_, _) ->
-      [{x, 5}, {y, 5}]
-    end,
     movements => [#{move => forward}, #{move => forward}]
    }).
 
