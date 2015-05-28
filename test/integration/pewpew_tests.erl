@@ -203,7 +203,7 @@ reject_move_player_command_when_game_not_started_test_() ->
   run(#{
     steps => [
         send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-        send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>)
+        send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>)
       ],
 
     test => fun(Context) ->
@@ -218,7 +218,7 @@ reject_move_player_command_when_the_player_is_not_registered_test_() ->
   run(#{
     steps => [
         send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-        send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>)
+        send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>)
       ],
 
     test => fun(Context) ->
@@ -231,10 +231,12 @@ reject_move_player_command_when_the_player_is_not_registered_test_() ->
 
 generate_move_command(Options) ->
   #{
-    direction := Direction,
     test := Test,
     coordinates := CoordinatesCb
    } = Options,
+
+  Movements          = maps:get(movements, Options, <<"[]">>),
+  JSONifiedMovements = jiffy:encode(Movements),
 
   run(#{
     steps => fun(Context) ->
@@ -263,7 +265,7 @@ generate_move_command(Options) ->
       send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
       GetPlayerCoordinates(coordinates_before_move),
       recv(ws_player_client),
-      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\":\"", Direction/binary, "\"}}">>),
+      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":", JSONifiedMovements/binary, "}">>),
       GetPlayerCoordinates(coordinates_after_move)
     ]
     end,
@@ -271,11 +273,8 @@ generate_move_command(Options) ->
     test => Test
    }).
 
-generate_reject_move_command_test(Cb) ->
-  generate_move_command(
-    #{
-    direction => <<"forward">>,
-    coordinates => Cb,
+generate_reject_move_command_test(Options) ->
+  DefaultOptions = #{
     test => fun(Context) ->
       #{
         last_reply := JSON,
@@ -290,66 +289,114 @@ generate_reject_move_command_test(Cb) ->
        ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
       ]
     end
-  }).
+  },
 
+  GenerateMoveCommandOptions = maps:merge(DefaultOptions, Options),
+  generate_move_command(GenerateMoveCommandOptions).
 
 reject_move_player_command_when_player_hits_arena_edges_test_() ->
-  generate_reject_move_command_test(fun(ArenaWidth, _) ->
-    [{x, ArenaWidth}]
-  end).
+  generate_reject_move_command_test(#{
+    coordinates => fun(ArenaWidth, _) ->
+      [{x, ArenaWidth}]
+    end,
+    movements => [#{move => forward}]
+   }).
 
 reject_move_player_command_when_player_hits_arena_edges_include_radius_test_() ->
-  generate_reject_move_command_test(fun(ArenaWidth, _) ->
-    [{x, ArenaWidth - 2}]
-  end).
+  generate_reject_move_command_test(#{
+    coordinates => fun(ArenaWidth, _) ->
+      [{x, ArenaWidth - 2}]
+    end,
+    movements => [#{move => forward}]
+   }).
 
 reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
-  generate_reject_move_command_test(fun(_, _) ->
-    [{x, 5}, {y, 5}]
-  end).
+  generate_reject_move_command_test(#{
+    coordinates => fun(_, _) ->
+      [{x, 5}, {y, 5}]
+    end,
+    movements => [#{move => forward}]
+   }).
 
 reject_move_player_command_when_direction_is_invalid_test_() ->
-  run(#{
-    steps => [
-      send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":{\"player\": 1, \"direction\": 2}}">>),
-      recv(ws_player_client)
-    ],
-
-    test => fun(Context) ->
-      #{last_reply := #{<<"type">> := Type}} = Context,
-
-      ?_assertEqual(<<"InvalidCommandError">>, Type)
-    end
+  generate_reject_move_command_test(#{
+    coordinates => fun(_, _) ->
+      [{x, 5}, {y, 5}]
+    end,
+    movements => [#{move => invalid_movement}]
    }).
 
-move_player_forward_test_() ->
+reject_move_player_command_when_rotation_is_invalid_test_() ->
+  generate_reject_move_command_test(#{
+    coordinates => fun(_, _) ->
+      [{x, 5}, {y, 5}]
+    end,
+    movements => [#{roration => 2}]
+   }).
+
+reject_move_player_command_when_two_rotations_test_() ->
+  generate_reject_move_command_test(#{
+    coordinates => fun(_, _) ->
+      [{x, 5}, {y, 5}]
+    end,
+    movements => [#{roration => 2}, #{rotation => 2}]
+   }).
+
+reject_move_player_command_when_two_moves_test_() ->
+  generate_reject_move_command_test(#{
+    coordinates => fun(_, _) ->
+      [{x, 5}, {y, 5}]
+    end,
+    movements => [#{move => forward}, #{move => forward}]
+   }).
+
+generate_movement_test(Options) ->
+  #{
+    expectations := #{
+      x := ExpectedX,
+      y := ExpectedY
+     }
+  } = Options,
+
   generate_move_command(
-    #{
-    direction => <<"forward">>,
-    coordinates => fun(_, _) -> [{x, 10}, {y, 10}] end,
-    test => fun(Context) ->
-      #{last_reply := #{<<"type">> := Type, <<"data">> := Data}} = Context,
+    maps:merge(Options,
+      #{
+        test => fun(Context) ->
+          #{last_reply := #{<<"type">> := Type, <<"data">> := Data}} = Context,
 
-      [
-       ?_assertEqual(<<"MovePlayerAck">>, Type),
-       ?_assertEqual(#{<<"x">> => 11.0, <<"y">> => 10.0}, Data)
-      ]
-    end
-   }).
+          [
+           ?_assertEqual(<<"MovePlayerAck">>, Type),
+           ?_assertEqual(#{<<"x">> => ExpectedX, <<"y">> => ExpectedY}, Data)
+          ]
+        end
+     }
+    )
+ ).
 
-move_player_backward_test_() ->
-  generate_move_command(
-    #{
-    direction => <<"backward">>,
-    coordinates => fun(_, _) -> [{x, 10}, {y, 10}] end,
-    test => fun(Context) ->
-      #{last_reply := #{<<"type">> := Type, <<"data">> := Data}} = Context,
 
-      [
-       ?_assertEqual(<<"MovePlayerAck">>, Type),
-       ?_assertEqual(#{<<"x">> => 9.0, <<"y">> => 10.0}, Data)
-      ]
-    end
-   }).
+move_player_test_() ->
+  Coordinates = fun(_, _) -> [{x, 10}, {y, 10}] end,
+  Movements = [
+   #{
+    coordinates => Coordinates,
+    movements => [#{rotate => 60}, #{move => forward}],
+    expectations => #{x => 10.5, y =>10.86602540378444}
+    },
+   #{
+    coordinates => Coordinates,
+    movements => [#{rotate => 60}],
+    expectations => #{x => 10, y =>10}
+    }
+   #{
+    coordinates => Coordinates,
+    movements => [#{move => forward}],
+    expectations => #{x => 11.0, y =>10.0}
+    },
+   #{
+    coordinates => Coordinates,
+    movements => [#{move => backward}],
+    expectations => #{x => 9.0, y =>10.0}
+    }
+  ],
+
+  lists:map(fun generate_movement_test/1, Movements).

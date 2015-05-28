@@ -33,8 +33,9 @@ move_player(Sign, PlayerComponentData) ->
 
 calculate_new_coordinates(Sign, Speed, PlayerComponentData) ->
   Rotation = pewpew_player_component_data:rotation(PlayerComponentData),
-  DX       = Speed * math:cos(-Rotation),
-  DY       = Speed * math:sin(-Rotation),
+  RadianRotation = (Rotation * math:pi()) / 180,
+  DX       = Speed * math:cos(RadianRotation),
+  DY       = Speed * math:sin(RadianRotation),
   X        = pewpew_player_component_data:x(PlayerComponentData),
   Y        = pewpew_player_component_data:y(PlayerComponentData),
 
