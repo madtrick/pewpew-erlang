@@ -6,7 +6,8 @@
   ws_client_send/2,
   ws_client_recv/1,
   generate_reject_move_command_test/1,
-  generate_valid_move_command_test/1
+  generate_valid_move_command_test/1,
+  register_player/1
 ]).
 
 run_test(Config) ->
@@ -17,12 +18,15 @@ run_test(Config) ->
       {ok, Client}        = ws_client:start_link(),
       {ok, ControlClient} = ws_client:start_link(4321),
       [PewPewGame]        = pewpew_core:get_games(),
+      ArenaComponent      = pewpew_game:arena_component(PewPewGame),
 
       #{
         ws_player_client => Client,
         ws_control_client => ControlClient,
         pewpew_game => PewPewGame,
-        replies => []
+        arena_component => ArenaComponent,
+        replies => [],
+        players => #{}
       }
     end,
     fun(Context) ->
@@ -69,6 +73,27 @@ run_test(Config) ->
       end
     end
     }.
+
+register_player(Alias) ->
+  fun(Context) ->
+    #{
+      arena_component := ArenaComponent,
+      ws_player_client := Client,
+      players := CurrentPlayers
+    } = Context,
+
+    Command = jiffy:encode(#{type => <<"RegisterPlayerCommand">>, data => #{}}),
+    ws_client:send_text(Client, Command),
+
+    {text, JSON}   = ws_client:recv(Client),
+
+    Response       = jiffy:decode(JSON, [return_maps]),
+    #{<<"data">> := #{<<"id">> := PlayerId}} = Response,
+
+    Player = pewpew_arena_component:get_player(ArenaComponent, PlayerId),
+
+    {context, Context#{players => maps:put(Alias, Player, CurrentPlayers)}}
+  end.
 
 ws_client_recv(ClientId) ->
   fun(Context) ->

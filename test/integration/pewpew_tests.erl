@@ -6,7 +6,8 @@
   ws_client_send/2,
   ws_client_recv/1,
   generate_reject_move_command_test/1,
-  generate_valid_move_command_test/1
+  generate_valid_move_command_test/1,
+  register_player/1
 ]).
 
 %register_player_command_test_() ->
@@ -214,13 +215,11 @@ send_state_to_control_test_() ->
 state_update_includes_registered_player_test_() ->
   run_test(#{
     steps => [
-      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
+      register_player(player1),
       ws_client_recv(ws_control_client)
     ],
     test => fun(Context) ->
-      #{ pewpew_game := PewPewGame } = Context,
-      Arena = pewpew_game:arena_component(PewPewGame),
-      [Player] = pewpew_arena_component:players(Arena),
+      #{players := #{player1 := Player}} = Context,
       ExpectedPlayerState = #{
         <<"coordinates">> => #{ <<"x">> => pewpew_player_component:x(Player), <<"y">> => pewpew_player_component:y(Player) }, <<"life">> => pewpew_player_component:life(Player), <<"rotation">> => pewpew_player_component:rotation(Player)
        },

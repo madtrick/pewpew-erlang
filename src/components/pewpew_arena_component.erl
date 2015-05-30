@@ -15,6 +15,10 @@
 -define(PLAYER_DOWN(Pid), {'DOWN', _, process, Pid, _}).
 -define(COLORS, [<<"red">>, <<"blue">>, <<"green">>]).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 start_link(Data) ->
   gen_server:start_link(?MODULE, [Data], []).
 
@@ -35,6 +39,10 @@ dimensions(ArenaComponent) ->
 
 players(ArenaComponent) ->
   gen_server:call(ArenaComponent, players).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% gen_server callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init([Data]) ->
   {ok, PewpewPlayerComponentSup} = pewpew_player_component_sup:start_link(),
@@ -89,6 +97,10 @@ handle_call(dimensions, _, ArenaComponentData) ->
   {ok, Dimensions} = pewpew_arena_component_mod:dimensions(ArenaComponentData),
 
   {reply, Dimensions, ArenaComponentData}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% internal functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 real_positions_left(ArenaComponentData) ->
   pewpew_arena_component_data:max_number_of_players(ArenaComponentData) - number_of_players(ArenaComponentData).
