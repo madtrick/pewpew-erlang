@@ -210,3 +210,28 @@ send_state_to_control_test_() ->
       ?_assertEqual([], Players)
     end
    }).
+
+state_update_includes_registered_player_test_() ->
+  run_test(#{
+    steps => [
+      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
+      ws_client_recv(ws_control_client)
+    ],
+    test => fun(Context) ->
+      #{ pewpew_game := PewPewGame } = Context,
+      Arena = pewpew_game:arena_component(PewPewGame),
+      [Player] = pewpew_arena_component:players(Arena),
+      ExpectedPlayerState = #{
+        <<"coordinates">> => #{ <<"x">> => pewpew_player_component:x(Player), <<"y">> => pewpew_player_component:y(Player) }, <<"life">> => pewpew_player_component:life(Player), <<"rotation">> => pewpew_player_component:rotation(Player)
+       },
+
+      #{last_reply := JSON} = Context,
+      #{<<"arena">> := #{ <<"players">> := Players }} = JSON,
+
+      PlayersState = lists:nth(1, Players),
+      [
+       ?_assertEqual(1, length(Players)),
+       ?_assertEqual(ExpectedPlayerState, PlayersState)
+      ]
+    end
+   }).

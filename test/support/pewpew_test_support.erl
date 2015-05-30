@@ -78,10 +78,12 @@ ws_client_recv(ClientId) ->
   end.
 
 ws_client_send(ClientId, Message) ->
+  JSON = maybe_convert_message_to_json(Message),
+
   fun(Context) ->
       Client = maps:get(ClientId, Context),
 
-      ws_client:send_text(Client, Message),
+      ws_client:send_text(Client, JSON),
       {text, Reply} = ws_client:recv(Client),
       {reply, Reply}
   end.
@@ -210,3 +212,7 @@ generate_move_command(Options) ->
     test => Test
    }).
 
+maybe_convert_message_to_json(Message) when is_map(Message) ->
+  jiffy:encode(Message);
+maybe_convert_message_to_json(Message) ->
+  Message.
