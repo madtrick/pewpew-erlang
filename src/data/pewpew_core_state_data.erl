@@ -3,22 +3,15 @@
 -export([new/1, pewpew_game/1, pending_messages/1]).
 -export([update/2]).
 
--record(pewpew_core_state_data, {
-    pewpew_game,
-    pending_messages = []
-  }).
+new(PewPewGame) ->
+  Options = [
+     {pewpew_game, PewPewGame},
+     {pending_messages, []}
+  ],
+  pewpew_map_backed_data:new(Options).
 
-new(PewpewGame) ->
-  #pewpew_core_state_data{
-    pewpew_game = PewpewGame
-  }.
+pending_messages(#{ pending_messages := Value }) -> Value.
+pewpew_game(#{ pewpew_game := Value }) -> Value.
 
-pending_messages(#pewpew_core_state_data{ pending_messages = PendingMessages }) ->
-  PendingMessages.
-pewpew_game(#pewpew_core_state_data{ pewpew_game = PewpewGame }) ->
-  PewpewGame.
-
-update(PewpewCoreStateData, Options) ->
-  PewpewCoreStateData#pewpew_core_state_data{
-    pending_messages = proplists:get_value(pending_messages, Options, pending_messages(PewpewCoreStateData))
-  }.
+update(Data, Options) ->
+  pewpew_map_backed_data:update(Data, Options).

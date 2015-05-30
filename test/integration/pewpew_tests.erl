@@ -1,58 +1,22 @@
 -module(pewpew_tests).
 -include_lib("eunit/include/eunit.hrl").
 
-run(Config) ->
-  {setup,
-    fun() ->
-      application:set_env(pewpew, execution_mode, test),
-      pewpew:start(),
-      {ok, Client}        = ws_client:start_link(),
-      {ok, ControlClient} = ws_client:start_link(4321),
-
-      #{
-        ws_player_client => Client,
-        ws_control_client => ControlClient
-      }
-    end,
-    fun(Context) ->
-      #{
-        ws_player_client := Client,
-        ws_control_client := ControlClient
-      } = Context,
-
-      ws_client:stop(Client),
-      ws_client:stop(ControlClient),
-
-      pewpew:stop()
-    end,
-    fun(Context) ->
-      Test = maps:get(test, Config),
-
-      try maps:get(before, Config) of
-        Before ->
-          UpdatedContext = Before(Context),
-          Test(UpdatedContext)
-      catch
-        _ ->
-          Test(Context)
-      end
-    end
-    }.
+-import(pewpew_test_support, [
+  run_test/1,
+  ws_client_send/2,
+  ws_client_recv/1,
+  generate_reject_move_command_test/1,
+  generate_valid_move_command_test/1
+]).
 
 register_player_command_test_() ->
-  run(#{
-    before => fun(Context) ->
-      #{ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      {text, Ack} = ws_client:recv(Client),
-      JSON        = jiffy:decode(Ack, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+  run_test(#{
+    steps => [
+      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{last_reply := JSON} = Context,
 
       #{<<"type">> := AckType, <<"data">> := Data} = JSON,
       #{<<"id">> := Id, <<"x">> := X, <<"y">> := Y, <<"life">> := Life} = Data,
@@ -68,109 +32,171 @@ register_player_command_test_() ->
    }).
 
 reject_register_player_twice_test_() ->
-  run(#{
-    before => fun(Context) ->
-      #{ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      {text, _Ack} = ws_client:recv(Client),
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      Recv = ws_client:recv(Client),
-
-      Context#{recv => Recv }
-    end,
+  run_test(#{
+    steps => [
+      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{recv := Recv} = Context,
+      #{last_reply := #{<<"type">> := Type}} = Context,
 
-      ?_assertEqual({error, timeout}, Recv)
+      ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
  }).
 
 start_game_command_test_() ->
-  run(#{
-    before => fun(Context) ->
-      #{ws_control_client := ControlClient} = Context,
-
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, Ack} = ws_client:recv(ControlClient),
-      JSON        = jiffy:decode(Ack, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+  run_test(#{
+    steps => [
+      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
-
-      #{<<"type">> := AckType} = JSON,
+      #{last_reply := #{<<"type">> := AckType}} = Context,
 
       ?_assertEqual(<<"StartGameAck">>, AckType)
     end
  }).
 
 reject_start_game_command_when_invalid_origin_test_() ->
-  run(#{
-    before => fun(Context) ->
-      #{ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, Ack} = ws_client:recv(Client),
-      JSON        = jiffy:decode(Ack, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+  run_test(#{
+    steps => [
+      ws_client_send(ws_player_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{last_reply := #{<<"type">> := Type}} = Context,
 
-      #{<<"type">> := AckType} = JSON,
-
-      ?_assertEqual(<<"InvalidCommandError">>, AckType)
+      ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
    }).
 
 reject_start_game_command_when_already_started_test_() ->
-  run(#{
-    before => fun(Context) ->
-      #{ws_control_client := ControlClient} = Context,
-
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, _} = ws_client:recv(ControlClient),
-
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, Ack} = ws_client:recv(ControlClient),
-      JSON        = jiffy:decode(Ack, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+  run_test(#{
+    steps => [
+      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
-      #{<<"type">> := AckType} = JSON,
+      #{last_reply := #{<<"type">> := Type}} = Context,
 
-      ?_assertEqual(<<"InvalidCommandError">>, AckType)
+      ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
    }).
 
-send_start_game_order_to_players_test_() ->
-  run(#{
-    before => fun(Context) ->
-      #{ws_control_client := ControlClient, ws_player_client := Client} = Context,
-
-      ws_client:send_text(Client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      _ = ws_client:recv(Client),
-      ws_client:send_text(ControlClient, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      {text, StartGameOrder} = ws_client:recv(Client),
-      JSON = jiffy:decode(StartGameOrder, [return_maps]),
-
-      Context#{json => JSON}
-    end,
+ws_client_send_start_game_order_to_players_test_() ->
+  run_test(#{
+    steps => [
+      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client_recv(ws_player_client)
+    ],
 
     test => fun(Context) ->
-      #{json := JSON} = Context,
+      #{last_reply := JSON} = Context,
       #{<<"type">> := OrderType} = JSON,
 
       ?_assertEqual(<<"StartGameOrder">>, OrderType)
     end
    }).
+
+
+
+reject_move_player_command_when_game_not_started_test_() ->
+  run_test(#{
+    steps => [
+        ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+        ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>)
+      ],
+
+    test => fun(Context) ->
+      #{last_reply := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
+
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+    end
+   }).
+
+reject_move_player_command_when_the_player_is_not_registered_test_() ->
+  run_test(#{
+    steps => [
+        ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+        ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>)
+      ],
+
+    test => fun(Context) ->
+      #{last_reply := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
+
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+    end
+   }).
+
+
+reject_move_player_command_when_player_hits_arena_edges_test_() ->
+  generate_reject_move_command_test(#{
+    coordinates => fun(ArenaWidth, _) -> [{x, ArenaWidth}] end,
+    movements => [#{move => forward}]
+   }).
+
+reject_move_player_command_when_player_hits_arena_edges_include_radius_test_() ->
+  generate_reject_move_command_test(#{
+    coordinates => fun(ArenaWidth, _) -> [{x, ArenaWidth - 2}] end,
+    movements => [#{move => forward}]
+   }).
+
+reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
+  generate_reject_move_command_test(#{
+    coordinates => [{x, 6}, {y, 6}],
+    movements => [#{move => backward}]
+   }).
+
+reject_move_player_command_when_direction_is_invalid_test_() ->
+  generate_reject_move_command_test(#{
+    movements => [#{move => invalid_movement}]
+   }).
+
+reject_move_player_command_when_rotation_is_invalid_test_() ->
+  generate_reject_move_command_test(#{
+    movements => [#{rotate => 900}]
+   }).
+
+reject_move_player_command_when_two_rotations_test_() ->
+  generate_reject_move_command_test(#{
+    movements => [#{rotate => 2}, #{rotate => 2}]
+   }).
+
+reject_move_player_command_when_two_moves_test_() ->
+  generate_reject_move_command_test(#{
+    movements => [#{move => forward}, #{move => forward}]
+   }).
+
+
+
+move_player_test_() ->
+  Coordinates = fun(_, _) -> [{x, 10}, {y, 10}] end,
+  Movements = [
+   #{
+    coordinates => Coordinates,
+    movements => [#{rotate => 60}, #{move => forward}],
+    expectations => #{x => 10.5, y =>10.86602540378444}
+    },
+   #{
+    coordinates => Coordinates,
+    movements => [#{rotate => 60}],
+    expectations => #{x => 10, y =>10}
+    }
+   #{
+    coordinates => Coordinates,
+    movements => [#{move => forward}],
+    expectations => #{x => 11.0, y =>10.0}
+    },
+   #{
+    coordinates => Coordinates,
+    movements => [#{move => backward}],
+    expectations => #{x => 9.0, y =>10.0}
+    }
+  ],
+
+  lists:map(fun(Movement) -> generate_valid_move_command_test(Movement) end, Movements).

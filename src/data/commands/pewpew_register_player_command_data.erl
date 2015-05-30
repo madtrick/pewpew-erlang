@@ -4,6 +4,6 @@
 
 -record(pewpew_register_player_command_data, {}).
 
-new(Runner, _Data) ->
+new(CommandModule, _Data) ->
   CommandData = #pewpew_register_player_command_data{},
-  pewpew_command_data:new(Runner, CommandData).
+  pewpew_command_data:new(CommandModule, CommandData).

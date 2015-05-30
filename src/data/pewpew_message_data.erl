@@ -17,6 +17,8 @@ new(MessageModule, MessageData) ->
 new(MessageModule, Channel, MessageData) ->
   #pewpew_message_data{
     message_module  = MessageModule,
+    %TODO: ensure that we really need the channel here. It seems that the channel is
+    %added to the dispatch rules
     message_channel = Channel,
     message_data    = MessageData
   }.
