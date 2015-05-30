@@ -5,7 +5,8 @@
   start_link/1,
   start_game/1,
   is_started/1,
-  arena_component/1
+  arena_component/1,
+  game_state/1
 ]).
 
 -export([
@@ -14,6 +15,10 @@
   handle_call/3,
   handle_info/2
 ]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 start_link(GameName) ->
   gen_server:start_link({local, GameName}, ?MODULE, [], []).
@@ -26,6 +31,13 @@ is_started(PewpewGame) ->
 
 arena_component(PewpewGame) ->
   gen_server:call(PewpewGame, arena_component).
+
+game_state(PewPewGame) ->
+  gen_server:call(PewPewGame, game_state).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% gen_server callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(_) ->
   {ok, EventBus}        = pewpew_event_bus:start_link(),
@@ -48,12 +60,37 @@ handle_cast(start, PewpewGameStateData) ->
   UpdatedPewPewGameStateData = pewpew_game_state_data:update(PewpewGameStateData, [{pewpew_game_status, started}]),
   {noreply, UpdatedPewPewGameStateData}.
 
+handle_call(game_state, _, PewPewGameStateData) ->
+  ArenaComponent = pewpew_game_state_data:pewpew_arena_component(PewPewGameStateData),
+  Players = pewpew_arena_component:players(ArenaComponent),
+
+  PlayersState = lists:map(fun(Player) ->
+    #{
+       coordinates => #{
+         x => pewpew_player_component:x(Player),
+         y => pewpew_player_component:y(Player)
+       },
+       rotation => pewpew_player_component:rotation(Player),
+       life => pewpew_player_component:life(Player)
+     }
+  end, Players),
+
+  GameState = #{ arena =>
+    #{ players => PlayersState }
+    },
+
+  {reply, GameState, PewPewGameStateData};
 handle_call(is_started, _, PewpewGameStateData) ->
   GameStatus = pewpew_game_state_data:pewpew_game_status(PewpewGameStateData),
   IsStarted = GameStatus == started,
   {reply, IsStarted, PewpewGameStateData};
 handle_call(arena_component, _, PewpewGameStateData) ->
   {reply, pewpew_game_state_data:pewpew_arena_component(PewpewGameStateData), PewpewGameStateData}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% internal functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 pewpew_event_bus(PewpewGameStateData) ->
   PewpewGameContextData = pewpew_game_state_data:pewpew_game_context_data(PewpewGameStateData),

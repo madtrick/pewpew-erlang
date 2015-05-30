@@ -5,7 +5,8 @@
   start_link/0,
   stop/0,
   process_player_message/2,
-  process_control_message/2
+  process_control_message/2,
+  register_control_channel/1
 ]).
 -export([
   init/1,
@@ -21,6 +22,10 @@
   number_of_pending_messages/0,
   number_of_pending_messages_per_channel/1
 ]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -46,12 +51,22 @@ number_of_pending_messages_per_channel(Channel) ->
 get_games() ->
   gen_server:call(?MODULE, get_games).
 
+register_control_channel(Channel) ->
+  gen_server:cast(?MODULE, {register_control_channel, Channel}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% gen_server callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 init(_) ->
   pewpew_timer:tick_every(?MODULE, next_cycle),
   {ok, build_pewpew_core_state()}.
 
 handle_cast(stop, State) ->
   {stop, normal, State};
+handle_cast({register_control_channel, Channel}, State) ->
+  UpdatedState = pewpew_core_state_data:update(State, [{control_channel, Channel}]),
+  {noreply, UpdatedState};
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
   ok;
 handle_cast({process_control_message, Channel, {text, Message}}, State) ->
@@ -82,11 +97,22 @@ handle_call(next_cycle, _, State) ->
   %UpdatedState                = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
   %{reply, ok, UpdatedState}.
   UpdatedState = pewpew_core_state_data:update(State, [{pending_messages, []}]),
+  PewPewGame = pewpew_core_state_data:pewpew_game(State),
+  PewPewGameState = pewpew_game:game_state(PewPewGame),
+  ControlChannel = pewpew_core_state_data:control_channel(State),
   ok = send_replies(Replies),
+  ok = send_state(PewPewGameState, ControlChannel),
   {reply, ok, UpdatedState};
 handle_call(get_games, _, State) ->
   PewPewGame = pewpew_core_state_data:pewpew_game(State),
   {reply, [PewPewGame], State}.
+
+terminate(_, _) ->
+  ok.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Internal functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),
@@ -164,8 +190,8 @@ send_replies([ReturnValue |  Tail]) ->
       ok %Discard all pending values
   end.
 
-terminate(_, _) ->
-  ok.
+send_state(GameState, ControlChannel) ->
+  pewpew_channel:send(ControlChannel, jiffy:encode(GameState)).
 
 build_pewpew_core_state() ->
   GameName = random_game_name(),
