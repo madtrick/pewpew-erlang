@@ -7,44 +7,45 @@
   ws_client_recv/1,
   generate_reject_move_command_test/1,
   generate_valid_move_command_test/1,
+  register_player/0,
   register_player/1
 ]).
 
-%register_player_command_test_() ->
-%  run_test(#{
-%    steps => [
-%      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>)
-%    ],
+register_player_command_test_() ->
+  run_test(#{
+    steps => [
+      register_player()
+    ],
 
-%    test => fun(Context) ->
-%      #{last_reply := JSON} = Context,
+    test => fun(Context) ->
+      #{last_reply := JSON} = Context,
 
-%      #{<<"type">> := AckType, <<"data">> := Data} = JSON,
-%      #{<<"id">> := Id, <<"x">> := X, <<"y">> := Y, <<"life">> := Life} = Data,
+      #{<<"type">> := AckType, <<"data">> := Data} = JSON,
+      #{<<"id">> := Id, <<"x">> := X, <<"y">> := Y, <<"life">> := Life} = Data,
 
-%      [
-%        ?_assertEqual(<<"RegisterPlayerAck">>, AckType),
-%        ?_assert(is_integer(Id)),
-%        ?_assert(is_integer(X)),
-%        ?_assert(is_integer(Y)),
-%        ?_assert(is_integer(Life))
-%      ]
-%    end
-%   }).
+      [
+        ?_assertEqual(<<"RegisterPlayerAck">>, AckType),
+        ?_assert(is_integer(Id)),
+        ?_assert(is_integer(X)),
+        ?_assert(is_integer(Y)),
+        ?_assert(is_integer(Life))
+      ]
+    end
+   }).
 
-%reject_register_player_twice_test_() ->
-%  run_test(#{
-%    steps => [
-%      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-%      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>)
-%    ],
+reject_register_player_twice_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}})
+    ],
 
-%    test => fun(Context) ->
-%      #{last_reply := #{<<"type">> := Type}} = Context,
+    test => fun(Context) ->
+      #{last_reply := #{<<"type">> := Type}} = Context,
 
-%      ?_assertEqual(<<"InvalidCommandError">>, Type)
-%    end
-% }).
+      ?_assertEqual(<<"InvalidCommandError">>, Type)
+    end
+ }).
 
 %start_game_command_test_() ->
 %  run_test(#{
@@ -86,38 +87,38 @@
 %    end
 %   }).
 
-%ws_client_send_start_game_order_to_players_test_() ->
-%  run_test(#{
-%    steps => [
-%      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-%      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-%      ws_client_recv(ws_player_client)
-%    ],
+ws_client_send_start_game_order_to_players_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client_recv(ws_player_client)
+    ],
 
-%    test => fun(Context) ->
-%      #{last_reply := JSON} = Context,
-%      #{<<"type">> := OrderType} = JSON,
+    test => fun(Context) ->
+      #{last_reply := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
 
-%      ?_assertEqual(<<"StartGameOrder">>, OrderType)
-%    end
-%   }).
+      ?_assertEqual(<<"StartGameOrder">>, OrderType)
+    end
+   }).
 
 
 
-%reject_move_player_command_when_game_not_started_test_() ->
-%  run_test(#{
-%    steps => [
-%        ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-%        ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>)
-%      ],
+reject_move_player_command_when_game_not_started_test_() ->
+  run_test(#{
+    steps => [
+        register_player(),
+        ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>)
+      ],
 
-%    test => fun(Context) ->
-%      #{last_reply := JSON} = Context,
-%      #{<<"type">> := OrderType} = JSON,
+    test => fun(Context) ->
+      #{last_reply := JSON} = Context,
+      #{<<"type">> := OrderType} = JSON,
 
-%      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
-%    end
-%   }).
+      ?_assertEqual(<<"InvalidCommandError">>, OrderType)
+    end
+   }).
 
 %reject_move_player_command_when_the_player_is_not_registered_test_() ->
 %  run_test(#{

@@ -7,6 +7,7 @@
   ws_client_recv/1,
   generate_reject_move_command_test/1,
   generate_valid_move_command_test/1,
+  register_player/0,
   register_player/1
 ]).
 
@@ -74,26 +75,25 @@ run_test(Config) ->
     end
     }.
 
+register_player() ->
+  register_player(last_registered_player).
 register_player(Alias) ->
-  fun(Context) ->
-    #{
+  [
+    ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
+    fun(Context) ->
+      #{
       arena_component := ArenaComponent,
-      ws_player_client := Client,
-      players := CurrentPlayers
-    } = Context,
+      players := CurrentPlayers,
+      last_reply := LastReply
+      } = Context,
 
-    Command = jiffy:encode(#{type => <<"RegisterPlayerCommand">>, data => #{}}),
-    ws_client:send_text(Client, Command),
+      #{<<"data">> := #{<<"id">> := PlayerId}} = LastReply,
 
-    {text, JSON}   = ws_client:recv(Client),
+      Player = pewpew_arena_component:get_player(ArenaComponent, PlayerId),
 
-    Response       = jiffy:decode(JSON, [return_maps]),
-    #{<<"data">> := #{<<"id">> := PlayerId}} = Response,
-
-    Player = pewpew_arena_component:get_player(ArenaComponent, PlayerId),
-
-    {context, Context#{players => maps:put(Alias, Player, CurrentPlayers)}}
-  end.
+      {context, Context#{players => maps:put(Alias, Player, CurrentPlayers)}}
+    end
+  ].
 
 ws_client_recv(ClientId) ->
   fun(Context) ->
@@ -164,17 +164,17 @@ generate_valid_move_command_test(Options) ->
 execute_steps([], Context) ->
   #{replies := Replies} = Context,
 
-  [LastReply | _] = Replies,
   OrderedReplies  = lists:reverse(Replies),
 
-  Context#{
-    replies => OrderedReplies,
-    last_reply => LastReply
-   };
+  Context#{replies => OrderedReplies};
 execute_steps([Step | Tail], Context) ->
   UpdatedContext = execute_step(Step, Context),
   execute_steps(Tail, UpdatedContext).
 
+execute_step(NestedSteps, Context) when is_list(NestedSteps) ->
+  lists:foldl(fun(Step, Acc) ->
+    execute_step(Step, Acc)
+  end, Context, NestedSteps);
 execute_step(Fun, Context) ->
   Result = Fun(Context),
 
@@ -183,7 +183,10 @@ execute_step(Fun, Context) ->
       JSON = jiffy:decode(Reply, [return_maps]),
 
       #{replies := CurrentReplies} = Context,
-      Context#{replies => [JSON | CurrentReplies]};
+      Context#{
+        replies => [JSON | CurrentReplies],
+        last_reply => JSON
+      };
     {context, UpdatedContext} ->
       UpdatedContext;
     _ -> Context
