@@ -9,7 +9,8 @@ it_only_stores_one_message_per_player_test_() ->
         pewpew_core:start_link()
     end,
     fun(_) ->
-        meck:unload(pewpew_games_sup)
+        meck:unload(pewpew_games_sup),
+        pewpew_core:stop()
     end,
     fun(_) ->
         pewpew_core:process_player_message({text, msg1}, ch1),
@@ -42,7 +43,8 @@ it_clears_the_players_message_queue_after_each_game_cycle_test_() ->
         pewpew_core:start_link()
     end,
     fun(_) ->
-        meck:unload(MockedModules)
+        meck:unload(MockedModules),
+        pewpew_core:stop()
     end,
     fun(_) ->
         pewpew_core:process_player_message({text, msg1}, ch1),

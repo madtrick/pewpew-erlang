@@ -3,6 +3,7 @@
 
 -export([
   start_link/0,
+  stop/0,
   process_player_message/2,
   process_control_message/2
 ]).
@@ -23,6 +24,9 @@
 
 start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+stop() ->
+  gen_server:cast(?MODULE, stop).
 
 process_control_message(Message, OriginChannel) ->
   gen_server:cast(?MODULE, {process_control_message, OriginChannel, Message}).
@@ -46,6 +50,8 @@ init(_) ->
   pewpew_timer:tick_every(?MODULE, next_cycle),
   {ok, build_pewpew_core_state()}.
 
+handle_cast(stop, State) ->
+  {stop, normal, State};
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
   ok;
 handle_cast({process_control_message, Channel, {text, Message}}, State) ->

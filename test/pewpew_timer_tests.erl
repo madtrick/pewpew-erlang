@@ -10,7 +10,8 @@ executes_the_callback_function_after_the_tick_period_test_() ->
       meck:expect(pewpew_timer_callback_mock, callback, 0, ok)
     end,
     fun(_) ->
-      meck:unload(pewpew_timer_callback_mock)
+      meck:unload(pewpew_timer_callback_mock),
+      pewpew_timer:stop()
     end,
     fun(_) ->
       pewpew_timer:tick_every(pewpew_timer_callback_mock, callback),

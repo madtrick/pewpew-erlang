@@ -21,6 +21,6 @@ move_player_test(OriginX, OriginY, Direction, ExpectedX, ExpectedY) ->
 
 move_player_test_() ->
   [
-   move_player_test(0, 0, <<"up">>, 1.0, 0.0),
-   move_player_test(0, 0, <<"down">>, -1.0, 0.0)
+   move_player_test(0, 0, <<"forward">>, 1.0, 0.0),
+   move_player_test(0, 0, <<"backward">>, -1.0, 0.0)
   ].

@@ -9,7 +9,8 @@ publishes_messages_in_given_channels_test_() ->
         pewpew_multicast:start_link()
     end,
     fun (_) ->
-        meck:unload(pewpew_channel)
+        meck:unload(pewpew_channel),
+        pewpew_multicast:stop()
     end,
     fun (_) ->
         pewpew_multicast:publish(data, [ch1, ch2]),
