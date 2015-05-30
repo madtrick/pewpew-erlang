@@ -3,7 +3,8 @@
 -export([
   set_coordinates/2,
   get_coordinates/1,
-  move/2
+  move/2,
+  to_state/1
 ]).
 
 -define(MOVEMENT_SPEED, 1).
@@ -22,6 +23,20 @@ move(<<"forward">>, PlayerComponentData) ->
   move_player(1, PlayerComponentData);
 move(<<"backward">>, PlayerComponentData) ->
   move_player(-1, PlayerComponentData).
+
+to_state(PlayerComponentData) ->
+  X        = pewpew_player_component_data:x(PlayerComponentData),
+  Y        = pewpew_player_component_data:y(PlayerComponentData),
+  Rotation = pewpew_player_component_data:rotation(PlayerComponentData),
+  Life     = pewpew_player_component_data:life(PlayerComponentData),
+
+  PlayerState = #{
+     coordinates => #{ x => X, y => Y },
+     rotation => Rotation,
+     life => Life
+   },
+
+  {ok, PlayerState}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

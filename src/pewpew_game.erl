@@ -64,16 +64,7 @@ handle_call(game_state, _, PewPewGameStateData) ->
   ArenaComponent = pewpew_game_state_data:pewpew_arena_component(PewPewGameStateData),
   Players = pewpew_arena_component:players(ArenaComponent),
 
-  PlayersState = lists:map(fun(Player) ->
-    #{
-       coordinates => #{
-         x => pewpew_player_component:x(Player),
-         y => pewpew_player_component:y(Player)
-       },
-       rotation => pewpew_player_component:rotation(Player),
-       life => pewpew_player_component:life(Player)
-     }
-  end, Players),
+  PlayersState = lists:map(fun pewpew_player_component:to_state/1, Players),
 
   GameState = #{ arena =>
     #{ players => PlayersState }
