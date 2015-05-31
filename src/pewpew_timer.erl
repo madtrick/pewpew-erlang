@@ -28,6 +28,8 @@ start_link() ->
 stop() ->
   gen_server:cast(?MODULE, stop).
 
+%TODO: remove the function to add a function callback
+%also the logic to remove it
 tick_every(Fun) ->
   gen_server:cast(?MODULE, {add_callback, Fun}).
 tick_every(Module, Function) ->

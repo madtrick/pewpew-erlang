@@ -11,7 +11,8 @@
   send_ping/2,
   recv/2,
   recv/1,
-  stop/1
+  stop/1,
+  flush/1
 ]).
 
 -export([
@@ -56,6 +57,10 @@ recv(Pid, Timeout) ->
     Timeout -> {error, timeout}
   end.
 
+%TODO: remove the flush function
+flush(Pid) ->
+  Pid ! {flush, self()}.
+
 init(_, _WSReq) ->
   {ok, #state{}}.
 
@@ -70,6 +75,8 @@ websocket_handle(Frame, _, State = #state{waiting = From}) ->
 websocket_info({send_text, Text}, WSReq, State) ->
   websocket_client:send({text, Text}, WSReq),
   {ok, State};
+websocket_info({flush, _}, _, State) ->
+  {ok, State#state{buffer = []}};
 websocket_info({recv, From}, _, State = #state{buffer = []}) ->
   {ok, State#state{waiting = From}};
 websocket_info({recv, From}, _, State = #state{buffer = [Top|Rest]}) ->

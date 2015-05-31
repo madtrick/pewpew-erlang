@@ -5,6 +5,8 @@
   run_test/1,
   ws_client_send/2,
   ws_client_recv/1,
+  ws_client_flush/1,
+  ws_client_sel_recv/2,
   generate_reject_move_command_test/1,
   generate_valid_move_command_test/1,
   register_player/0,
@@ -111,6 +113,28 @@ ws_client_send(ClientId, Message) ->
       ws_client:send_text(Client, JSON),
       {text, Reply} = ws_client:recv(Client),
       {reply, Reply}
+  end.
+
+ws_client_sel_recv(ClientId, Expression) ->
+  fun(Context) ->
+      Client = maps:get(ClientId, Context),
+
+      {text, Reply} = ws_client:recv(Client),
+      JSON = jiffy:decode(Reply, [return_maps]),
+
+      #{<<"type">> := ReplyType} = JSON,
+      #{type := ExpressionType} = Expression,
+      case ReplyType of
+        ExpressionType ->  {reply, Reply};
+        _ -> ( ws_client_sel_recv(ClientId, Expression) )(Context)
+      end
+  end.
+
+ws_client_flush(ClientId) ->
+  fun(Context) ->
+      Client = maps:get(ClientId, Context),
+      ws_client:flush(Client),
+      ok
   end.
 
 generate_reject_move_command_test(Options) ->

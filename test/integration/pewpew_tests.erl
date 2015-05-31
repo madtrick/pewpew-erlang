@@ -5,6 +5,8 @@
   run_test/1,
   ws_client_send/2,
   ws_client_recv/1,
+  ws_client_flush/1,
+  ws_client_sel_recv/2,
   generate_reject_move_command_test/1,
   generate_valid_move_command_test/1,
   register_player/0,
@@ -208,7 +210,7 @@ send_state_to_control_test_() ->
     steps => [ws_client_recv(ws_control_client)],
     test => fun(Context) ->
       #{last_reply := JSON} = Context,
-      #{<<"arena">> := #{ <<"players">> := Players }} = JSON,
+      #{<<"type">> := <<"GameStateNotification">>, <<"data">> := #{<<"arena">> := #{ <<"players">> := Players }}} = JSON,
       ?_assertEqual([], Players)
     end
    }).
@@ -231,7 +233,38 @@ state_update_includes_registered_player_test_() ->
        },
 
       #{last_reply := JSON} = Context,
-      #{<<"arena">> := #{ <<"players">> := Players }} = JSON,
+      #{<<"type">> := <<"GameStateNotification">>, <<"data">> := #{<<"arena">> := #{ <<"players">> := Players }}} = JSON,
+
+      PlayersState = lists:nth(1, Players),
+      [
+       ?_assertEqual(1, length(Players)),
+       ?_assertEqual(ExpectedPlayerState, PlayersState)
+      ]
+    end
+   }).
+
+state_update_reflects_player_movement_test_() ->
+  run_test(#{
+    steps => [
+      register_player(player1),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_send(ws_player_client, #{type => <<"MovePlayerCommand">>, data => [#{move => forward}] }),
+      ws_client_flush(ws_control_client),
+      ws_client_sel_recv(ws_control_client, #{type => <<"GameStateNotification">>})
+    ],
+    test => fun(Context) ->
+      #{players := #{player1 := Player}} = Context,
+      ExpectedPlayerState = #{
+        <<"coordinates">> => #{
+            <<"x">> => pewpew_player_component:x(Player),
+            <<"y">> => pewpew_player_component:y(Player)
+        },
+        <<"life">> => pewpew_player_component:life(Player),
+        <<"rotation">> => pewpew_player_component:rotation(Player)
+       },
+
+      #{last_reply := JSON} = Context,
+      #{<<"type">> := <<"GameStateNotification">>, <<"data">> := #{<<"arena">> := #{ <<"players">> := Players }}} = JSON,
 
       PlayersState = lists:nth(1, Players),
       [
