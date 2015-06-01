@@ -6,7 +6,7 @@
   start_game/1,
   is_started/1,
   arena_component/1,
-  game_state/1
+  snapshot/1
 ]).
 
 -export([
@@ -32,8 +32,8 @@ is_started(PewpewGame) ->
 arena_component(PewpewGame) ->
   gen_server:call(PewpewGame, arena_component).
 
-game_state(PewPewGame) ->
-  gen_server:call(PewPewGame, game_state).
+snapshot(PewPewGame) ->
+  gen_server:call(PewPewGame, snapshot).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callbacks
@@ -60,19 +60,9 @@ handle_cast(start, PewpewGameStateData) ->
   UpdatedPewPewGameStateData = pewpew_game_state_data:update(PewpewGameStateData, [{pewpew_game_status, started}]),
   {noreply, UpdatedPewPewGameStateData}.
 
-handle_call(game_state, _, PewPewGameStateData) ->
-  ArenaComponent = pewpew_game_state_data:pewpew_arena_component(PewPewGameStateData),
-  Players = pewpew_arena_component:players(ArenaComponent),
-
-  %io:format("Players ~w~n", [Players]),
-
-  PlayersState = lists:map(fun pewpew_player_component:to_state/1, Players),
-
-  GameState = #{ type => <<"GameStateNotification">>, data => #{ arena =>
-    #{ players => PlayersState }
-    }},
-
-  {reply, GameState, PewPewGameStateData};
+handle_call(snapshot, _, PewPewGameStateData) ->
+  Snapshot = pewpew_game_snapshot:new(PewPewGameStateData),
+  {reply, Snapshot, PewPewGameStateData};
 handle_call(is_started, _, PewpewGameStateData) ->
   GameStatus = pewpew_game_state_data:pewpew_game_status(PewpewGameStateData),
   IsStarted = GameStatus == started,

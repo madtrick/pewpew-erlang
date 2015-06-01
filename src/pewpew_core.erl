@@ -98,10 +98,11 @@ handle_call(next_cycle, _, State) ->
   %{reply, ok, UpdatedState}.
   UpdatedState = pewpew_core_state_data:update(State, [{pending_messages, []}]),
   PewPewGame = pewpew_core_state_data:pewpew_game(State),
-  PewPewGameState = pewpew_game:game_state(PewPewGame),
+  PewPewGameSnapshot = pewpew_game:snapshot(PewPewGame),
+  Notification = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
   ControlChannel = pewpew_core_state_data:control_channel(State),
-  ok = send_replies(Replies),
-  ok = send_state(PewPewGameState, ControlChannel),
+  NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
+  ok = send_replies([ NotificationDispatchRule | Replies ]),
   {reply, ok, UpdatedState};
 handle_call(get_games, _, State) ->
   PewPewGame = pewpew_core_state_data:pewpew_game(State),
@@ -189,9 +190,6 @@ send_replies([ReturnValue |  Tail]) ->
       pewpew_channel:close(channel_placeholder),
       ok %Discard all pending values
   end.
-
-send_state(GameState, ControlChannel) ->
-  pewpew_channel:send(ControlChannel, jiffy:encode(GameState)).
 
 build_pewpew_core_state() ->
   GameName = random_game_name(),

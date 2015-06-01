@@ -26,7 +26,7 @@
   channel/1,
   radius/1,
   coordinates/1,
-  to_state/1
+  snapshot/1
 ]).
 
 % Exported only for testing
@@ -96,8 +96,8 @@ set_coordinates(PlayerComponent, Coordinates) ->
 coordinates(PlayerComponent) ->
   gen_server:call(PlayerComponent, coordinates).
 
-to_state(PlayerComponent) ->
-  gen_server:call(PlayerComponent, to_state).
+snapshot(PlayerComponent) ->
+  gen_server:call(PlayerComponent, snapshot).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callback
@@ -149,8 +149,8 @@ handle_call(radius, _, PlayerComponentData) ->
 handle_call(coordinates, _, PlayerComponentData) ->
   {ok, Coordinates} = pewpew_player_component_mod:get_coordinates(PlayerComponentData),
   {reply, Coordinates, PlayerComponentData};
-handle_call(to_state, _, PlayerComponentData) ->
-  {ok, PlayerState} = pewpew_player_component_mod:to_state(PlayerComponentData),
+handle_call(snapshot, _, PlayerComponentData) ->
+  {ok, PlayerState} = pewpew_player_component_mod:snapshot(PlayerComponentData),
   {reply, PlayerState, PlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->

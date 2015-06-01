@@ -8,7 +8,8 @@
   positions_left/1,
   create_player/2,
   move_player/2,
-  dimensions/1
+  dimensions/1,
+  snapshot/1
 ]).
 -export([init/1, handle_call/3, handle_info/2]).
 
@@ -40,6 +41,9 @@ dimensions(ArenaComponent) ->
 players(ArenaComponent) ->
   gen_server:call(ArenaComponent, players).
 
+snapshot(ArenaComponent) ->
+  gen_server:call(ArenaComponent, snapshot).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,6 +63,9 @@ handle_info(?PLAYER_DOWN(Pid), ArenaComponentData) ->
   NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, NewPlayers}]),
   {noreply, NewArenaComponentData}.
 
+handle_call(snapshot, _, ArenaComponentData) ->
+  Snapshot = pewpew_arena_component_snapshot:new(ArenaComponentData),
+  {reply, Snapshot, ArenaComponentData};
 handle_call({create_player, Data}, _, ArenaComponentData) ->
   Color        = pick_player_color(ArenaComponentData),
   Id           = pick_player_id(ArenaComponentData),

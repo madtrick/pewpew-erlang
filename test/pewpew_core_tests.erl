@@ -30,7 +30,9 @@ it_clears_the_players_message_queue_after_each_game_cycle_test_() ->
     pewpew_games_sup,
     pewpew_command_parser,
     pewpew_command_context_data,
-    pewpew_command_runner
+    pewpew_command_runner,
+    pewpew_game,
+    pewpew_message_dispatcher
   ],
 
   {setup,
@@ -40,6 +42,8 @@ it_clears_the_players_message_queue_after_each_game_cycle_test_() ->
         meck:expect(pewpew_command_parser, parse, 1, commmand_context),
         meck:expect(pewpew_command_context_data, update, 2, updated_commmand_context),
         meck:expect(pewpew_command_runner, run, 1, noreply),
+        meck:expect(pewpew_game, snapshot, 1, snapshot),
+        meck:expect(pewpew_message_dispatcher, dispatch, 1, ok),
         pewpew_core:start_link()
     end,
     fun(_) ->
