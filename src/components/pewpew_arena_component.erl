@@ -8,12 +8,17 @@
   positions_left/1,
   create_player/2,
   move_player/2,
-  dimensions/1
+  dimensions/1,
+  snapshot/1
 ]).
 -export([init/1, handle_call/3, handle_info/2]).
 
 -define(PLAYER_DOWN(Pid), {'DOWN', _, process, Pid, _}).
 -define(COLORS, [<<"red">>, <<"blue">>, <<"green">>]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 start_link(Data) ->
   gen_server:start_link(?MODULE, [Data], []).
@@ -36,6 +41,13 @@ dimensions(ArenaComponent) ->
 players(ArenaComponent) ->
   gen_server:call(ArenaComponent, players).
 
+snapshot(ArenaComponent) ->
+  gen_server:call(ArenaComponent, snapshot).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% gen_server callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 init([Data]) ->
   {ok, PewpewPlayerComponentSup} = pewpew_player_component_sup:start_link(),
   {ok, pewpew_arena_component_data:new([
@@ -51,6 +63,9 @@ handle_info(?PLAYER_DOWN(Pid), ArenaComponentData) ->
   NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, NewPlayers}]),
   {noreply, NewArenaComponentData}.
 
+handle_call(snapshot, _, ArenaComponentData) ->
+  Snapshot = pewpew_arena_component_snapshot:new(ArenaComponentData),
+  {reply, Snapshot, ArenaComponentData};
 handle_call({create_player, Data}, _, ArenaComponentData) ->
   Color        = pick_player_color(ArenaComponentData),
   Id           = pick_player_id(ArenaComponentData),
@@ -89,6 +104,10 @@ handle_call(dimensions, _, ArenaComponentData) ->
   {ok, Dimensions} = pewpew_arena_component_mod:dimensions(ArenaComponentData),
 
   {reply, Dimensions, ArenaComponentData}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% internal functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 real_positions_left(ArenaComponentData) ->
   pewpew_arena_component_data:max_number_of_players(ArenaComponentData) - number_of_players(ArenaComponentData).

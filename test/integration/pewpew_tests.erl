@@ -5,14 +5,18 @@
   run_test/1,
   ws_client_send/2,
   ws_client_recv/1,
+  ws_client_flush/1,
+  ws_client_sel_recv/2,
   generate_reject_move_command_test/1,
-  generate_valid_move_command_test/1
+  generate_valid_move_command_test/1,
+  register_player/0,
+  register_player/1
 ]).
 
 register_player_command_test_() ->
   run_test(#{
     steps => [
-      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>)
+      register_player()
     ],
 
     test => fun(Context) ->
@@ -34,8 +38,8 @@ register_player_command_test_() ->
 reject_register_player_twice_test_() ->
   run_test(#{
     steps => [
-      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
-      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>)
+      register_player(),
+      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}})
     ],
 
     test => fun(Context) ->
@@ -88,7 +92,7 @@ reject_start_game_command_when_already_started_test_() ->
 ws_client_send_start_game_order_to_players_test_() ->
   run_test(#{
     steps => [
-      ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+      register_player(),
       ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
       ws_client_recv(ws_player_client)
     ],
@@ -106,7 +110,7 @@ ws_client_send_start_game_order_to_players_test_() ->
 reject_move_player_command_when_game_not_started_test_() ->
   run_test(#{
     steps => [
-        ws_client_send(ws_player_client, <<"{\"type\":\"RegisterPlayerCommand\", \"data\":{}}">>),
+        register_player(),
         ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>)
       ],
 
@@ -200,3 +204,72 @@ move_player_test_() ->
   ],
 
   lists:map(fun(Movement) -> generate_valid_move_command_test(Movement) end, Movements).
+
+send_state_to_control_test_() ->
+  run_test(#{
+    steps => [ws_client_recv(ws_control_client)],
+    test => fun(Context) ->
+      #{last_reply := JSON} = Context,
+      #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}} = JSON,
+      ?_assertEqual([], Players)
+    end
+   }).
+
+state_update_includes_registered_player_test_() ->
+  run_test(#{
+    steps => [
+      register_player(player1),
+      ws_client_recv(ws_control_client)
+    ],
+    test => fun(Context) ->
+      #{players := #{player1 := Player}} = Context,
+      ExpectedPlayerState = #{
+        <<"coordinates">> => #{ 
+            <<"x">> => pewpew_player_component:x(Player),
+            <<"y">> => pewpew_player_component:y(Player)
+        },
+        <<"life">> => pewpew_player_component:life(Player),
+        <<"rotation">> => pewpew_player_component:rotation(Player)
+       },
+
+      #{last_reply := JSON} = Context,
+      #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}} = JSON,
+
+      PlayersState = lists:nth(1, Players),
+      [
+       ?_assertEqual(1, length(Players)),
+       ?_assertEqual(ExpectedPlayerState, PlayersState)
+      ]
+    end
+   }).
+
+state_update_reflects_player_movement_test_() ->
+  run_test(#{
+    steps => [
+      register_player(player1),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_send(ws_player_client, #{type => <<"MovePlayerCommand">>, data => [#{move => forward}] }),
+      ws_client_flush(ws_control_client),
+      ws_client_recv(ws_control_client)
+    ],
+    test => fun(Context) ->
+      #{players := #{player1 := Player}} = Context,
+      ExpectedPlayerState = #{
+        <<"coordinates">> => #{
+            <<"x">> => pewpew_player_component:x(Player),
+            <<"y">> => pewpew_player_component:y(Player)
+        },
+        <<"life">> => pewpew_player_component:life(Player),
+        <<"rotation">> => pewpew_player_component:rotation(Player)
+       },
+
+      #{last_reply := JSON} = Context,
+      #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}} = JSON,
+
+      PlayersState = lists:nth(1, Players),
+      [
+       ?_assertEqual(1, length(Players)),
+       ?_assertEqual(ExpectedPlayerState, PlayersState)
+      ]
+    end
+   }).

@@ -3,7 +3,8 @@
 -export([
   set_coordinates/2,
   get_coordinates/1,
-  move/2
+  move/2,
+  snapshot/1
 ]).
 
 -define(MOVEMENT_SPEED, 1).
@@ -22,6 +23,11 @@ move(<<"forward">>, PlayerComponentData) ->
   move_player(1, PlayerComponentData);
 move(<<"backward">>, PlayerComponentData) ->
   move_player(-1, PlayerComponentData).
+
+snapshot(PlayerComponentData) ->
+  Snapshot = pewpew_player_component_snapshot:new(PlayerComponentData),
+
+  {ok, Snapshot}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

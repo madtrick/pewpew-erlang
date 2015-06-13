@@ -4,11 +4,13 @@
 -record(pewpew_state, {pewpew_channel}).
 
 init(Options) ->
+  lager:info("websockets player handler created"),
   Worker        = proplists:get_value(worker, Options),
   {ok, Channel} = pewpew_channel:create(Worker, [{is_control, false}]),
   #pewpew_state{pewpew_channel = Channel}.
 
 handle({close, _}, State) ->
+  lager:info("websockets player handler stopped"),
   {close, State};
 handle({pong, _}, State) ->
   {noreply, State};

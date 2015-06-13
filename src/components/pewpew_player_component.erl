@@ -25,7 +25,8 @@
   rotation/1,
   channel/1,
   radius/1,
-  coordinates/1
+  coordinates/1,
+  snapshot/1
 ]).
 
 % Exported only for testing
@@ -34,6 +35,10 @@
 ]).
 
 -define(PROCESS_DOWN(Pid), {'DOWN', _MonitorRef, process, Pid, _}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 start_link(PewpewGameContextData, PlayerData) ->
   gen_server:start_link(?MODULE, [PewpewGameContextData, PlayerData], []).
@@ -91,6 +96,13 @@ set_coordinates(PlayerComponent, Coordinates) ->
 coordinates(PlayerComponent) ->
   gen_server:call(PlayerComponent, coordinates).
 
+snapshot(PlayerComponent) ->
+  gen_server:call(PlayerComponent, snapshot).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% gen_server callback
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 init([PewpewGameContextData, PlayerData]) ->
   %TODO: check if the player uses the game context data for anything
   PlayerComponentData = pewpew_player_component_data:new(
@@ -136,11 +148,17 @@ handle_call(radius, _, PlayerComponentData) ->
   {reply, pewpew_player_component_data:radius(PlayerComponentData), PlayerComponentData};
 handle_call(coordinates, _, PlayerComponentData) ->
   {ok, Coordinates} = pewpew_player_component_mod:get_coordinates(PlayerComponentData),
-  {reply, Coordinates, PlayerComponentData}.
-
+  {reply, Coordinates, PlayerComponentData};
+handle_call(snapshot, _, PlayerComponentData) ->
+  {ok, PlayerState} = pewpew_player_component_mod:snapshot(PlayerComponentData),
+  {reply, PlayerState, PlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->
   die.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% internal functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 hit2(PlayerComponentData) ->
   pewpew_player_component_data:update(
