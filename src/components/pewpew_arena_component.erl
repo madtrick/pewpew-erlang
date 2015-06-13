@@ -1,7 +1,8 @@
 -module(pewpew_arena_component).
 -behaviour(gen_server).
 
--export([start_link/1]).
+-export([start_link/1, stop/1]).
+
 -export([
   get_player/2,
   players/1,
@@ -11,7 +12,14 @@
   dimensions/1,
   snapshot/1
 ]).
--export([init/1, handle_call/3, handle_info/2]).
+
+-export([
+  init/1,
+  handle_call/3,
+  handle_info/2,
+  handle_cast/2,
+  terminate/2
+]).
 
 -define(PLAYER_DOWN(Pid), {'DOWN', _, process, Pid, _}).
 -define(COLORS, [<<"red">>, <<"blue">>, <<"green">>]).
@@ -22,6 +30,9 @@
 
 start_link(Data) ->
   gen_server:start_link(?MODULE, [Data], []).
+
+stop(ArenaComponent) ->
+  gen_server:cast(ArenaComponent, stop).
 
 positions_left(ArenaComponent) ->
   gen_server:call(ArenaComponent, positions_left).
@@ -104,6 +115,12 @@ handle_call(dimensions, _, ArenaComponentData) ->
   {ok, Dimensions} = pewpew_arena_component_mod:dimensions(ArenaComponentData),
 
   {reply, Dimensions, ArenaComponentData}.
+
+handle_cast(stop, ArenaComponentData) ->
+  {stop, normal, ArenaComponentData}.
+
+terminate(_, _) ->
+  ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% internal functions
