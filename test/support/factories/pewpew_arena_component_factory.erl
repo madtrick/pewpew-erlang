@@ -9,9 +9,35 @@ create(Options) ->
   {ok, ArenaComponent} = pewpew_arena_component:start_link(ArenaOptions),
 
   PlayersOptions = maps:get(players_options, Options, []),
-  [
-   pewpew_arena_component:create_player(ArenaComponent, PlayerOptions)
-   || PlayerOptions <- PlayersOptions
-  ],
+  create_players(ArenaComponent, PlayersOptions),
 
   ArenaComponent.
+
+create_players(_, []) ->
+  ok;
+create_players(ArenaComponent, [PlayerOptions | Tail]) ->
+  create_player(ArenaComponent, PlayerOptions),
+  create_players(ArenaComponent, Tail).
+
+create_player(ArenaComponent, Options) ->
+  Origin = pewpew_channel_mock:start(),
+  Radius = 5,
+  X      = Radius,
+  Y      = Radius,
+  Defaults = [{x, X}, {y, Y}, {id, player_id}, {color, red}, {name, name}, {origin, Origin}, {radius, Radius}],
+
+  PlayerOptions = lists:foldl(
+    fun(El, Acc) ->
+        {OptionName, _} = El,
+
+        PlayerOption = case proplists:get_value(OptionName, Options) of
+          undefined -> El;
+          Value -> {OptionName, Value}
+        end,
+
+        [PlayerOption | Acc]
+    end,
+    [],
+    Defaults),
+
+  pewpew_arena_component:create_player(ArenaComponent, PlayerOptions).
