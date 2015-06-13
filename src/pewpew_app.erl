@@ -4,13 +4,12 @@
 -export([start/2, stop/1]).
 
 -define(APPLICATION, pewpew).
--define(CONFIG_FILE, "pewpew.conf").
 
 start(_StartType, _StartArgs) ->
   lager:info("Execution mode ~s", [fserlangutils_app:execution_mode(?APPLICATION)]),
 
   init_random_seed(),
-  init_config(),
+  pewpew_config:load(),
   pewpew_sup:start_link().
 
 stop(_State) ->
@@ -18,8 +17,3 @@ stop(_State) ->
 
 init_random_seed() ->
   random:seed(erlang:now()).
-
-init_config() ->
-  {ok, Conf} = fserlangutils_app:read_in_priv(?APPLICATION, ?CONFIG_FILE),
-  pewpew_config:init(proplists:get_value(fserlangutils_app:execution_mode(?APPLICATION), Conf)).
-
