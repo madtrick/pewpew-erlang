@@ -224,6 +224,7 @@ state_update_includes_registered_player_test_() ->
     test => fun(Context) ->
       #{players := #{player1 := Player}} = Context,
       ExpectedPlayerState = #{
+        <<"id">> => pewpew_player_component:id(Player),
         <<"coordinates">> => #{ 
             <<"x">> => pewpew_player_component:x(Player),
             <<"y">> => pewpew_player_component:y(Player)
@@ -255,6 +256,7 @@ state_update_reflects_player_movement_test_() ->
     test => fun(Context) ->
       #{players := #{player1 := Player}} = Context,
       ExpectedPlayerState = #{
+        <<"id">> => pewpew_player_component:id(Player),
         <<"coordinates">> => #{
             <<"x">> => pewpew_player_component:x(Player),
             <<"y">> => pewpew_player_component:y(Player)
