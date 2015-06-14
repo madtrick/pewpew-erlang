@@ -100,50 +100,73 @@ does_not_detect_player_with_center_out_of_radar_test_() ->
 detect_right_wall_test_() ->
   generate_wall_test(
     [{x, 380}, {y, 200}],
-    [{400, 234}, {400, 165}]
+    [[{400, 234}, {400, 165}]]
    ).
 
 detect_right_tangent_wall_test_() ->
   generate_wall_test(
     [{x, 360}, {y, 200}],
-    [{400, 200}]
+    [[{400, 200}]]
    ).
 
 detect_top_wall_test_() ->
   generate_wall_test(
     [{x, 200}, {y, 380}],
-    [{234, 400}, {165, 400}]
+    [[{234, 400}, {165, 400}]]
    ).
 
 detect_tangent_top_wall_test_() ->
   generate_wall_test(
     [{x, 200}, {y, 360}],
-    [{200, 400}]
+    [[{200, 400}]]
    ).
 
 detect_left_wall_test_() ->
   generate_wall_test(
     [{x, 20}, {y, 200}],
-    [{0, 234}, {0, 165}]
+    [[{0, 234}, {0, 165}]]
    ).
 
 detect_left_tangent_wall_test_() ->
   generate_wall_test(
     [{x, 40}, {y, 200}],
-    [{0, 200}]
+    [[{0, 200}]]
    ).
-
 
 detect_bottom_wall_test_() ->
   generate_wall_test(
     [{x, 200}, {y, 20}],
-    [{234, 0}, {165, 0}]
+    [[{234, 0}, {165, 0}]]
    ).
 
 detect_tangent_bottom_wall_test_() ->
   generate_wall_test(
     [{x, 200}, {y, 40}],
-    [{200, 0}]
+    [[{200, 0}]]
+   ).
+
+detect_right_top_corner_wall_test_() ->
+  generate_wall_test(
+    [{x, 380}, {y, 380}],
+    [[{400,400},{345,400}],[{400,400},{400,345}]]
+   ).
+
+detect_left_top_corner_wall_test_() ->
+  generate_wall_test(
+    [{x, 20}, {y, 380}],
+    [[{54,400},{0,400}],[{0,400},{0,345}]]
+   ).
+
+detect_right_bottom_corner_wall_test_() ->
+  generate_wall_test(
+    [{x, 380}, {y, 20}],
+    [[{400,0},{345,0}],[{400,54},{400,0}]]
+   ).
+
+detect_left_bottom_corner_wall_test_() ->
+  generate_wall_test(
+    [{x, 20}, {y, 20}],
+    [[{54,0},{0,0}],[{0,54},{0,0}]]
    ).
 
 generate_wall_test(PlayerCoordinates, Expectations) ->

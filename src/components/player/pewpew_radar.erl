@@ -42,30 +42,38 @@ players_under_radar(Players, ScanningPlayer, ScanRadius) ->
    Players).
 
 intersections_with_walls(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius) ->
-  lists:flatten([
-                 intersect_left_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
-                 intersect_right_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
-                 intersect_bottom_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
-                 intersect_top_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius)
-                ]
-   ).
+  Intersections = [
+   intersect_left_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
+   intersect_right_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
+   intersect_bottom_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
+   intersect_top_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius)
+  ],
 
-intersect_left_wall(_, ArenaWidth, ScanningPlayer, ScanRadius) ->
+  [ Intersection || Intersection <- Intersections, Intersection =/= []].
+
+intersect_left_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius) ->
   LeftWallLine = ArenaWidth,
-  intersect_with_line(vertical, LeftWallLine, ScanningPlayer, ScanRadius).
-intersect_right_wall(_, _, ScanningPlayer, ScanRadius) ->
+  intersect_with_line(vertical, ArenaHeight, 0, LeftWallLine, ScanningPlayer, ScanRadius).
+intersect_right_wall(ArenaHeight, _, ScanningPlayer, ScanRadius) ->
   RightWallLine = 0,
-  intersect_with_line(vertical, RightWallLine, ScanningPlayer, ScanRadius).
-intersect_bottom_wall(_, _, ScanningPlayer, ScanRadius) ->
+  intersect_with_line(vertical, ArenaHeight, 0, RightWallLine, ScanningPlayer, ScanRadius).
+intersect_bottom_wall(_, ArenaWidth, ScanningPlayer, ScanRadius) ->
   BottomWallLine = 0,
-  intersect_with_line(horizontal, BottomWallLine, ScanningPlayer, ScanRadius).
-intersect_top_wall(ArenaHeight, _, ScanningPlayer, ScanRadius) ->
+  intersect_with_line(horizontal, ArenaWidth, 0, BottomWallLine, ScanningPlayer, ScanRadius).
+intersect_top_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius) ->
   TopWallLine = ArenaHeight,
-  intersect_with_line(horizontal, TopWallLine, ScanningPlayer, ScanRadius).
+  intersect_with_line(horizontal, ArenaWidth, 0, TopWallLine, ScanningPlayer, ScanRadius).
 
-intersect_with_line(WallType, WallLine, ScanningPlayer, ScanRadius) ->
+intersect_with_line(
+  WallType,
+  MaxIntersectionPoint,
+  MinIntersectionPoint,
+  WallLine,
+  ScanningPlayer,
+  ScanRadius
+) ->
   {x, PlayerX, y, PlayerY} = pewpew_player_component:coordinates(ScanningPlayer),
-  calculate_coordinates(WallType, WallLine, PlayerX, PlayerY, ScanRadius).
+  calculate_coordinates(WallType, MaxIntersectionPoint, MinIntersectionPoint, WallLine, PlayerX, PlayerY, ScanRadius).
 
 % (C1, C2) = center of the player
 % r = radius of the scan
@@ -85,7 +93,14 @@ intersect_with_line(WallType, WallLine, ScanningPlayer, ScanRadius) ->
 % Intersection if b^2 > 4*a*c
 % No intersection in the other case
 %
-calculate_coordinates(LineType, Z, TC1, TC2, R) ->
+calculate_coordinates(
+  LineType,
+  MaxIntersectionPoint,
+  MinIntersectionPoint,
+  Z,
+  TC1, TC2,
+  R
+) ->
   {C1, C2} = case LineType of
                horizontal -> {TC2, TC1};
                vertical -> {TC1, TC2}
@@ -105,11 +120,14 @@ calculate_coordinates(LineType, Z, TC1, TC2, R) ->
       P_1 = erlang:trunc((-B + math:sqrt(Temp)) / 2 * A),
       P_2 = erlang:trunc((-B - math:sqrt(Temp)) / 2 * A),
 
+      NormalizedP_1 = normalize_intersection_point(gt, P_1, MaxIntersectionPoint),
+      NormalizedP_2 = normalize_intersection_point(lt, P_2, MinIntersectionPoint),
+
       case LineType of
         horizontal ->
-          [{Z, P_1}, {Z, P_2}];
+          [{Z, NormalizedP_1}, {Z, NormalizedP_2}];
         vertical ->
-          [{P_1, Z}, {P_2, Z}]
+          [{NormalizedP_1, Z}, {NormalizedP_2, Z}]
       end;
     false ->
       case Temp =:= 0.0 of
@@ -126,3 +144,8 @@ calculate_coordinates(LineType, Z, TC1, TC2, R) ->
           []
       end
   end.
+
+normalize_intersection_point(gt, Point, Max) when Point > Max -> Max;
+normalize_intersection_point(gt, Point, _) -> Point;
+normalize_intersection_point(lt, Point, Min) when Point < Min -> Min;
+normalize_intersection_point(lt, Point, _) -> Point.
