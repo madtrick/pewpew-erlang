@@ -1,4 +1,5 @@
 -module(pewpew_arena_component_factory).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([
   create/1
@@ -24,7 +25,7 @@ create_player(ArenaComponent, Options) ->
   Radius = 5,
   X      = Radius,
   Y      = Radius,
-  Defaults = [{x, X}, {y, Y}, {id, player_id}, {color, red}, {name, name}, {origin, Origin}, {radius, Radius}],
+  Defaults = [{x, X}, {y, Y}, {id, player_id}, {color, red}, {name, name}, {rotation, 0}, {origin, Origin}, {radius, Radius}],
 
   PlayerOptions = lists:foldl(
     fun(El, Acc) ->
@@ -39,5 +40,7 @@ create_player(ArenaComponent, Options) ->
     end,
     [],
     Defaults),
+
+  ?debugVal(PlayerOptions),
 
   pewpew_arena_component:create_player(ArenaComponent, PlayerOptions).

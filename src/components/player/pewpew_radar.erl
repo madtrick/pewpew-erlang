@@ -1,7 +1,7 @@
 -module(pewpew_radar).
 -include_lib("eunit/include/eunit.hrl").
 
--export([scan/3]).
+-export([scan/3, long_range_scan/3]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% API
@@ -19,6 +19,37 @@ scan(ArenaComponent, ScanningPlayer, ScanRadius) ->
     players => PlayersUnderRadar,
     walls => Walls
   }.
+
+long_range_scan(ArenaComponent, ScanningPlayer, ScanRadius) ->
+  Players     = pewpew_arena_component:players(ArenaComponent),
+  PlayersToCheck = [Player || Player <- Players, Player =/= ScanningPlayer],
+
+  PlayersUnderRadar = players_under_radar(PlayersToCheck, ScanningPlayer, ScanRadius),
+
+  {x, ScanningPlayerX, y, ScanningPlayerY} = pewpew_player_component:coordinates(ScanningPlayer),
+
+  ScanningPlayerRotation = pewpew_player_component:rotation(ScanningPlayer),
+  PlayersUnderLongRangeRadar = lists:filter(
+    fun(Player) ->
+        {x, X, y, Y} = pewpew_player_component:coordinates(Player),
+
+        case X - ScanningPlayerX of
+          0 -> true;
+          Adjacent ->
+            Slope            = abs((Y - ScanningPlayerY) / (Adjacent)),
+            LeftBoundsSlope  = abs(math:tan(math:pi() / 6 + ScanningPlayerRotation)),
+            RightBoundsSlope = abs(math:tan(ScanningPlayerRotation - math:pi() / 6)),
+
+            (Slope >= RightBoundsSlope) andalso (Slope >= LeftBoundsSlope)
+        end
+    end,
+    PlayersUnderRadar
+   ),
+
+  #{
+      players => PlayersUnderLongRangeRadar,
+      walls => []
+     }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
