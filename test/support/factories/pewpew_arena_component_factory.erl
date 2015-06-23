@@ -41,6 +41,4 @@ create_player(ArenaComponent, Options) ->
     [],
     Defaults),
 
-  ?debugVal(PlayerOptions),
-
   pewpew_arena_component:create_player(ArenaComponent, PlayerOptions).
