@@ -1,5 +1,6 @@
 -module(pewpew_core).
 -behaviour(gen_server).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([
   start_link/0,
@@ -75,7 +76,7 @@ handle_cast({process_control_message, Channel, {text, Message}}, State) ->
   CommandContext        = pewpew_command_parser:parse(Message),
   UpdatedCommandContext = pewpew_command_context_data:update(CommandContext, [{origin, Channel}, {pewpew_game, Game}]),
   Reply                 = pewpew_command_runner:run(UpdatedCommandContext),
-  send_replies([Reply]),
+  send_replies(transform_replies([Reply])),
   {noreply, State};
 handle_cast({process_player_message, OriginChannel, Message}, State) ->
   NewPewpewCoreStateData = handle_process_message(OriginChannel, Message, State),
@@ -101,8 +102,11 @@ handle_call(next_cycle, _, State) ->
   PewPewGameSnapshot = pewpew_game:snapshot(PewPewGame),
   Notification = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
   ControlChannel = pewpew_core_state_data:control_channel(State),
-  NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
-  ok = send_replies([ NotificationDispatchRule | Replies ]),
+  % TODO move the construction of the notification to a separate module
+  NotificationDispatchRule = {reply, [{send_to, ControlChannel, [Notification]}]},
+  TransformedReplies = transform_replies(Replies),
+  %ok = send_replies( TransformedReplies ),
+  ok = send_replies([ NotificationDispatchRule | TransformedReplies ]),
   {reply, ok, UpdatedState};
 handle_call(get_games, _, State) ->
   PewPewGame = pewpew_core_state_data:pewpew_game(State),
@@ -114,6 +118,35 @@ terminate(_, _) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+transform_replies(Replies) ->
+  Dict = dict:new(),
+  Transformation = transform_replies(Replies, Dict),
+  dict:fold(fun(Channel, Messages, Acc) ->
+    [{reply, [{send_to, Channel, Messages}]} | Acc]
+  end, [], Transformation).
+
+transform_replies([], Dict) ->
+  Dict;
+transform_replies([Reply | Tail], Dict) ->
+  UpdatedDict = transform_reply(Reply, Dict),
+  transform_replies(Tail, UpdatedDict).
+
+transform_reply(noreply, Dict) ->
+  Dict;
+transform_reply(close, Dict) ->
+  Dict; % TODO: fix this when replace the 'channel_placeholder' in send_replies
+transform_reply({reply, Data}, Dict) ->
+  lists:foldl(fun(Element, Acc) ->
+    {send_to, Channel, Message} = Element,
+    case dict:is_key(Channel, Acc) of
+      true ->
+        Messages = dict:fetch(Channel, Acc),
+        dict:store(Channel, [Messages | Messages], Acc);
+      false ->
+        dict:store(Channel, [Message], Acc)
+    end
+  end, Dict, Data).
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),
@@ -184,11 +217,11 @@ send_replies([ReturnValue |  Tail]) ->
       send_replies(Tail);
     close ->
       pewpew_channel:close(channel_placeholder),
-      ok; %Discard all pending values
-    {close, Messages} ->
-      pewpew_message_dispatcher:dispatch(Messages),
-      pewpew_channel:close(channel_placeholder),
       ok %Discard all pending values
+    %{close, Messages} ->
+    %  pewpew_message_dispatcher:dispatch(Messages),
+    %  pewpew_channel:close(channel_placeholder),
+    %  ok %Discard all pending values
   end.
 
 build_pewpew_core_state() ->

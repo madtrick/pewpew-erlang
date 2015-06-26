@@ -7,5 +7,4 @@ toJSON(NotificationData) ->
     type => <<"GameSnapshotNotification">>,
     data => NotificationData
    },
-
-  jiffy:encode(Struct).
+  Struct.

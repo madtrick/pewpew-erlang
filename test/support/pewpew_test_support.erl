@@ -89,7 +89,7 @@ register_player(Alias) ->
       last_reply := LastReply
       } = Context,
 
-      #{<<"data">> := #{<<"id">> := PlayerId}} = LastReply,
+      [#{<<"data">> := #{<<"id">> := PlayerId}}] = LastReply,
 
       Player = pewpew_arena_component:get_player(ArenaComponent, PlayerId),
 
@@ -146,7 +146,9 @@ generate_reject_move_command_test(Options) ->
         coordinates_after_move := CoordinatesAfterMove
       } = Context,
 
-      #{<<"type">> := OrderType} = JSON,
+      [
+       #{<<"type">> := OrderType}
+      ] = JSON,
 
       [
        ?_assertEqual(<<"InvalidCommandError">>, OrderType),
@@ -170,7 +172,11 @@ generate_valid_move_command_test(Options) ->
     maps:merge(Options,
       #{
         test => fun(Context) ->
-          #{last_reply := #{<<"type">> := Type, <<"data">> := Data}} = Context,
+          #{last_reply := JSON } = Context,
+
+          [
+           #{<<"type">> := Type, <<"data">> := Data}
+          ] = JSON,
 
           [
            ?_assertEqual(<<"MovePlayerAck">>, Type),

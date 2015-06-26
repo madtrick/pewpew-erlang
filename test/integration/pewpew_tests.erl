@@ -22,7 +22,9 @@ register_player_command_test_() ->
     test => fun(Context) ->
       #{last_reply := JSON} = Context,
 
-      #{<<"type">> := AckType, <<"data">> := Data} = JSON,
+      [
+       #{<<"type">> := AckType, <<"data">> := Data}
+      ] = JSON,
       #{<<"id">> := Id, <<"x">> := X, <<"y">> := Y, <<"life">> := Life} = Data,
 
       [
@@ -43,7 +45,11 @@ reject_register_player_twice_test_() ->
     ],
 
     test => fun(Context) ->
-      #{last_reply := #{<<"type">> := Type}} = Context,
+      #{last_reply := JSON} = Context,
+
+      [
+        #{<<"type">> := Type}
+      ] = JSON,
 
       ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
@@ -56,7 +62,11 @@ start_game_command_test_() ->
     ],
 
     test => fun(Context) ->
-      #{last_reply := #{<<"type">> := AckType}} = Context,
+      #{last_reply := JSON} = Context,
+
+      [
+        #{<<"type">> := AckType}
+      ] = JSON,
 
       ?_assertEqual(<<"StartGameAck">>, AckType)
     end
@@ -69,7 +79,11 @@ reject_start_game_command_when_invalid_origin_test_() ->
     ],
 
     test => fun(Context) ->
-      #{last_reply := #{<<"type">> := Type}} = Context,
+      #{last_reply := JSON} = Context,
+
+      [
+       #{<<"type">> := Type}
+      ] = JSON,
 
       ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
@@ -83,7 +97,11 @@ reject_start_game_command_when_already_started_test_() ->
     ],
 
     test => fun(Context) ->
-      #{last_reply := #{<<"type">> := Type}} = Context,
+      #{last_reply := JSON} = Context,
+
+      [
+       #{<<"type">> := Type}
+      ] = JSON,
 
       ?_assertEqual(<<"InvalidCommandError">>, Type)
     end
@@ -99,7 +117,10 @@ ws_client_send_start_game_order_to_players_test_() ->
 
     test => fun(Context) ->
       #{last_reply := JSON} = Context,
-      #{<<"type">> := OrderType} = JSON,
+
+      [
+       #{<<"type">> := OrderType}
+      ] = JSON,
 
       ?_assertEqual(<<"StartGameOrder">>, OrderType)
     end
@@ -116,7 +137,10 @@ reject_move_player_command_when_game_not_started_test_() ->
 
     test => fun(Context) ->
       #{last_reply := JSON} = Context,
-      #{<<"type">> := OrderType} = JSON,
+
+      [
+       #{<<"type">> := OrderType}
+      ] = JSON,
 
       ?_assertEqual(<<"InvalidCommandError">>, OrderType)
     end
@@ -131,7 +155,10 @@ reject_move_player_command_when_the_player_is_not_registered_test_() ->
 
     test => fun(Context) ->
       #{last_reply := JSON} = Context,
-      #{<<"type">> := OrderType} = JSON,
+
+      [
+       #{<<"type">> := OrderType}
+      ] = JSON,
 
       ?_assertEqual(<<"InvalidCommandError">>, OrderType)
     end
@@ -176,8 +203,6 @@ reject_move_player_command_when_two_moves_test_() ->
     movements => [#{move => forward}, #{move => forward}]
    }).
 
-
-
 move_player_test_() ->
   Coordinates = fun(_, _) -> [{x, 10}, {y, 10}] end,
   Movements = [
@@ -210,7 +235,9 @@ send_state_to_control_test_() ->
     steps => [ws_client_recv(ws_control_client)],
     test => fun(Context) ->
       #{last_reply := JSON} = Context,
-      #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}} = JSON,
+      [
+       #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}}
+      ] = JSON,
       ?_assertEqual([], Players)
     end
    }).
@@ -234,7 +261,10 @@ state_update_includes_registered_player_test_() ->
        },
 
       #{last_reply := JSON} = Context,
-      #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}} = JSON,
+
+      [
+       #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}}
+      ] = JSON,
 
       PlayersState = lists:nth(1, Players),
       [
@@ -266,7 +296,10 @@ state_update_reflects_player_movement_test_() ->
        },
 
       #{last_reply := JSON} = Context,
-      #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}} = JSON,
+
+      [
+       #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}}
+      ] = JSON,
 
       PlayersState = lists:nth(1, Players),
       [

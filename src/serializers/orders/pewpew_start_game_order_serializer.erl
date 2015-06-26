@@ -8,4 +8,4 @@ toJSON(_OrderData) ->
     {data, {[]}}
   ]},
 
-  jiffy:encode(Struct).
+  Struct.

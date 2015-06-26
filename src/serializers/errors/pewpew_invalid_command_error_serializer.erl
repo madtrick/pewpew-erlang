@@ -7,4 +7,4 @@ toJSON(_ErrorData) ->
        {type, <<"InvalidCommandError">>},
        {data, {[]}}
     ]},
-  jiffy:encode(Struct).
+  Struct.

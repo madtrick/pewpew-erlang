@@ -7,4 +7,4 @@ toJSON(_AckData) ->
       {type, <<"StartGameAck">>},
       {data, {[]}}
     ]},
-  jiffy:encode(Struct).
+  Struct.

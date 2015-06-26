@@ -13,4 +13,4 @@ toJSON(RegisterPlayerAckData) ->
              {life, pewpew_player_component:life(PlayerComponent)}
             ]}}
     ]},
-  jiffy:encode(Struct).
+  Struct.

@@ -1,13 +1,12 @@
 -module(pewpew_radar).
--include_lib("eunit/include/eunit.hrl").
 
--export([scan/3, long_range_scan/3]).
+-export([circular_scan/3, long_range_scan/3]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-scan(ArenaComponent, ScanningPlayer, ScanRadius) ->
+circular_scan(ArenaComponent, ScanningPlayer, ScanRadius) ->
   {width, ArenaWidth, height, ArenaHeight} = pewpew_arena_component:dimensions(ArenaComponent),
   Players     = pewpew_arena_component:players(ArenaComponent),
   PlayersToCheck = [Player || Player <- Players, Player =/= ScanningPlayer],
@@ -25,6 +24,8 @@ long_range_scan(ArenaComponent, ScanningPlayer, ScanRadius) ->
   PlayersToCheck  = [Player || Player <- Players, Player =/= ScanningPlayer],
   PlayersUnderRadar = players_under_radar(PlayersToCheck, ScanningPlayer, ScanRadius),
 
+  % TODO add more tests for this method
+  % TODO refactor this
   {x, ScanningPlayerX, y, ScanningPlayerY} = pewpew_player_component:coordinates(ScanningPlayer),
   ScanningPlayerRotation                   = pewpew_player_component:rotation(ScanningPlayer),
 
@@ -46,9 +47,9 @@ long_range_scan(ArenaComponent, ScanningPlayer, ScanRadius) ->
    ),
 
   #{
-      players => PlayersUnderLongRangeRadar,
-      walls => []
-     }.
+    players => PlayersUnderLongRangeRadar,
+    walls => []
+  }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

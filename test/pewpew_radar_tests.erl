@@ -184,7 +184,7 @@ long_range_radar_player_rotated_6_test_() ->
 generate_circular_radar_test(Setup) ->
   CircularRadarSetup = maps:merge(
     Setup,
-    #{radar => scan, radius => 40}
+    #{radar => circular_scan, radius => 40}
   ),
 
   generate_radar_test(CircularRadarSetup).
@@ -242,33 +242,3 @@ generate_radar_test(Setup) ->
         ]
     end
   }.
-
-%generate_wall_test(PlayerCoordinates, Expectations) ->
-%  {setup,
-%    fun() ->
-%        application:set_env(pewpew, execution_mode, test),
-%        pewpew_config:load(),
-
-%        PlayerOptions = lists:flatten([ PlayerCoordinates | [{id, player_id_1} | []] ]),
-%        Options = #{
-%          arena_options => [{width, 400}, {height, 400}, {pewpew_game_context_data, undefined}],
-%          players_options => [PlayerOptions]
-%         },
-%        ArenaComponent = pewpew_arena_component_factory:create(Options),
-%        ArenaComponent
-%    end,
-%    fun(ArenaComponent) ->
-%        pewpew_arena_component:stop(ArenaComponent)
-%    end,
-%    fun(ArenaComponent) ->
-%        ScanningPlayer = pewpew_arena_component:get_player(ArenaComponent, player_id_1),
-%        Scan   = pewpew_radar:scan(ArenaComponent, ScanningPlayer, 40),
-
-%        #{players := PlayersScan, walls := WallScan} = Scan,
-
-%        [
-%         ?_assertEqual([], PlayersScan),
-%         ?_assertEqual(Expectations, WallScan)
-%        ]
-%    end
-%  }.

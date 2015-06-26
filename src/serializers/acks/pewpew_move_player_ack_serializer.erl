@@ -9,4 +9,5 @@ toJSON(AckData) ->
     {type, <<"MovePlayerAck">>},
     {data, {[{x, X}, {y, Y}]}}
   ]},
-  jiffy:encode(Struct).
+
+  Struct.
