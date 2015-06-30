@@ -92,13 +92,17 @@ handle_call({number_of_pending_messages_per_channel, Channel}, _, State) ->
   NumberOfPendingMessages = internal_number_of_pending_messages_per_channel(Channel, PendingMessages),
   {reply, NumberOfPendingMessages, State};
 handle_call(next_cycle, _, State) ->
+  PewPewGame = pewpew_core_state_data:pewpew_game(State),
+  NotificationContextData = pewpew_notification_context_data:new([{pewpew_game, PewPewGame}]),
+  Updates = pewpew_game_update_notification_context:call(NotificationContextData),
+  %Updates2 = pewpew_game:update(PewPewGame),
+  ?debugVal(Updates),
   PendingMessages              = pewpew_core_state_data:pending_messages(State),
   ReversedPendingMessages      = lists:reverse(PendingMessages),
   {_UpdatedGameState, Replies} = next_cycle(ReversedPendingMessages, pewpew_game(State)),
   %UpdatedState                = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
-  %{reply, ok, UpdatedState}.
   UpdatedState = pewpew_core_state_data:update(State, [{pending_messages, []}]),
-  PewPewGame = pewpew_core_state_data:pewpew_game(State),
+  %{reply, ok, UpdatedState}.
   PewPewGameSnapshot = pewpew_game:snapshot(PewPewGame),
   Notification = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
   ControlChannel = pewpew_core_state_data:control_channel(State),
@@ -106,7 +110,7 @@ handle_call(next_cycle, _, State) ->
   NotificationDispatchRule = {reply, [{send_to, ControlChannel, [Notification]}]},
   TransformedReplies = transform_replies(Replies),
   %ok = send_replies( TransformedReplies ),
-  ok = send_replies([ NotificationDispatchRule | TransformedReplies ]),
+  ok = send_replies(lists:flatten([ Updates | [NotificationDispatchRule | TransformedReplies] ])),
   {reply, ok, UpdatedState};
 handle_call(get_games, _, State) ->
   PewPewGame = pewpew_core_state_data:pewpew_game(State),

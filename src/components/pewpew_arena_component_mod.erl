@@ -3,7 +3,8 @@
 -export([
   get_player/2,
   move_player/3,
-  dimensions/1
+  dimensions/1,
+  update/1
 ]).
 
 get_player(Condition, ArenaComponentData) ->
@@ -23,6 +24,14 @@ dimensions(ArenaComponentData) ->
   Height = pewpew_arena_component_data:height(ArenaComponentData),
 
   {ok, {width, Width, height, Height}}.
+
+update(ArenaComponentData) ->
+  Players = pewpew_arena_component_data:players(ArenaComponentData),
+  PlayersUpdates = lists:map(fun(Player) ->
+    {player, Player, update, pewpew_player_component:update(Player) }
+  end, Players),
+
+  {ok, PlayersUpdates}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

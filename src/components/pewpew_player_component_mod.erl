@@ -4,7 +4,8 @@
   set_coordinates/2,
   get_coordinates/1,
   move/2,
-  snapshot/1
+  snapshot/1,
+  update/1
 ]).
 
 -define(MOVEMENT_SPEED, 1).
@@ -28,6 +29,13 @@ snapshot(PlayerComponentData) ->
   Snapshot = pewpew_player_component_snapshot:new(PlayerComponentData),
 
   {ok, Snapshot}.
+
+update(PlayerComponentData) ->
+  RadarComponent = pewpew_player_component_data:radar_component(PlayerComponentData),
+  Scan = pewpew_radar:scan(RadarComponent),
+  ScanNotification = pewpew_radar_scan_notification:new(Scan),
+  Update = {notification, ScanNotification},
+  {ok, Update}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

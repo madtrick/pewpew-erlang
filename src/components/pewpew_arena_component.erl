@@ -10,7 +10,8 @@
   create_player/2,
   move_player/2,
   dimensions/1,
-  snapshot/1
+  snapshot/1,
+  update/1
 ]).
 
 -export([
@@ -55,6 +56,9 @@ players(ArenaComponent) ->
 snapshot(ArenaComponent) ->
   gen_server:call(ArenaComponent, snapshot).
 
+update(ArenaComponent) ->
+  gen_server:call(ArenaComponent, update).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,6 +78,9 @@ handle_info(?PLAYER_DOWN(Pid), ArenaComponentData) ->
   NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, NewPlayers}]),
   {noreply, NewArenaComponentData}.
 
+handle_call(update, _, ArenaComponentData) ->
+  {ok, Update} = pewpew_arena_component_mod:update(ArenaComponentData),
+  {reply, Update, ArenaComponentData};
 handle_call(snapshot, _, ArenaComponentData) ->
   Snapshot = pewpew_arena_component_snapshot:new(ArenaComponentData),
   {reply, Snapshot, ArenaComponentData};

@@ -99,6 +99,7 @@ detect_left_bottom_corner_wall_test_() ->
     walls_to_find => [[{54,0},{0,0}],[{0,54},{0,0}]]
    }).
 
+% TODO rename the following tests
 long_range_radar_player_o2_rotated_test_() ->
   generate_long_range_radar_test(#{
     players => [

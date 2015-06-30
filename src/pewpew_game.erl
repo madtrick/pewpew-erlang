@@ -6,7 +6,8 @@
   start_game/1,
   is_started/1,
   arena_component/1,
-  snapshot/1
+  snapshot/1,
+  update/1
 ]).
 
 -export([
@@ -35,6 +36,9 @@ arena_component(PewpewGame) ->
 snapshot(PewPewGame) ->
   gen_server:call(PewPewGame, snapshot).
 
+update(PewPewGame) ->
+  gen_server:call(PewPewGame, update).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,6 +64,10 @@ handle_cast(start, PewpewGameStateData) ->
   UpdatedPewPewGameStateData = pewpew_game_state_data:update(PewpewGameStateData, [{pewpew_game_status, started}]),
   {noreply, UpdatedPewPewGameStateData}.
 
+handle_call(update, _, PewPewGameStateData) ->
+  ArenaComponent = pewpew_game_state_data:pewpew_arena_component(PewPewGameStateData),
+  Messages       = pewpew_arena_component:update(ArenaComponent),
+  {reply, Messages, PewPewGameStateData};
 handle_call(snapshot, _, PewPewGameStateData) ->
   Snapshot = pewpew_game_snapshot:new(PewPewGameStateData),
   {reply, Snapshot, PewPewGameStateData};

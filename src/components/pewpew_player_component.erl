@@ -26,7 +26,8 @@
   channel/1,
   radius/1,
   coordinates/1,
-  snapshot/1
+  snapshot/1,
+  update/1
 ]).
 
 % Exported only for testing
@@ -99,14 +100,22 @@ coordinates(PlayerComponent) ->
 snapshot(PlayerComponent) ->
   gen_server:call(PlayerComponent, snapshot).
 
+update(PlayerComponent) ->
+  gen_server:call(PlayerComponent, update).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callback
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init([PewpewGameContextData, PlayerData]) ->
+  {ok, RadarComponent} = pewpew_radar:start_link(),
   %TODO: check if the player uses the game context data for anything
   PlayerComponentData = pewpew_player_component_data:new(
-    [{pewpew_game_context_data, PewpewGameContextData} | PlayerData]
+    [
+     {radar_component, RadarComponent},
+     {pewpew_game_context_data, PewpewGameContextData}
+     | PlayerData
+    ]
   ),
   monitor_origin(PlayerComponentData),
   {ok, PlayerComponentData}.
@@ -130,6 +139,9 @@ handle_cast({set_coordinates, Coordinates}, PlayerComponentData) ->
 handle_cast({set_state, Data}, _) ->
   {noreply, Data}.
 
+handle_call(update, _, PlayerComponentData) ->
+  {ok, Update} = pewpew_player_component_mod:update(PlayerComponentData),
+  {reply, Update, PlayerComponentData};
 handle_call(get_state, _, PlayerComponentData) ->
   {reply, PlayerComponentData, PlayerComponentData};
 handle_call(id, _, PlayerComponentData) ->
