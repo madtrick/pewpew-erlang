@@ -52,7 +52,7 @@ recv(Pid) ->
 recv(Pid, Timeout) ->
   Pid ! {recv, self()},
   receive
-    M -> M
+    M ->  M
   after
     Timeout -> {error, timeout}
   end.
@@ -80,7 +80,7 @@ websocket_info({flush, _}, _, State) ->
 websocket_info({recv, From}, _, State = #state{buffer = []}) ->
   {ok, State#state{waiting = From}};
 websocket_info({recv, From}, _, State = #state{buffer = [Top|Rest]}) ->
-  From ! Top,
+  From !  Top,
   {ok, State#state{buffer = Rest}};
 websocket_info(stop, _, State) ->
   {close, <<>>, State}.

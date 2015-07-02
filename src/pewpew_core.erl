@@ -96,7 +96,6 @@ handle_call(next_cycle, _, State) ->
   NotificationContextData = pewpew_notification_context_data:new([{pewpew_game, PewPewGame}]),
   Updates = pewpew_game_update_notification_context:call(NotificationContextData),
   %Updates2 = pewpew_game:update(PewPewGame),
-  ?debugVal(Updates),
   PendingMessages              = pewpew_core_state_data:pending_messages(State),
   ReversedPendingMessages      = lists:reverse(PendingMessages),
   {_UpdatedGameState, Replies} = next_cycle(ReversedPendingMessages, pewpew_game(State)),

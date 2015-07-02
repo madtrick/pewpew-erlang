@@ -6,16 +6,18 @@
   ws_client_send/2,
   ws_client_recv/1,
   ws_client_flush/1,
+  ws_client_count_recv/2,
   ws_client_sel_recv/2,
   generate_reject_move_command_test/1,
   generate_valid_move_command_test/1,
   register_player/0,
-  register_player/1
+  wait/1
 ]).
 
 run_test(Config) ->
   {setup,
     fun() ->
+      meck:new(pewpew_core, [passthrough]),
       application:set_env(pewpew, execution_mode, test),
       pewpew:start(),
       {ok, Client}        = ws_client:start_link(),
@@ -29,6 +31,7 @@ run_test(Config) ->
         pewpew_game => PewPewGame,
         arena_component => ArenaComponent,
         replies => [],
+        per_client_replies => #{},
         players => #{}
       }
     end,
@@ -41,12 +44,16 @@ run_test(Config) ->
       ws_client:stop(Client),
       ws_client:stop(ControlClient),
 
-      pewpew:stop()
+      pewpew:stop(),
+      meck:unload(pewpew_core)
     end,
     fun(Context) ->
       Test   = maps:get(test, Config),
       Before = maps:get(before, Config, undefined),
       Steps  = maps:get(steps, Config, undefined),
+
+
+
 
       case Before of
         undefined ->
@@ -70,32 +77,67 @@ run_test(Config) ->
               Test(UpdatedContext);
             _ ->
               UpdatedContext = Before(Context),
-             NewContext      = execute_steps(Steps(UpdatedContext), UpdatedContext),
-             Test(NewContext)
+              NewContext     = execute_steps(Steps(UpdatedContext), UpdatedContext),
+              Test(NewContext)
           end
       end
     end
     }.
 
+%register_player() ->
+%  register_player(last_registered_player).
 register_player() ->
-  register_player(last_registered_player).
-register_player(Alias) ->
   [
-    ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
-    fun(Context) ->
-      #{
-      arena_component := ArenaComponent,
-      players := CurrentPlayers,
-      last_reply := LastReply
-      } = Context,
+    ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}})
+    %fun(Context) ->
+    %  #{
+    %  arena_component := ArenaComponent,
+    %  players := CurrentPlayers,
+    %  last_reply := LastReply,
+    %  per_client_replies := PerClientReplies
+    %  } = Context,
 
-      [#{<<"data">> := #{<<"id">> := PlayerId}}] = LastReply,
+    %  ?debugVal(LastReply),
 
-      Player = pewpew_arena_component:get_player(ArenaComponent, PlayerId),
+    %  [#{<<"data">> := #{<<"id">> := PlayerId}}] = LastReply,
+    %  Player = pewpew_arena_component:get_player(ArenaComponent, PlayerId),
 
-      {context, Context#{players => maps:put(Alias, Player, CurrentPlayers)}}
-    end
+    %  RepliesForClient        = maps:get(ws_player_client, PerClientReplies, []),
+    %  % encode again as JSON as the 'execute_steps' function expect a JSON string
+    %  UpdatedRepliesForClient = [jiffy:encode(LastReply) | RepliesForClient],
+    %  UpdatedPerClientReplies = maps:put(ws_player_client, UpdatedRepliesForClient, PerClientReplies),
+
+    %  UpdatedContext = Context#{
+    %    players => maps:put(Alias, Player, CurrentPlayers),
+    %    per_client_replies => UpdatedPerClientReplies
+    %  },
+
+    %  {context, UpdatedContext}
+    %end
   ].
+
+lol(0, ClientId, _, Replies) ->
+  {replies, ClientId, lists:reverse(Replies)};
+lol(Counter, ClientId, Client, Replies) ->
+  {text, Reply} = ws_client:recv(Client),
+  lol(Counter - 1, ClientId, Client,  [Reply | Replies]).
+
+ws_client_count_recv(ClientId, Count) ->
+  fun(Context) ->
+    Client = maps:get(ClientId, Context),
+    PerClientReplies = maps:get(per_client_replies, Context),
+    ClientReplies = maps:get(ClientId, PerClientReplies, []),
+    lol(Count, ClientId, Client, ClientReplies)
+    %F = fun (0, Replies) ->
+    %          {replies, ClientId, Replies};
+    %        (Counter, Replies) ->
+    %          Client = maps:get(ClientId, Context),
+    %          {text, Reply} = ws_client:recv(Client),
+    %          F(Counter - 1, [Reply | Replies])
+    %end,
+
+    %F(Count, [])
+  end.
 
 ws_client_recv(ClientId) ->
   fun(Context) ->
@@ -110,9 +152,9 @@ ws_client_send(ClientId, Message) ->
   fun(Context) ->
       Client = maps:get(ClientId, Context),
 
-      ws_client:send_text(Client, JSON),
-      {text, Reply} = ws_client:recv(Client),
-      {reply, Reply}
+      ws_client:send_text(Client, JSON)
+      %{text, Reply} = ws_client:recv(Client),
+      %{reply, Reply}
   end.
 
 ws_client_sel_recv(ClientId, Expression) ->
@@ -135,6 +177,11 @@ ws_client_flush(ClientId) ->
       Client = maps:get(ClientId, Context),
       ws_client:flush(Client),
       ok
+  end.
+
+wait(Time) ->
+  fun(_) ->
+    timer:sleep(Time)
   end.
 
 generate_reject_move_command_test(Options) ->
@@ -217,6 +264,11 @@ execute_step(Fun, Context) ->
         replies => [JSON | CurrentReplies],
         last_reply => JSON
       };
+    {replies, ClientId, Replies} ->
+      JSON = lists:map(fun(E) -> jiffy:decode(E, [return_maps]) end, Replies),
+      #{per_client_replies := PerClientReplies} = Context,
+      UpdatedPerClientReplies = maps:put(ClientId, JSON, PerClientReplies),
+      Context#{per_client_replies => UpdatedPerClientReplies};
     {context, UpdatedContext} ->
       UpdatedContext;
     _ -> Context

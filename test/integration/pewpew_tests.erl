@@ -1,16 +1,20 @@
 -module(pewpew_tests).
 -include_lib("eunit/include/eunit.hrl").
 
--import(pewpew_test_support, [
-  run_test/1,
-  ws_client_send/2,
-  ws_client_recv/1,
-  ws_client_flush/1,
-  ws_client_sel_recv/2,
-  generate_reject_move_command_test/1,
-  generate_valid_move_command_test/1,
-  register_player/0,
-  register_player/1
+-import(
+  pewpew_test_support, [
+    run_test/1,
+    ws_client_send/2,
+    ws_client_recv/1,
+    ws_client_flush/1,
+    ws_client_sel_recv/2,
+    ws_client_sel_recv/2,
+    ws_client_count_recv/2,
+    generate_reject_move_command_test/1,
+    generate_valid_move_command_test/1,
+    register_player/0,
+    register_player/1,
+    wait/1
 ]).
 
 %register_player_command_test_() ->
@@ -312,14 +316,28 @@
 receive_radar_update_test_() ->
   run_test(#{
     steps => [
-      register_player(player1),
+      register_player(),
+      wait(100),
       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-      ws_client_recv(ws_player_client),
-      ws_client_recv(ws_player_client),
-      ws_client_recv(ws_player_client)
+      ws_client_count_recv(ws_player_client, 3)
    ],
     test => fun(Context) ->
-      #{last_reply := JSON} = Context,
-      ?debugVal(JSON)
+      #{per_client_replies := #{ws_player_client := L}} = Context,
+
+      [
+       [RegisterPlayerAck],
+       [StartGameOrder],
+       [RadarScanNotification]
+      ] = L,
+
+      #{<<"type">> := RegisterPlayerAckType} = RegisterPlayerAck,
+      #{<<"type">> := StartGameOrderType} = StartGameOrder,
+      #{<<"type">> := RadarScanNotificationType} = RadarScanNotification,
+
+      [
+       ?_assertEqual(<<"RegisterPlayerAck">>, RegisterPlayerAckType),
+       ?_assertEqual(<<"StartGameOrder">>, StartGameOrderType),
+       ?_assertEqual(<<"RadarScanNotification">>, RadarScanNotificationType)
+      ]
     end
   }).
