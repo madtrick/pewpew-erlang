@@ -14,7 +14,8 @@
     generate_valid_move_command_test/1,
     register_player/0,
     register_player/1,
-    wait/1
+    wait/1,
+    get_player_for_client/1
 ]).
 
 %register_player_command_test_() ->
@@ -253,7 +254,6 @@
 %      ws_client_recv(ws_control_client)
 %    ],
 %    test => fun(Context) ->
-%      #{players := #{player1 := Player}} = Context,
 %      ExpectedPlayerState = #{
 %        <<"id">> => pewpew_player_component:id(Player),
 %        <<"coordinates">> => #{ 
@@ -313,31 +313,46 @@
 %    end
 %   }).
 
-receive_radar_update_test_() ->
+%receive_radar_update_test_() ->
+%  run_test(#{
+%    steps => [
+%      register_player(),
+%      wait(100),
+%      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+%      ws_client_count_recv(ws_player_client, 3)
+%   ],
+%    test => fun(Context) ->
+%      #{per_client_replies := #{ws_player_client := L}} = Context,
+
+%      [
+%       [RegisterPlayerAck],
+%       [StartGameOrder],
+%       [RadarScanNotification]
+%      ] = L,
+
+%      #{<<"type">> := RegisterPlayerAckType} = RegisterPlayerAck,
+%      #{<<"type">> := StartGameOrderType} = StartGameOrder,
+%      #{<<"type">> := RadarScanNotificationType} = RadarScanNotification,
+
+%      [
+%       ?_assertEqual(<<"RegisterPlayerAck">>, RegisterPlayerAckType),
+%       ?_assertEqual(<<"StartGameOrder">>, StartGameOrderType),
+%       ?_assertEqual(<<"RadarScanNotification">>, RadarScanNotificationType)
+%      ]
+%    end
+%  }).
+
+lol_test_() ->
   run_test(#{
     steps => [
       register_player(),
       wait(100),
-      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-      ws_client_count_recv(ws_player_client, 3)
-   ],
+      ws_client_count_recv(ws_player_client, 1)
+    ],
     test => fun(Context) ->
-      #{per_client_replies := #{ws_player_client := L}} = Context,
+      Player1 = get_player_for_client(Context),
+      ?debugVal(Player1),
 
-      [
-       [RegisterPlayerAck],
-       [StartGameOrder],
-       [RadarScanNotification]
-      ] = L,
-
-      #{<<"type">> := RegisterPlayerAckType} = RegisterPlayerAck,
-      #{<<"type">> := StartGameOrderType} = StartGameOrder,
-      #{<<"type">> := RadarScanNotificationType} = RadarScanNotification,
-
-      [
-       ?_assertEqual(<<"RegisterPlayerAck">>, RegisterPlayerAckType),
-       ?_assertEqual(<<"StartGameOrder">>, StartGameOrderType),
-       ?_assertEqual(<<"RadarScanNotification">>, RadarScanNotificationType)
-      ]
+      ?_assert(true)
     end
-  }).
+   }).

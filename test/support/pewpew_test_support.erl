@@ -11,7 +11,8 @@
   generate_reject_move_command_test/1,
   generate_valid_move_command_test/1,
   register_player/0,
-  wait/1
+  wait/1,
+  get_player_for_client/1
 ]).
 
 run_test(Config) ->
@@ -115,6 +116,30 @@ register_player() ->
     %  {context, UpdatedContext}
     %end
   ].
+
+get_player_for_client(Context) ->
+  #{
+    arena_component := ArenaComponent,
+    per_client_replies := PerClientReplies
+  } = Context,
+
+  Replies = lists:flatten(maps:get(ws_player_client, PerClientReplies)),
+  ?debugVal(Replies),
+
+  [RegisterPlayerAck] = [Reply|| #{<<"type">> := Type} = Reply <- Replies, Type =:= <<"RegisterPlayerAck">> ],
+  %[RegisterPlayerAck | _] = lists:dropwhile(fun(E) ->
+  %  #{<<"type">> := MessageType} = E,
+  %  case MessageType of
+  %    <<"RegisterPlayerAck">> -> true;
+  %    _ -> false
+  %  end
+  %end, Replies),
+
+  #{<<"data">> := #{<<"id">> := PlayerId}} = RegisterPlayerAck,
+
+  Player = pewpew_arena_component:get_player(ArenaComponent, PlayerId),
+  Player.
+
 
 lol(0, ClientId, _, Replies) ->
   {replies, ClientId, lists:reverse(Replies)};
