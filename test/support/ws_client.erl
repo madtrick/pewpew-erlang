@@ -2,6 +2,7 @@
 % https://github.com/jeremyong/websocket_client/blob/master/ct/ws_client.erl
 -module(ws_client).
 -behaviour(websocket_client_handler).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([
   start_link/0,
