@@ -45,84 +45,84 @@
 %    end
 %   }).
 
-reject_register_player_twice_test_() ->
-  run_test(#{
-    steps => [
-      register_player(),
-      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
-      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
-      ws_client_recv(ws_player_client)
-    ],
+%reject_register_player_twice_test_() ->
+%  run_test(#{
+%    steps => [
+%      register_player(),
+%      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+%      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
+%      ws_client_recv(ws_player_client)
+%    ],
 
-    test => validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>)
- }).
+%    test => validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>)
+% }).
 
-start_game_command_test_() ->
-  run_test(#{
-    steps => [
-      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client_recv(ws_control_client)
-    ],
+%start_game_command_test_() ->
+%  run_test(#{
+%    steps => [
+%      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+%      ws_client_recv(ws_control_client)
+%    ],
 
-    test => validate_last_reply_type_test(ws_control_client, <<"StartGameAck">>)
- }).
+%    test => validate_last_reply_type_test(ws_control_client, <<"StartGameAck">>)
+% }).
 
-reject_start_game_command_when_invalid_origin_test_() ->
-  run_test(#{
-    steps => [
-      ws_client_send(ws_player_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client_recv(ws_player_client)
-    ],
+%reject_start_game_command_when_invalid_origin_test_() ->
+%  run_test(#{
+%    steps => [
+%      ws_client_send(ws_player_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+%      ws_client_recv(ws_player_client)
+%    ],
 
-    test => validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>)
-   }).
+%    test => validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>)
+%   }).
 
-reject_start_game_command_when_already_started_test_() ->
-  run_test(#{
-    steps => [
-      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
-      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client_recv(ws_control_client)
-    ],
+%reject_start_game_command_when_already_started_test_() ->
+%  run_test(#{
+%    steps => [
+%      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+%      ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
+%      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+%      ws_client_recv(ws_control_client)
+%    ],
 
-    test => validate_last_reply_type_test(ws_control_client, <<"InvalidCommandError">>)
-   }).
+%    test => validate_last_reply_type_test(ws_control_client, <<"InvalidCommandError">>)
+%   }).
 
-ws_client_send_start_game_order_to_players_test_() ->
-  run_test(#{
-    steps => [
-      register_player(),
-      ws_client_recv(ws_player_client),
-      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-      ws_client_recv(ws_player_client)
-    ],
+%ws_client_send_start_game_order_to_players_test_() ->
+%  run_test(#{
+%    steps => [
+%      register_player(),
+%      ws_client_recv(ws_player_client),
+%      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+%      ws_client_recv(ws_player_client)
+%    ],
 
-    test => validate_last_reply_type_test(ws_player_client, <<"StartGameOrder">>)
-   }).
+%    test => validate_last_reply_type_test(ws_player_client, <<"StartGameOrder">>)
+%   }).
 
-reject_move_player_command_when_game_not_started_test_() ->
-  run_test(#{
-    steps => [
-        register_player(),
-        ws_client_recv(ws_player_client),
-        ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>),
-        ws_client_recv(ws_player_client)
-      ],
+%reject_move_player_command_when_game_not_started_test_() ->
+%  run_test(#{
+%    steps => [
+%        register_player(),
+%        ws_client_recv(ws_player_client),
+%        ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>),
+%        ws_client_recv(ws_player_client)
+%      ],
 
-    test => validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>)
-   }).
+%    test => validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>)
+%   }).
 
-reject_move_player_command_when_the_player_is_not_registered_test_() ->
-  run_test(#{
-    steps => [
-        ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
-        ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>),
-        ws_client_recv(ws_player_client)
-      ],
+%reject_move_player_command_when_the_player_is_not_registered_test_() ->
+%  run_test(#{
+%    steps => [
+%        ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+%        ws_client_send(ws_player_client, <<"{\"type\":\"MovePlayerCommand\", \"data\":[]}">>),
+%        ws_client_recv(ws_player_client)
+%      ],
 
-    test => validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>)
-   }).
+%    test => validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>)
+%   }).
 
 
 reject_move_player_command_when_player_hits_arena_edges_test_() ->

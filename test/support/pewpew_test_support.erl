@@ -52,12 +52,10 @@ run_test(Config) ->
       meck:unload(pewpew_core)
     end,
     fun(Context) ->
+      % TODO: maybe remove this default for the test function
       Test   = maps:get(test, Config, fun(_) -> [] end),
       Before = maps:get(before, Config, undefined),
       Steps  = maps:get(steps, Config, undefined),
-
-
-
 
       case Before of
         undefined ->
@@ -72,7 +70,7 @@ run_test(Config) ->
              end,
 
              NewContext = execute_steps(StepsList, Context),
-             Test(NewContext)
+             run_tests(Test, NewContext)
           end;
         _ ->
           case Steps of
@@ -82,11 +80,25 @@ run_test(Config) ->
             _ ->
               UpdatedContext = Before(Context),
               NewContext     = execute_steps(Steps(UpdatedContext), UpdatedContext),
-              Test(NewContext)
+              run_tests(Test, NewContext)
           end
       end
     end
     }.
+
+run_list_of_tests([], _, TestObjects) ->
+  TestObjects;
+run_list_of_tests([{_, _} = T | Tail], Context, TestObjects) ->
+  run_list_of_tests(Tail, Context, [T | TestObjects]);
+run_list_of_tests([T | Tail], Context, TestObjects) ->
+  NewTestObjects      = T(Context),
+  UpdatedTestsObjects = lists:flatten([NewTestObjects | TestObjects]),
+  run_list_of_tests(Tail, Context, UpdatedTestsObjects).
+
+run_tests(Tests, Context) when is_function(Tests) ->
+  Tests(Context);
+run_tests(Tests, Context) when is_list(Tests) ->
+  run_list_of_tests(Tests, Context, []).
 
 %register_player() ->
 %  register_player(last_registered_player).
@@ -212,22 +224,35 @@ get_last_reply_for_client(ClientId, Context) ->
 generate_reject_move_command_test(Options) ->
   DefaultOptions = #{
     move_player_reply => <<"InvalidCommandError">>,
-    test => fun(Context) ->
-      #{
-        last_reply_per_client := #{ws_player_client := JSON},
-        coordinates_before_move := CoordinatesBeforeMove,
-        coordinates_after_move := CoordinatesAfterMove
-      } = Context,
+    test => [
+             validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>),
+             fun(Context) ->
+               #{
+                 coordinates_before_move := CoordinatesBeforeMove,
+                 coordinates_after_move := CoordinatesAfterMove
+                } = Context,
 
-      [
-       #{<<"type">> := OrderType}
-      ] = JSON,
+               [
+                ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
+               ]
+             end
+            ]
+    %test => fun(Context) ->
+    %  #{
+    %    last_reply_per_client := #{ws_player_client := JSON},
+    %    coordinates_before_move := CoordinatesBeforeMove,
+    %    coordinates_after_move := CoordinatesAfterMove
+    %  } = Context,
 
-      [
-       ?_assertEqual(<<"InvalidCommandError">>, OrderType),
-       ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
-      ]
-    end
+    %  [
+    %   #{<<"type">> := OrderType}
+    %  ] = JSON,
+
+    %  [
+    %   ?_assertEqual(<<"InvalidCommandError">>, OrderType),
+    %   ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
+    %  ]
+    %end
   },
 
   GenerateMoveCommandOptions = maps:merge(DefaultOptions, Options),
