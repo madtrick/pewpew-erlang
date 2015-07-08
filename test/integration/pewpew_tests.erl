@@ -17,7 +17,8 @@
     wait/1,
     get_player_for_client/2,
     get_last_reply_for_client/2,
-    validate_last_reply_type_test/2
+    validate_last_reply_type_test/2,
+    validate_last_reply_test/2
 ]).
 
 register_player_command_test_() ->
@@ -190,20 +191,18 @@ move_player_test_() ->
 
   lists:map(fun(Movement) -> generate_valid_move_command_test(Movement) end, Movements).
 
-%send_state_to_control_test_() ->
-%  run_test(#{
-%    steps => [
-%      ws_client_recv(ws_control_client)
-%    ],
-%    test => fun(Context) ->
-%      #{last_reply_per_client := #{ws_control_client := JSON}} = Context,
+send_state_to_control_test_() ->
+  ExpectedReply = #{
+    <<"type">> => <<"GameSnapshotNotification">>,
+    <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [] }}
+  },
 
-%      [
-%       #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}}
-%      ] = JSON,
-%      ?_assertEqual([], Players)
-%    end
-%   }).
+  run_test(#{
+    steps => [
+      ws_client_recv(ws_control_client)
+    ],
+    test => validate_last_reply_test(ws_control_client, ExpectedReply)
+   }).
 
 %state_update_includes_registered_player_test_() ->
 %  run_test(#{

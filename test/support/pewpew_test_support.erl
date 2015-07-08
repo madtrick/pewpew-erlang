@@ -14,7 +14,8 @@
   wait/1,
   get_player_for_client/2,
   get_last_reply_for_client/2,
-  validate_last_reply_type_test/2
+  validate_last_reply_type_test/2,
+  validate_last_reply_test/2
 ]).
 
 run_test(Config) ->
@@ -277,6 +278,13 @@ generate_valid_move_command_test(Options) ->
      }
     )
  ).
+
+validate_last_reply_test(ClientId, ExpectedReply) ->
+  fun(Context) ->
+    [Reply] = get_last_reply_for_client(ClientId, Context),
+
+    ?_assertEqual(ExpectedReply, Reply)
+  end.
 
 validate_last_reply_type_test(ClientId, ExpectedType) ->
   fun(Context) ->
