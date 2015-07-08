@@ -270,18 +270,10 @@ generate_valid_move_command_test(Options) ->
     maps:merge(Options,
       #{
         move_player_reply => <<"MovePlayerAck">>,
-        test => fun(Context) ->
-          JSON = get_last_reply_for_client(ws_player_client, Context),
-
-          [
-           #{<<"type">> := Type, <<"data">> := Data}
-          ] = JSON,
-
-          [
-           ?_assertEqual(<<"MovePlayerAck">>, Type),
-           ?_assertEqual(#{<<"x">> => ExpectedX, <<"y">> => ExpectedY}, Data)
-          ]
-        end
+        test => [
+          validate_last_reply_type_test(ws_player_client, <<"MovePlayerAck">>),
+          validate_last_reply_data_test(ws_player_client, #{<<"x">> => ExpectedX, <<"y">> => ExpectedY})
+        ]
      }
     )
  ).
@@ -295,6 +287,17 @@ validate_last_reply_type_test(ClientId, ExpectedType) ->
     ] = Reply,
 
     ?_assertEqual(ExpectedType, Type)
+  end.
+
+validate_last_reply_data_test(ClientId, ExpectedData) ->
+  fun(Context) ->
+    Reply = get_last_reply_for_client(ClientId, Context),
+
+    [
+     #{<<"data">> := Data}
+    ] = Reply,
+
+    ?_assertEqual(ExpectedData, Data)
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
