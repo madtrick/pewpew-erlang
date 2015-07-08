@@ -97,7 +97,11 @@ run_list_of_tests([T | Tail], Context, TestObjects) ->
   run_list_of_tests(Tail, Context, UpdatedTestsObjects).
 
 run_tests(Tests, Context) when is_function(Tests) ->
-  Tests(Context);
+  Result = Tests(Context),
+  case Result of
+    Fun when is_function(Fun) -> Fun(Context);
+    _ -> Result
+  end;
 run_tests(Tests, Context) when is_list(Tests) ->
   run_list_of_tests(Tests, Context, []).
 

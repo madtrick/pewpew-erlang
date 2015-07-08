@@ -204,38 +204,33 @@ send_state_to_control_test_() ->
     test => validate_last_reply_test(ws_control_client, ExpectedReply)
    }).
 
-%state_update_includes_registered_player_test_() ->
-%  run_test(#{
-%    steps => [
-%      register_player(),
-%      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
-%      ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
-%    ],
-%    test => fun(Context) ->
-%      Player = get_player_for_client(ws_player_client, Context),
-%      ExpectedPlayerState = #{
-%        <<"id">> => pewpew_player_component:id(Player),
-%        <<"coordinates">> => #{ 
-%            <<"x">> => pewpew_player_component:x(Player),
-%            <<"y">> => pewpew_player_component:y(Player)
-%        },
-%        <<"life">> => pewpew_player_component:life(Player),
-%        <<"rotation">> => pewpew_player_component:rotation(Player)
-%       },
+state_update_includes_registered_player_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_recv(ws_control_client)
+    ],
+    test => fun(Context) ->
+      Player              = get_player_for_client(ws_player_client, Context),
+      ExpectedPlayerState = #{
+        <<"id">> => pewpew_player_component:id(Player),
+        <<"coordinates">> => #{ 
+            <<"x">> => pewpew_player_component:x(Player),
+            <<"y">> => pewpew_player_component:y(Player)
+        },
+        <<"life">> => pewpew_player_component:life(Player),
+        <<"rotation">> => pewpew_player_component:rotation(Player)
+       },
 
-%      #{last_reply_per_client := #{ws_control_client := JSON}} = Context,
+      ExpectedReply = #{
+        <<"type">> => <<"GameSnapshotNotification">>,
+        <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [ExpectedPlayerState]}}
+      },
 
-%      [
-%       #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}}
-%      ] = JSON,
-
-%      PlayersState = lists:nth(1, Players),
-%      [
-%       ?_assertEqual(1, length(Players)),
-%       ?_assertEqual(ExpectedPlayerState, PlayersState)
-%      ]
-%    end
-%   }).
+      validate_last_reply_test(ws_control_client, ExpectedReply)
+    end
+   }).
 
 %state_update_reflects_player_movement_test_() ->
 %  run_test(#{
