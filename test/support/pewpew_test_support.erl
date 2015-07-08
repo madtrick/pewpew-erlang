@@ -11,7 +11,6 @@
   generate_reject_move_command_test/1,
   generate_valid_move_command_test/1,
   register_player/0,
-  wait/1,
   get_player_for_client/2,
   get_last_reply_for_client/2,
   validate_last_reply_type_test/2,
@@ -34,10 +33,8 @@ run_test(Config) ->
         ws_control_client => ControlClient,
         pewpew_game => PewPewGame,
         arena_component => ArenaComponent,
-        replies => [],
         per_client_replies => #{},
-        last_reply_per_client => #{},
-        players => #{} % TODO: remove this element
+        last_reply_per_client => #{}
       }
     end,
     fun(Context) ->
@@ -53,37 +50,16 @@ run_test(Config) ->
       meck:unload(pewpew_core)
     end,
     fun(Context) ->
-      % TODO: maybe remove this default for the test function
-      Test   = maps:get(test, Config, fun(_) -> [] end),
-      Before = maps:get(before, Config, undefined),
+      Test   = maps:get(test, Config),
       Steps  = maps:get(steps, Config, undefined),
 
-      case Before of
-        undefined ->
-          case Steps of
-            undefined ->
-              Test(Context);
-            _ ->
+      StepsList = case is_function(Steps) of
+                    true -> Steps(Context);
+                    false -> Steps
+                  end,
 
-             StepsList = case is_function(Steps) of
-               true -> Steps(Context);
-               false -> Steps
-             end,
-
-             NewContext = execute_steps(StepsList, Context),
-             run_tests(Test, NewContext)
-          end;
-        _ ->
-          case Steps of
-            undefined ->
-              UpdatedContext = Before(Context),
-              Test(UpdatedContext);
-            _ ->
-              UpdatedContext = Before(Context),
-              NewContext     = execute_steps(Steps(UpdatedContext), UpdatedContext),
-              run_tests(Test, NewContext)
-          end
-      end
+      NewContext = execute_steps(StepsList, Context),
+      run_tests(Test, NewContext)
     end
     }.
 
@@ -105,37 +81,8 @@ run_tests(Tests, Context) when is_function(Tests) ->
 run_tests(Tests, Context) when is_list(Tests) ->
   run_list_of_tests(Tests, Context, []).
 
-%register_player() ->
-%  register_player(last_registered_player).
 register_player() ->
-  [
-    ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}})
-    %fun(Context) ->
-    %  #{
-    %  arena_component := ArenaComponent,
-    %  players := CurrentPlayers,
-    %  last_reply := LastReply,
-    %  per_client_replies := PerClientReplies
-    %  } = Context,
-
-    %  ?debugVal(LastReply),
-
-    %  [#{<<"data">> := #{<<"id">> := PlayerId}}] = LastReply,
-    %  Player = pewpew_arena_component:get_player(ArenaComponent, PlayerId),
-
-    %  RepliesForClient        = maps:get(ws_player_client, PerClientReplies, []),
-    %  % encode again as JSON as the 'execute_steps' function expect a JSON string
-    %  UpdatedRepliesForClient = [jiffy:encode(LastReply) | RepliesForClient],
-    %  UpdatedPerClientReplies = maps:put(ws_player_client, UpdatedRepliesForClient, PerClientReplies),
-
-    %  UpdatedContext = Context#{
-    %    players => maps:put(Alias, Player, CurrentPlayers),
-    %    per_client_replies => UpdatedPerClientReplies
-    %  },
-
-    %  {context, UpdatedContext}
-    %end
-  ].
+  ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}).
 
 get_player_for_client(ClientId, Context) ->
   #{
@@ -152,32 +99,19 @@ get_player_for_client(ClientId, Context) ->
   pewpew_arena_component:get_player(ArenaComponent, PlayerId).
 
 
-% TODO: rename this function
-lol(0, ClientId, _, Replies) ->
-  {replies, ClientId, lists:reverse(Replies)};
-lol(Counter, ClientId, Client, Replies) ->
-  {text, Reply} = ws_client:recv(Client),
-  lol(Counter - 1, ClientId, Client,  [Reply | Replies]).
-
 ws_client_recv(ClientId) ->
   ws_client_count_recv(ClientId, 1).
+
+ws_client_count_recv(0, ClientId, _, Replies) ->
+  {replies, ClientId, lists:reverse(Replies)};
+ws_client_count_recv(Counter, ClientId, Client, Replies) ->
+  {text, Reply} = ws_client:recv(Client),
+  ws_client_count_recv(Counter - 1, ClientId, Client,  [Reply | Replies]).
 
 ws_client_count_recv(ClientId, Count) ->
   fun(Context) ->
     Client = maps:get(ClientId, Context),
-    % TODO why might not need to get the client replies
-    %PerClientReplies = maps:get(per_client_replies, Context),
-    %ClientReplies = maps:get(ClientId, PerClientReplies, []),
-    lol(Count, ClientId, Client, [])
-    %F = fun (0, Replies) ->
-    %          {replies, ClientId, Replies};
-    %        (Counter, Replies) ->
-    %          Client = maps:get(ClientId, Context),
-    %          {text, Reply} = ws_client:recv(Client),
-    %          F(Counter - 1, [Reply | Replies])
-    %end,
-
-    %F(Count, [])
+    ws_client_count_recv(Count, ClientId, Client, [])
   end.
 
 ws_client_send(ClientId, Message) ->
@@ -213,12 +147,6 @@ ws_client_flush(ClientId) ->
       ok
   end.
 
-% TODO maybe remove this function
-wait(Time) ->
-  fun(_) ->
-    timer:sleep(Time)
-  end.
-
 get_last_reply_for_client(ClientId, Context) ->
   #{per_client_replies := PerClientReplies} = Context,
 
@@ -230,34 +158,16 @@ generate_reject_move_command_test(Options) ->
   DefaultOptions = #{
     move_player_reply => <<"InvalidCommandError">>,
     test => [
-             validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>),
-             fun(Context) ->
-               #{
-                 coordinates_before_move := CoordinatesBeforeMove,
-                 coordinates_after_move := CoordinatesAfterMove
-                } = Context,
+      validate_last_reply_type_test(ws_player_client, <<"InvalidCommandError">>),
+      fun(Context) ->
+       #{
+         coordinates_before_move := CoordinatesBeforeMove,
+         coordinates_after_move := CoordinatesAfterMove
+        } = Context,
 
-               [
-                ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
-               ]
-             end
-            ]
-    %test => fun(Context) ->
-    %  #{
-    %    last_reply_per_client := #{ws_player_client := JSON},
-    %    coordinates_before_move := CoordinatesBeforeMove,
-    %    coordinates_after_move := CoordinatesAfterMove
-    %  } = Context,
-
-    %  [
-    %   #{<<"type">> := OrderType}
-    %  ] = JSON,
-
-    %  [
-    %   ?_assertEqual(<<"InvalidCommandError">>, OrderType),
-    %   ?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)
-    %  ]
-    %end
+       [?_assertEqual(CoordinatesBeforeMove, CoordinatesAfterMove)]
+      end
+    ]
   },
 
   GenerateMoveCommandOptions = maps:merge(DefaultOptions, Options),
@@ -317,12 +227,7 @@ validate_last_reply_data_test(ClientId, ExpectedData) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 execute_steps([], Context) ->
-  #{replies := Replies} = Context,
-
-  OrderedReplies  = lists:reverse(Replies),
-
-  % TODO maybe remove the Replies property
-  Context#{replies => OrderedReplies};
+  Context;
 execute_steps([Step | Tail], Context) ->
   UpdatedContext = execute_step(Step, Context),
   execute_steps(Tail, UpdatedContext).
@@ -335,14 +240,6 @@ execute_step(Fun, Context) ->
   Result = Fun(Context),
 
   case Result of
-    {reply, Reply} -> % TODO remove this case
-      JSON = jiffy:decode(Reply, [return_maps]),
-
-      #{replies := CurrentReplies} = Context,
-      Context#{
-        replies => [JSON | CurrentReplies],
-        last_reply => JSON
-      };
     {replies, ClientId, Replies} ->
       #{
         per_client_replies := PerClientReplies,
