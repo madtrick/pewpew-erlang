@@ -201,6 +201,7 @@ send_state_to_control_test_() ->
     steps => [
       ws_client_recv(ws_control_client)
     ],
+
     test => validate_last_reply_test(ws_control_client, ExpectedReply)
    }).
 
@@ -211,6 +212,7 @@ state_update_includes_registered_player_test_() ->
       ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
       ws_client_recv(ws_control_client)
     ],
+
     test => fun(Context) ->
       Player              = get_player_for_client(ws_player_client, Context),
       ExpectedPlayerState = #{
@@ -232,67 +234,48 @@ state_update_includes_registered_player_test_() ->
     end
    }).
 
-%state_update_reflects_player_movement_test_() ->
-%  run_test(#{
-%    steps => [
-%      register_player(),
-%      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>), % ensure the player is registered
-%      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%      ws_client_send(ws_player_client, #{type => <<"MovePlayerCommand">>, data => [#{move => forward}] }),
-%      ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
-%    ],
-%    test => fun(Context) ->
-%      Player = get_player_for_client(ws_player_client, Context),
-%      ExpectedPlayerState = #{
-%        <<"id">> => pewpew_player_component:id(Player),
-%        <<"coordinates">> => #{
-%            <<"x">> => pewpew_player_component:x(Player),
-%            <<"y">> => pewpew_player_component:y(Player)
-%        },
-%        <<"life">> => pewpew_player_component:life(Player),
-%        <<"rotation">> => pewpew_player_component:rotation(Player)
-%       },
+state_update_reflects_player_movement_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>), % ensure the player is registered
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
+      ws_client_send(ws_player_client, #{type => <<"MovePlayerCommand">>, data => [#{move => forward}] }),
+      ws_client_recv(ws_control_client)
+    ],
 
-%      #{last_reply_per_client := #{ ws_control_client := JSON }} = Context,
+    test => fun(Context) ->
+      Player = get_player_for_client(ws_player_client, Context),
+      ExpectedPlayerState = #{
+        <<"id">> => pewpew_player_component:id(Player),
+        <<"coordinates">> => #{
+            <<"x">> => pewpew_player_component:x(Player),
+            <<"y">> => pewpew_player_component:y(Player)
+        },
+        <<"life">> => pewpew_player_component:life(Player),
+        <<"rotation">> => pewpew_player_component:rotation(Player)
+       },
 
-%      [
-%       #{<<"type">> := <<"GameSnapshotNotification">>, <<"data">> := #{<<"arena_snapshot">> := #{ <<"players_snapshots">> := Players }}}
-%      ] = JSON,
+      ExpectedReply = #{
+        <<"type">> => <<"GameSnapshotNotification">>,
+        <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [ExpectedPlayerState]}}
+      },
 
-%      PlayersState = lists:nth(1, Players),
-%      [
-%       ?_assertEqual(1, length(Players)),
-%       ?_assertEqual(ExpectedPlayerState, PlayersState)
-%      ]
-%    end
-%   }).
+      validate_last_reply_test(ws_control_client, ExpectedReply)
+    end
+   }).
 
-%receive_radar_update_test_() ->
-%  run_test(#{
-%    steps => [
-%      register_player(),
-%      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
-%      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%      ws_client_count_recv(ws_player_client, 3)
-%   ],
-%    test => fun(Context) ->
-%      #{per_client_replies := #{ws_player_client := L}} = Context,
+receive_radar_update_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_recv(ws_player_client)
+    ],
 
-%      [
-%       [RegisterPlayerAck],
-%       [StartGameOrder],
-%       [RadarScanNotification],
-%       _
-%      ] = L,
-
-%      #{<<"type">> := RegisterPlayerAckType} = RegisterPlayerAck,
-%      #{<<"type">> := StartGameOrderType} = StartGameOrder,
-%      #{<<"type">> := RadarScanNotificationType} = RadarScanNotification,
-
-%      [
-%       ?_assertEqual(<<"RegisterPlayerAck">>, RegisterPlayerAckType),
-%       ?_assertEqual(<<"StartGameOrder">>, StartGameOrderType),
-%       ?_assertEqual(<<"RadarScanNotification">>, RadarScanNotificationType)
-%      ]
-%    end
-%  }).
+    test => validate_last_reply_type_test(ws_player_client, <<"RadarScanNotification">>)
+  }).
