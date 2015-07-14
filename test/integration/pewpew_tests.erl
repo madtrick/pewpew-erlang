@@ -277,3 +277,23 @@ receive_radar_update_test_() ->
 
     test => validate_last_reply_type_test(ws_player_client, <<"RadarScanNotification">>)
   }).
+
+register_more_that_one_player_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       register_player(ws_player_2_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>)
+      ]
+    end,
+
+    test => fun(Context) ->
+      #{ pewpew_game := Game } = Context,
+      ArenaComponent                 = pewpew_game:arena_component(Game),
+      NPlayers = length(pewpew_arena_component:players(ArenaComponent)),
+
+      [?_assertEqual(2, NPlayers)]
+    end
+   }).

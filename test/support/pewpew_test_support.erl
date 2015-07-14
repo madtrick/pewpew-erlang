@@ -11,6 +11,7 @@
   generate_reject_move_command_test/1,
   generate_valid_move_command_test/1,
   register_player/0,
+  register_player/1,
   get_player_for_client/2,
   get_last_reply_for_client/2,
   validate_last_reply_type_test/2,
@@ -23,14 +24,12 @@ run_test(Config) ->
       meck:new(pewpew_core, [passthrough]),
       application:set_env(pewpew, execution_mode, test),
       pewpew:start(),
-      {ok, Client}        = ws_client:start_link(),
       {ok, ControlClient} = ws_client:start_link(4321),
       [PewPewGame]        = pewpew_core:get_games(),
       ArenaComponent      = pewpew_game:arena_component(PewPewGame),
 
       #{
-        ws_player_client => Client,
-        ws_control_client => ControlClient,
+        clients => #{ws_control_client => ControlClient},
         pewpew_game => PewPewGame,
         arena_component => ArenaComponent,
         per_client_replies => #{},
@@ -39,12 +38,11 @@ run_test(Config) ->
     end,
     fun(Context) ->
       #{
-        ws_player_client := Client,
-        ws_control_client := ControlClient
+        clients := Clients
       } = Context,
 
-      ws_client:stop(Client),
-      ws_client:stop(ControlClient),
+      ClientsPids = maps:values(Clients),
+      [ws_client:stop(ClientPid) || ClientPid <- ClientsPids],
 
       pewpew:stop(),
       meck:unload(pewpew_core)
@@ -82,7 +80,9 @@ run_tests(Tests, Context) when is_list(Tests) ->
   run_list_of_tests(Tests, Context, []).
 
 register_player() ->
-  ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}).
+  register_player(ws_player_client).
+register_player(ClientId) ->
+  ws_client_send(ClientId, #{type => <<"RegisterPlayerCommand">>, data => #{}}).
 
 get_player_for_client(ClientId, Context) ->
   #{
@@ -110,7 +110,7 @@ ws_client_count_recv(Counter, ClientId, Client, Replies) ->
 
 ws_client_count_recv(ClientId, Count) ->
   fun(Context) ->
-    Client = maps:get(ClientId, Context),
+    Client = get_client(ClientId, Context),
     ws_client_count_recv(Count, ClientId, Client, [])
   end.
 
@@ -118,9 +118,11 @@ ws_client_send(ClientId, Message) ->
   JSON = maybe_convert_message_to_json(Message),
 
   fun(Context) ->
-      Client = maps:get(ClientId, Context),
+      {Client, UpdatedContext} = maybe_start_client(ClientId, Context),
 
-      ws_client:send_text(Client, JSON)
+      ws_client:send_text(Client, JSON),
+
+      {context, UpdatedContext}
   end.
 
 ws_client_sel_recv(ClientId, Client, Type, Replies) ->
@@ -135,14 +137,14 @@ ws_client_sel_recv(ClientId, Client, Type, Replies) ->
 
 ws_client_sel_recv(ClientId, Type) ->
   fun(Context) ->
-      Client = maps:get(ClientId, Context),
+      Client = get_client(ClientId, Context),
 
       ws_client_sel_recv(ClientId, Client, Type, [])
   end.
 
 ws_client_flush(ClientId) ->
   fun(Context) ->
-      Client = maps:get(ClientId, Context),
+      Client = get_client(ClientId, Context),
       ws_client:flush(Client),
       ok
   end.
@@ -318,3 +320,23 @@ maybe_convert_message_to_json(Message) when is_map(Message) ->
   jiffy:encode(Message);
 maybe_convert_message_to_json(Message) ->
   Message.
+
+get_client(ClientId, Context) ->
+  #{clients := Clients} =  Context,
+  Client = maps:get(ClientId, Clients, undefined),
+
+  Client.
+
+maybe_start_client(ClientId, Context) ->
+  Client = get_client(ClientId, Context),
+
+  case Client of
+    undefined ->
+      {ok, ClientPid} = ws_client:start_link(),
+      #{clients := Clients} = Context,
+      UpdatedClients  = maps:put(ClientId, ClientPid, Clients),
+      UpdatedContext  = Context#{clients => UpdatedClients},
+      {ClientPid, UpdatedContext};
+    _ ->
+      {Client, Context}
+  end.
