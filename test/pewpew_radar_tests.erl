@@ -229,8 +229,11 @@ generate_radar_test(Setup) ->
         pewpew_arena_component:stop(ArenaComponent)
     end,
     fun(ArenaComponent) ->
-        ScanningPlayer      = pewpew_arena_component:get_player(ArenaComponent, player_id_1),
-        Scan                = pewpew_radar:Radar(ArenaComponent, ScanningPlayer, Radius),
+        ScanningPlayer  = pewpew_arena_component:get_player(ArenaComponent, player_id_1),
+        ArenaDimensions = pewpew_arena_component:dimensions(ArenaComponent),
+        ArenaPlayers    = pewpew_arena_component:players(ArenaComponent),
+
+        Scan            = pewpew_radar_mod:Radar(ArenaDimensions, ArenaPlayers, ScanningPlayer, Radius),
         #{players := ScannedPlayers, walls := WallScan} = Scan,
 
         AllPlayersFound = lists:all(fun(PlayerFound) ->
