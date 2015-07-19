@@ -341,4 +341,40 @@ radar_detect_player_test_() ->
     end
    }).
 
+radar_does_not_detect_player_test() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       register_player(ws_player_2_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+       fun(Context) ->
+           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
+           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
+
+           % center the player to avoid the walls
+           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
+           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 250}, {y, 250}]),
+
+           {context, Context}
+       end,
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_recv(ws_player_1_client)
+      ]
+    end,
+
+    test => fun(_) ->
+      ExpectedReply = #{
+        <<"type">> => <<"RadarScanNotification">>,
+        <<"data">> => #{
+            <<"elements">> => [],
+            <<"walls">> => []
+           }
+      },
+
+      validate_last_reply_test(ws_player_1_client, ExpectedReply)
+    end
+   }).
 % RADAR TEST HITS WALLS
