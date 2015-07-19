@@ -75,6 +75,7 @@ run_tests(Tests, Context) when is_function(Tests) ->
   Result = Tests(Context),
   case Result of
     Fun when is_function(Fun) -> Fun(Context);
+    List when is_list(List) -> run_list_of_tests(List, Context, []);
     _ -> Result
   end;
 run_tests(Tests, Context) when is_list(Tests) ->

@@ -279,25 +279,25 @@
 %    test => validate_last_reply_type_test(ws_player_client, <<"RadarScanNotification">>)
 %  }).
 
-register_more_that_one_player_test_() ->
-  run_test(#{
-    steps => fun(_Context) ->
-      [
-       register_player(ws_player_1_client),
-       register_player(ws_player_2_client),
-       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>)
-      ]
-    end,
+%register_more_that_one_player_test_() ->
+%  run_test(#{
+%    steps => fun(_Context) ->
+%      [
+%       register_player(ws_player_1_client),
+%       register_player(ws_player_2_client),
+%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+%       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>)
+%      ]
+%    end,
 
-    test => fun(Context) ->
-      #{ pewpew_game := Game } = Context,
-      ArenaComponent                 = pewpew_game:arena_component(Game),
-      NPlayers = length(pewpew_arena_component:players(ArenaComponent)),
+%    test => fun(Context) ->
+%      #{ pewpew_game := Game } = Context,
+%      ArenaComponent                 = pewpew_game:arena_component(Game),
+%      NPlayers = length(pewpew_arena_component:players(ArenaComponent)),
 
-      [?_assertEqual(2, NPlayers)]
-    end
-   }).
+%      [?_assertEqual(2, NPlayers)]
+%    end
+%   }).
 
 radar_detect_player_test_() ->
   run_test(#{
@@ -319,25 +319,38 @@ radar_detect_player_test_() ->
        end,
        ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
        ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-       ws_client_recv(ws_player_1_client)
+       ws_client_recv(ws_player_1_client),
+       ws_client_recv(ws_player_2_client)
       ]
     end,
 
     test => fun(_) ->
-      ScannedPlayer = #{
-        <<"coordinates">> => #{<<"x">> => 220, <<"y">> => 220},
-        <<"type">> => <<"unknown">>
-      },
+      ScannedPlayersExpectations = [
+        {ws_player_1_client,
+          #{
+            <<"coordinates">> => #{<<"x">> => 220, <<"y">> => 220},
+            <<"type">> => <<"unknown">>
+          }
+        },
+        {ws_player_2_client,
+          #{
+            <<"coordinates">> => #{<<"x">> => 200, <<"y">> => 200},
+            <<"type">> => <<"unknown">>
+          }
+        }
+      ],
 
-      ExpectedReply = #{
-        <<"type">> => <<"RadarScanNotification">>,
-        <<"data">> => #{
-            <<"elements">> => [ScannedPlayer],
-            <<"walls">> => []
-           }
-      },
+      lists:map(fun({ClientId, ScannedPlayerExpectation}) ->
+        ExpectedReply = #{
+          <<"type">> => <<"RadarScanNotification">>,
+          <<"data">> => #{
+              <<"elements">> => [ScannedPlayerExpectation],
+              <<"walls">> => []
+             }
+        },
 
-      validate_last_reply_test(ws_player_1_client, ExpectedReply)
+        validate_last_reply_test(ClientId, ExpectedReply)
+      end, ScannedPlayersExpectations)
     end
    }).
 
@@ -361,20 +374,25 @@ radar_does_not_detect_player_test() ->
        end,
        ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
        ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-       ws_client_recv(ws_player_1_client)
+       ws_client_recv(ws_player_1_client),
+       ws_client_recv(ws_player_2_client)
       ]
     end,
 
     test => fun(_) ->
-      ExpectedReply = #{
-        <<"type">> => <<"RadarScanNotification">>,
-        <<"data">> => #{
-            <<"elements">> => [],
-            <<"walls">> => []
-           }
-      },
+      CliendIds = [ ws_player_1_client, ws_player_2_client],
 
-      validate_last_reply_test(ws_player_1_client, ExpectedReply)
+      lists:map(fun(ClientId) ->
+        ExpectedReply = #{
+          <<"type">> => <<"RadarScanNotification">>,
+          <<"data">> => #{
+              <<"elements">> => [],
+              <<"walls">> => []
+             }
+        },
+
+        validate_last_reply_test(ClientId, ExpectedReply)
+      end, CliendIds)
     end
    }).
 % RADAR TEST HITS WALLS
