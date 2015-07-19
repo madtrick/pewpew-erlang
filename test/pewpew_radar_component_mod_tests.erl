@@ -1,4 +1,4 @@
--module(pewpew_radar_tests).
+-module(pewpew_radar_component_mod_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 detects_no_player_when_there_are_no_players_test_() ->
@@ -222,6 +222,8 @@ generate_radar_test(Setup) ->
           arena_options => [{width, 400}, {height, 400}, {pewpew_game_context_data, undefined}],
           players_options => Players
          },
+        % TODO maybe create only the players and not the arena too as we only
+        % need the arena here for the tests
         ArenaComponent = pewpew_arena_component_factory:create(Options),
         ArenaComponent
     end,
@@ -233,7 +235,7 @@ generate_radar_test(Setup) ->
         ArenaDimensions = pewpew_arena_component:dimensions(ArenaComponent),
         ArenaPlayers    = pewpew_arena_component:players(ArenaComponent),
 
-        Scan            = pewpew_radar_mod:Radar(ArenaDimensions, ArenaPlayers, ScanningPlayer, Radius),
+        Scan            = pewpew_radar_component_mod:Radar(ArenaDimensions, ArenaPlayers, ScanningPlayer, Radius),
         #{players := ScannedPlayers, walls := WallScan} = Scan,
 
         AllPlayersFound = lists:all(fun(PlayerFound) ->

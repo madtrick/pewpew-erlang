@@ -1,4 +1,4 @@
--module(pewpew_radar_mod).
+-module(pewpew_radar_component_mod).
 -include_lib("eunit/include/eunit.hrl").
 
 -export([
