@@ -16,6 +16,7 @@
     get_player_for_client/2,
     get_last_reply_for_client/2,
     validate_last_reply_type_test/2,
+    validate_last_reply_data_test/2,
     validate_last_reply_test/2
 ]).
 
@@ -318,16 +319,25 @@ radar_detect_player_test_() ->
        end,
        ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
        ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-       ws_client_sel_recv(ws_player_1_client, <<"RadarScanNotification">>),
-       ws_client_sel_recv(ws_player_1_client, <<"RadarScanNotification">>)
+       ws_client_recv(ws_player_1_client)
       ]
     end,
 
-    test => fun(Context) ->
-      LastReply = get_last_reply_for_client(ws_player_1_client, Context),
-      ?debugVal(LastReply),
+    test => fun(_) ->
+      ScannedPlayer = #{
+        <<"coordinates">> => #{<<"x">> => 220, <<"y">> => 220},
+        <<"type">> => <<"unknown">>
+      },
 
-      [?_assertEqual(2, 3)]
+      ExpectedReply = #{
+        <<"type">> => <<"RadarScanNotification">>,
+        <<"data">> => #{
+            <<"elements">> => [ScannedPlayer],
+            <<"walls">> => []
+           }
+      },
+
+      validate_last_reply_test(ws_player_1_client, ExpectedReply)
     end
    }).
 

@@ -17,9 +17,6 @@ circular_scan(ArenaDimensions, Players, ScanningPlayer, ScanRadius) ->
   PlayersUnderRadar = players_under_radar(PlayersToCheck, ScanningPlayer, ScanRadius),
   Walls = intersections_with_walls(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
 
-  ?debugVal(ScanningPlayer),
-  ?debugVal(PlayersUnderRadar),
-
   #{
     players => PlayersUnderRadar,
     walls => Walls

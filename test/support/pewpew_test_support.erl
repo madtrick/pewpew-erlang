@@ -15,6 +15,7 @@
   get_player_for_client/2,
   get_last_reply_for_client/2,
   validate_last_reply_type_test/2,
+  validate_last_reply_data_test/2,
   validate_last_reply_test/2
 ]).
 

@@ -4,23 +4,27 @@
 -export([toJSON/1]).
 
 toJSON(ScanData) ->
-  #{scanned_players := Players, scanned_walls := Walls} = ScanData,
-
-  Ps = lists:map(fun(P) ->
-                     {x, X, y, Y} = pewpew_player_component:coordinates(P),
-                     #{x => X, y=> Y}
-                 end, Players),
+  DataStruct = transform_data(ScanData, false),
 
   Struct = #{
     type => <<"RadarScanNotification">>,
-    data => #{
-      players => Ps,
-      walls => Walls
-     }
-   },
-
-  ?debugVal(Struct),
-
+    data => DataStruct
+  },
 
   Struct.
 
+transform_data(ScanData, IsElementTypeReturned) ->
+  #{scanned_players := ScannedPlayers} = ScanData,
+
+  ScannedPlayersStruct = transform_data(players, ScannedPlayers, IsElementTypeReturned),
+
+  #{elements => ScannedPlayersStruct, walls => []}.
+
+transform_data(players, Players, false = _IsElementTypeReturned) ->
+  lists:map(fun(Player) ->
+    {x, X, y, Y} = pewpew_player_component:coordinates(Player),
+    Coordinates = #{x => X, y=> Y},
+    Type = unknown,
+
+    #{coordinates => Coordinates, type => Type}
+  end, Players).
