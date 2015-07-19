@@ -1,4 +1,4 @@
--module(pewpew_radar).
+-module(pewpew_radar_component).
 -behaviour(gen_server).
 
 -export([
@@ -27,10 +27,7 @@ scan(Radar) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(_) ->
-  Radius = 40,
-  Mode   = circular_scan,
-  Data   = pewpew_radar_data:new([{radar_mode, Mode}, {radar_radius, Radius}]),
-  {ok, Data}.
+  {ok, undefined}.
 
 handle_call(scan, _, Data) ->
   ScanResult = pewpew_radar_scan_result_data:new([{scanned_walls, []}, {scanned_players, []}]),

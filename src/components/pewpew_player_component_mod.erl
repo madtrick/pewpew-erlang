@@ -30,12 +30,8 @@ snapshot(PlayerComponentData) ->
 
   {ok, Snapshot}.
 
-update(PlayerComponentData) ->
-  RadarComponent = pewpew_player_component_data:radar_component(PlayerComponentData),
-  Scan = pewpew_radar:scan(RadarComponent),
-  ScanNotification = pewpew_radar_scan_notification:new(Scan),
-  Update = {notification, ScanNotification},
-  {ok, Update}.
+update(_PlayerComponentData) ->
+  {ok, noupdate}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

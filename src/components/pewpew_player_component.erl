@@ -27,7 +27,8 @@
   radius/1,
   coordinates/1,
   snapshot/1,
-  update/1
+  update/1,
+  radar_config/1
 ]).
 
 % Exported only for testing
@@ -103,16 +104,21 @@ snapshot(PlayerComponent) ->
 update(PlayerComponent) ->
   gen_server:call(PlayerComponent, update).
 
+radar_config(PlayerComponent) ->
+  gen_server:call(PlayerComponent, radar_config).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callback
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init([PewpewGameContextData, PlayerData]) ->
-  {ok, RadarComponent} = pewpew_radar:start_link(),
   %TODO: check if the player uses the game context data for anything
+  PlayerRadarConfigData = pewpew_radar_config_data:new(
+    [{mode, circular_scan}, {radius, 40}]
+  ),
   PlayerComponentData = pewpew_player_component_data:new(
     [
-     {radar_component, RadarComponent},
+     {radar_config_data, PlayerRadarConfigData},
      {pewpew_game_context_data, PewpewGameContextData}
      | PlayerData
     ]
@@ -163,7 +169,10 @@ handle_call(coordinates, _, PlayerComponentData) ->
   {reply, Coordinates, PlayerComponentData};
 handle_call(snapshot, _, PlayerComponentData) ->
   {ok, PlayerState} = pewpew_player_component_mod:snapshot(PlayerComponentData),
-  {reply, PlayerState, PlayerComponentData}.
+  {reply, PlayerState, PlayerComponentData};
+handle_call(radar_config, _, PlayerComponentData) ->
+  RadarConfigData = pewpew_player_component_data:radar_config_data(PlayerComponentData),
+  {reply, RadarConfigData, PlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->
   die.

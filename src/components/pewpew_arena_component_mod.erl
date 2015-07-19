@@ -50,17 +50,28 @@ dimensions(ArenaComponentData) ->
   {ok, {width, Width, height, Height}}.
 
 update(ArenaComponentData) ->
-  Players = pewpew_arena_component_data:players(ArenaComponentData),
+  Players        = pewpew_arena_component_data:players(ArenaComponentData),
+  RadarComponent = pewpew_arena_component_data:radar_component(ArenaComponentData),
 
   PlayersUpdates = lists:map(fun(Player) ->
-    {player, Player, update, pewpew_player_component:update(Player)}
+    _RadarConfig      = pewpew_player_component:radar_config(Player),
+    ScanResult       = pewpew_radar_component:scan(RadarComponent),
+    ScanNotification = radar_scan_to_notification(ScanResult),
+    RadarUpdate      = {player, Player, update, ScanNotification},
+    %PlayerUpdate = {player, Player, update, pewpew_player_component:update(Player)},
+
+    RadarUpdate
   end, Players),
 
-  {ok, PlayersUpdates}.
+  {ok, lists:flatten(PlayersUpdates)}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+radar_scan_to_notification(ScanResult) ->
+  ScanNotification = pewpew_radar_scan_notification:new(ScanResult),
+  {notification, ScanNotification}.
 
 find_players_matching_condition(Condition, ArenaComponentData) ->
   [

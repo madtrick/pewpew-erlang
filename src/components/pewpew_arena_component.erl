@@ -64,7 +64,9 @@ update(ArenaComponent) ->
 
 init([Data]) ->
   {ok, PewpewPlayerComponentSup} = pewpew_player_component_sup:start_link(),
+  {ok, PewPewRadarComponent} = pewpew_radar_component:start_link(),
   {ok, pewpew_arena_component_data:new([
+        {radar_component, PewPewRadarComponent},
         {pewpew_player_component_sup, PewpewPlayerComponentSup},
         {pewpew_game_context_data, proplists:get_value(pewpew_game_context_data, Data)},
         {max_number_of_players, pewpew_config:get('arena.players.max')},

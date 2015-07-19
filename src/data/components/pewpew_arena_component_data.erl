@@ -7,7 +7,8 @@
   pewpew_game_context_data/1,
   max_number_of_players/1,
   width/1,
-  height/1
+  height/1,
+  radar_component/1
 ]).
 -export([update/2]).
 
@@ -21,6 +22,7 @@ max_number_of_players(#{ max_number_of_players := Value }) -> Value.
 players(#{ players := Value }) -> Value.
 width(#{ width := Value }) -> Value.
 height(#{ height := Value }) -> Value.
+radar_component(#{ radar_component := Value }) -> Value.
 
 update(ArenaComponentData, Options) ->
   pewpew_map_backed_data:update(ArenaComponentData, Options).
