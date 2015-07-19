@@ -299,100 +299,159 @@
 %    end
 %   }).
 
-radar_detect_player_test_() ->
+%radar_detect_player_test_() ->
+%  run_test(#{
+%    steps => fun(_Context) ->
+%      [
+%       register_player(ws_player_1_client),
+%       register_player(ws_player_2_client),
+%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+%       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+%       fun(Context) ->
+%           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
+%           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
+
+%           % center the player to avoid the walls
+%           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
+%           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 220}, {y, 220}]),
+
+%           {context, Context}
+%       end,
+%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+%       ws_client_recv(ws_player_1_client),
+%       ws_client_recv(ws_player_2_client)
+%      ]
+%    end,
+
+%    test => fun(_) ->
+%      ScannedPlayersExpectations = [
+%        {ws_player_1_client,
+%          #{
+%            <<"coordinates">> => #{<<"x">> => 220, <<"y">> => 220},
+%            <<"type">> => <<"unknown">>
+%          }
+%        },
+%        {ws_player_2_client,
+%          #{
+%            <<"coordinates">> => #{<<"x">> => 200, <<"y">> => 200},
+%            <<"type">> => <<"unknown">>
+%          }
+%        }
+%      ],
+
+%      lists:map(fun({ClientId, ScannedPlayerExpectation}) ->
+%        ExpectedReply = #{
+%          <<"type">> => <<"RadarScanNotification">>,
+%          <<"data">> => #{
+%              <<"elements">> => [ScannedPlayerExpectation],
+%              <<"walls">> => []
+%             }
+%        },
+
+%        validate_last_reply_test(ClientId, ExpectedReply)
+%      end, ScannedPlayersExpectations)
+%    end
+%   }).
+
+%radar_does_not_detect_player_test() ->
+%  run_test(#{
+%    steps => fun(_Context) ->
+%      [
+%       register_player(ws_player_1_client),
+%       register_player(ws_player_2_client),
+%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+%       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+%       fun(Context) ->
+%           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
+%           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
+
+%           % center the player to avoid the walls
+%           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
+%           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 250}, {y, 250}]),
+
+%           {context, Context}
+%       end,
+%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+%       ws_client_recv(ws_player_1_client),
+%       ws_client_recv(ws_player_2_client)
+%      ]
+%    end,
+
+%    test => fun(_) ->
+%      CliendIds = [ ws_player_1_client, ws_player_2_client],
+
+%      lists:map(fun(ClientId) ->
+%        ExpectedReply = #{
+%          <<"type">> => <<"RadarScanNotification">>,
+%          <<"data">> => #{
+%              <<"elements">> => [],
+%              <<"walls">> => []
+%             }
+%        },
+
+%        validate_last_reply_test(ClientId, ExpectedReply)
+%      end, CliendIds)
+%    end
+%   }).
+
+player_can_not_set_radar_type_before_game_starts_test() ->
   run_test(#{
     steps => fun(_Context) ->
       [
        register_player(ws_player_1_client),
-       register_player(ws_player_2_client),
        ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
-       fun(Context) ->
-           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
-           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
-
-           % center the player to avoid the walls
-           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
-           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 220}, {y, 220}]),
-
-           {context, Context}
-       end,
-       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-       ws_client_recv(ws_player_1_client),
-       ws_client_recv(ws_player_2_client)
+       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"radarType\", \"args\": [\"longRange\"]}}">>),
+       ws_client_recv(ws_player_1_client)
       ]
     end,
 
-    test => fun(_) ->
-      ScannedPlayersExpectations = [
-        {ws_player_1_client,
-          #{
-            <<"coordinates">> => #{<<"x">> => 220, <<"y">> => 220},
-            <<"type">> => <<"unknown">>
-          }
-        },
-        {ws_player_2_client,
-          #{
-            <<"coordinates">> => #{<<"x">> => 200, <<"y">> => 200},
-            <<"type">> => <<"unknown">>
-          }
-        }
-      ],
-
-      lists:map(fun({ClientId, ScannedPlayerExpectation}) ->
-        ExpectedReply = #{
-          <<"type">> => <<"RadarScanNotification">>,
-          <<"data">> => #{
-              <<"elements">> => [ScannedPlayerExpectation],
-              <<"walls">> => []
-             }
-        },
-
-        validate_last_reply_test(ClientId, ExpectedReply)
-      end, ScannedPlayersExpectations)
-    end
+    test =>  validate_last_reply_type_test(ws_player_1_client, <<"InvalidCommandError">>)
    }).
 
-radar_does_not_detect_player_test() ->
-  run_test(#{
-    steps => fun(_Context) ->
-      [
-       register_player(ws_player_1_client),
-       register_player(ws_player_2_client),
-       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
-       fun(Context) ->
-           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
-           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
 
-           % center the player to avoid the walls
-           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
-           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 250}, {y, 250}]),
+%long_range_radar_detects_player_test() ->
+%  run_test(#{
+%    steps => fun(_Context) ->
+%      [
+%       register_player(ws_player_1_client),
+%       register_player(ws_player_2_client),
+%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+%       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+%       fun(Context) ->
+%           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
+%           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
 
-           {context, Context}
-       end,
-       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-       ws_client_recv(ws_player_1_client),
-       ws_client_recv(ws_player_2_client)
-      ]
-    end,
+%           % center the player to avoid the walls
+%           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
+%           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 250}, {y, 250}]),
 
-    test => fun(_) ->
-      CliendIds = [ ws_player_1_client, ws_player_2_client],
+%           {context, Context}
+%       end,
+%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+%       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"radarType\", \"args\": [\"longRange\"]}}">>),
+%       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>),
+%       ws_client_recv(ws_player_1_client),
+%       ws_client_recv(ws_player_2_client)
+%      ]
+%    end,
 
-      lists:map(fun(ClientId) ->
-        ExpectedReply = #{
-          <<"type">> => <<"RadarScanNotification">>,
-          <<"data">> => #{
-              <<"elements">> => [],
-              <<"walls">> => []
-             }
-        },
+%    test => fun(_) ->
+%      CliendIds = [ ws_player_1_client, ws_player_2_client],
 
-        validate_last_reply_test(ClientId, ExpectedReply)
-      end, CliendIds)
-    end
-   }).
+%      lists:map(fun(ClientId) ->
+%        ExpectedReply = #{
+%          <<"type">> => <<"RadarScanNotification">>,
+%          <<"data">> => #{
+%              <<"elements">> => [],
+%              <<"walls">> => []
+%             }
+%        },
+
+%        validate_last_reply_test(ClientId, ExpectedReply)
+%      end, CliendIds)
+%    end
+%   }).
 % RADAR TEST HITS WALLS
