@@ -52,10 +52,18 @@ dimensions(ArenaComponentData) ->
 update(ArenaComponentData) ->
   Players        = pewpew_arena_component_data:players(ArenaComponentData),
   RadarComponent = pewpew_arena_component_data:radar_component(ArenaComponentData),
+  Height = pewpew_arena_component_data:height(ArenaComponentData),
+  Width = pewpew_arena_component_data:width(ArenaComponentData),
+  ArenaDimensions = {width, Width, height, Height},
 
   PlayersUpdates = lists:map(fun(Player) ->
-    _RadarConfig      = pewpew_player_component:radar_config(Player),
-    ScanResult       = pewpew_radar_component:scan(RadarComponent),
+    RadarConfig      = pewpew_player_component:radar_config(Player),
+    ScanContext = #{
+      arena_dimensions => ArenaDimensions,
+      players => Players,
+      scanning_player => Player
+     },
+    ScanResult       = pewpew_radar_component:scan(RadarComponent, ScanContext, RadarConfig),
     ScanNotification = radar_scan_to_notification(ScanResult),
     RadarUpdate      = {player, Player, update, ScanNotification},
     %PlayerUpdate = {player, Player, update, pewpew_player_component:update(Player)},

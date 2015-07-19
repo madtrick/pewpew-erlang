@@ -3,7 +3,7 @@
 
 -export([
   start_link/0,
-  scan/1
+  scan/3
   ]).
 
 -export([
@@ -19,8 +19,8 @@
 start_link() ->
   gen_server:start_link(?MODULE, [], []).
 
-scan(Radar) ->
-  gen_server:call(Radar, scan).
+scan(Radar, ScanContext, RadarConfig) ->
+  gen_server:call(Radar, {scan, ScanContext, RadarConfig}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callbacks
@@ -29,9 +29,21 @@ scan(Radar) ->
 init(_) ->
   {ok, undefined}.
 
-handle_call(scan, _, Data) ->
-  ScanResult = pewpew_radar_scan_result_data:new([{scanned_walls, []}, {scanned_players, []}]),
-  {reply, ScanResult, Data}.
+handle_call({scan, ScanContext, _RadarConfig}, _, Data) ->
+  #{
+    arena_dimensions := ArenaDimensions,
+    players := Players,
+    scanning_player := ScanningPlayer
+  } = ScanContext,
+
+
+  ScanResult = pewpew_radar_component_mod:circular_scan(ArenaDimensions, Players, ScanningPlayer, 40),
+  #{
+                                                                                    walls := Sw,
+                                                                                    players := SP
+                                                                                   } = ScanResult,
+  ScanResultData = pewpew_radar_scan_result_data:new([{scanned_walls, Sw}, {scanned_players, SP}]),
+  {reply, ScanResultData, Data}.
 
 terminate(_, _) ->
   normal.

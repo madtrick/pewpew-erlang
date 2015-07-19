@@ -14,10 +14,11 @@ circular_scan(ArenaDimensions, Players, ScanningPlayer, ScanRadius) ->
   {width, ArenaWidth, height, ArenaHeight} = ArenaDimensions,
   PlayersToCheck = [Player || Player <- Players, Player =/= ScanningPlayer],
 
-  ?debugVal(PlayersToCheck),
-  ?debugMsg("++++++++++++++++++++++++"),
   PlayersUnderRadar = players_under_radar(PlayersToCheck, ScanningPlayer, ScanRadius),
   Walls = intersections_with_walls(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
+
+  ?debugVal(ScanningPlayer),
+  ?debugVal(PlayersUnderRadar),
 
   #{
     players => PlayersUnderRadar,
@@ -62,8 +63,6 @@ long_range_scan(_ArenaDimensions, Players, ScanningPlayer, ScanRadius) ->
 players_under_radar([], _, _) ->
   [];
 players_under_radar(Players, ScanningPlayer, ScanRadius) ->
-        ?debugMsg("LOOOOOOOOOOOOOOOOOOOOO"),
-        ?debugVal(ScanningPlayer),
   {x, ScanningPlayerX, y, ScanningPlayerY} = pewpew_player_component:coordinates(ScanningPlayer),
 
   lists:filter(
@@ -73,8 +72,6 @@ players_under_radar(Players, ScanningPlayer, ScanRadius) ->
         A = erlang:abs(X - ScanningPlayerX),
         B = erlang:abs(Y - ScanningPlayerY),
         Distance = math:sqrt(A*A + B*B),
-
-        ?debugMsg("LOOOOOOOOOOOOOOOOOOOOO"),
 
         Distance =< ScanRadius
     end,
