@@ -7,7 +7,6 @@ call(CommandContextData) ->
   PewPewGame           = pewpew_command_context_data:pewpew_game(CommandContextData),
   ArenaComponent       = pewpew_game:arena_component(PewPewGame),
 
-
   CommandData           = pewpew_command_context_data:command_data(CommandContextData),
   CommandModule         = pewpew_command_data:command_module(CommandData),
   MovePlayerCommandData = pewpew_command_data:command_data(CommandData),

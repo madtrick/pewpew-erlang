@@ -71,7 +71,6 @@ handle_cast({register_control_channel, Channel}, State) ->
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
   ok;
 handle_cast({process_control_message, Channel, {text, Message}}, State) ->
-
   Game                  = pewpew_game(State),
   CommandContext        = pewpew_command_parser:parse(Message),
   UpdatedCommandContext = pewpew_command_context_data:update(CommandContext, [{origin, Channel}, {pewpew_game, Game}]),

@@ -28,7 +28,8 @@
   coordinates/1,
   snapshot/1,
   update/1,
-  radar_config/1
+  radar_config/1,
+  configure/3
 ]).
 
 % Exported only for testing
@@ -107,6 +108,9 @@ update(PlayerComponent) ->
 radar_config(PlayerComponent) ->
   gen_server:call(PlayerComponent, radar_config).
 
+configure(PlayerComponent, Op, Args) ->
+  gen_server:call(PlayerComponent, {configure, Op, Args}).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callback
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,7 +176,10 @@ handle_call(snapshot, _, PlayerComponentData) ->
   {reply, PlayerState, PlayerComponentData};
 handle_call(radar_config, _, PlayerComponentData) ->
   RadarConfigData = pewpew_player_component_data:radar_config_data(PlayerComponentData),
-  {reply, RadarConfigData, PlayerComponentData}.
+  {reply, RadarConfigData, PlayerComponentData};
+handle_call({configure, Op, Args}, _, PlayerComponentData) ->
+  {ok, UpdatedPlayerComponentData} = pewpew_player_component_mod:configure(PlayerComponentData, Op, Args),
+  {reply, ok, UpdatedPlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->
   die.

@@ -1,4 +1,5 @@
 -module(pewpew_command_parser).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([parse/1]).
 

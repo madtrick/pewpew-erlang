@@ -5,7 +5,8 @@
   get_coordinates/1,
   move/2,
   snapshot/1,
-  update/1
+  update/1,
+  configure/3
 ]).
 
 -define(MOVEMENT_SPEED, 1).
@@ -32,6 +33,12 @@ snapshot(PlayerComponentData) ->
 
 update(_PlayerComponentData) ->
   {ok, noupdate}.
+
+configure(PlayerComponentData, <<"radarType">>, [NewMode]) ->
+  RadarConfigData            = pewpew_player_component_data:radar_config_data(PlayerComponentData),
+  UpdatedRadarConfigData     = pewpew_radar_config_data:update(RadarConfigData, [{mode, NewMode}]),
+  UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{radar_config_data, UpdatedRadarConfigData}]),
+  {ok, UpdatedPlayerComponentData}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

@@ -240,6 +240,7 @@ validate_last_reply_data_test(ClientId, ExpectedData) ->
 
 is_reply_type_present_in_messages(Type, Messages) ->
   lists:any(fun(#{<<"type">> := ReplyType}) ->
+    ?debugVal(ReplyType),
     ReplyType =:= Type
   end, Messages).
 
