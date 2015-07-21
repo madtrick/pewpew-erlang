@@ -106,10 +106,11 @@ handle_call(next_cycle, _, State) ->
   Notification = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
   ControlChannel = pewpew_core_state_data:control_channel(State),
   % TODO move the construction of the notification to a separate module
-  NotificationDispatchRule = {reply, [{send_to, ControlChannel, [Notification]}]},
-  TransformedReplies = transform_replies(Replies),
+  NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
+  AllMessages = lists:flatten([ Updates | [NotificationDispatchRule | Replies] ]),
+  TransformedReplies = transform_replies(AllMessages),
   %ok = send_replies( TransformedReplies ),
-  ok = send_replies(lists:flatten([ Updates | [NotificationDispatchRule | TransformedReplies] ])),
+  ok = send_replies(TransformedReplies),
   {reply, ok, UpdatedState};
 handle_call(get_games, _, State) ->
   PewPewGame = pewpew_core_state_data:pewpew_game(State),
@@ -139,17 +140,19 @@ transform_reply(noreply, Dict) ->
   Dict;
 transform_reply(close, Dict) ->
   Dict; % TODO: fix this when replace the 'channel_placeholder' in send_replies
-transform_reply({reply, Data}, Dict) ->
+transform_reply({reply, Data}, Dict) when is_list(Data)->
   lists:foldl(fun(Element, Acc) ->
     {send_to, Channel, Message} = Element,
     case dict:is_key(Channel, Acc) of
       true ->
         Messages = dict:fetch(Channel, Acc),
-        dict:store(Channel, [Messages | Messages], Acc);
+        dict:store(Channel, [Message | Messages], Acc);
       false ->
         dict:store(Channel, [Message], Acc)
     end
-  end, Dict, Data).
+  end, Dict, Data);
+transform_reply({reply, Data}, Dict) ->
+  transform_reply({reply, [Data]}, Dict).
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),

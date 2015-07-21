@@ -21,7 +21,7 @@ call(NotificationContextData) ->
             case U of
               {notification, Notification} ->
                 PlayerChannel = pewpew_player_component:channel(Player),
-                {reply, [{send_to, PlayerChannel, [Notification]}]}
+                {reply, [{send_to, PlayerChannel, Notification}]}
             end
         end
       end, Updates)
