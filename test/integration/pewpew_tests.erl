@@ -427,7 +427,7 @@
 %    test => ?_assert(true)
 %   }).
 
-player_can_change_the_radar_mode_to_long_range_test_() ->
+player_can_not_use_invalid_args_to_configure_test_() ->
   run_test(#{
     steps => fun(_Context) ->
       [
@@ -435,16 +435,29 @@ player_can_change_the_radar_mode_to_long_range_test_() ->
        ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
        ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
        ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"longRange">>] }}),
-       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>)
+       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{op => <<"radarType">>, args => [<<"bacon">>]}}),
+       ws_client_sel_recv(ws_player_1_client, <<"InvalidCommandError">>)
       ]
     end,
 
-    test =>  ?_assert(true)
+    test => ?_assert(true)
    }).
 
-% TODO test what happens when the args for the config op are invalid. For example an unknown radar mode
+%player_can_change_the_radar_mode_to_long_range_test_() ->
+%  run_test(#{
+%    steps => fun(_Context) ->
+%      [
+%       register_player(ws_player_1_client),
+%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+%       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"longRange">>] }}),
+%       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>)
+%      ]
+%    end,
 
+%    test =>  ?_assert(true)
+%   }).
 
 %%long_range_radar_detects_player_test() ->
 %%  run_test(#{

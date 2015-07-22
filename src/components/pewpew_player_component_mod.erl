@@ -10,6 +10,7 @@
 ]).
 
 -define(MOVEMENT_SPEED, 1).
+-define(RADAR_MODES, [<<"longRange">>]).
 
 set_coordinates(Coordinates, PlayerComponentData) ->
   NewPlayerComponentData = pewpew_player_component_data:update(Coordinates, PlayerComponentData),
@@ -34,11 +35,18 @@ snapshot(PlayerComponentData) ->
 update(_PlayerComponentData) ->
   {ok, noupdate}.
 
-configure(PlayerComponentData, <<"radarType">>, [NewMode]) ->
-  RadarConfigData            = pewpew_player_component_data:radar_config_data(PlayerComponentData),
-  UpdatedRadarConfigData     = pewpew_radar_config_data:update(RadarConfigData, [{mode, NewMode}]),
-  UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{radar_config_data, UpdatedRadarConfigData}]),
-  {ok, UpdatedPlayerComponentData}.
+configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
+  IsValidRadarType           = lists:member(NewType, ?RADAR_MODES),
+
+  case IsValidRadarType of
+    true ->
+      RadarConfigData            = pewpew_player_component_data:radar_config_data(PlayerComponentData),
+      UpdatedRadarConfigData     = pewpew_radar_config_data:update(RadarConfigData, [{mode, NewType}]),
+      UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{radar_config_data, UpdatedRadarConfigData}]),
+      {ok, UpdatedPlayerComponentData};
+    false ->
+      {error, PlayerComponentData}
+  end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

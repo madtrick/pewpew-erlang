@@ -20,13 +20,19 @@ call(CommandContextData) ->
           InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
           {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
         true ->
-          ok = (pewpew_command_data:command_module(CommandData)):run(
+          OkOrError = (pewpew_command_data:command_module(CommandData)):run(
             pewpew_command_data:command_data(CommandData), CommandContextData
           ),
 
-          ConfigurePlayerAck = pewpew_configure_player_ack:new(CommandOriginChannel),
-          ?debugVal(ConfigurePlayerAck),
-          {reply, [{send_to, CommandOriginChannel, ConfigurePlayerAck}]}
+          case OkOrError of
+            ok ->
+              ConfigurePlayerAck = pewpew_configure_player_ack:new(CommandOriginChannel),
+              ?debugVal(ConfigurePlayerAck),
+              {reply, [{send_to, CommandOriginChannel, ConfigurePlayerAck}]};
+            error ->
+              InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
+              {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}
+          end
       end;
     false ->
           InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),

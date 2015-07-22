@@ -178,8 +178,8 @@ handle_call(radar_config, _, PlayerComponentData) ->
   RadarConfigData = pewpew_player_component_data:radar_config_data(PlayerComponentData),
   {reply, RadarConfigData, PlayerComponentData};
 handle_call({configure, Op, Args}, _, PlayerComponentData) ->
-  {ok, UpdatedPlayerComponentData} = pewpew_player_component_mod:configure(PlayerComponentData, Op, Args),
-  {reply, ok, UpdatedPlayerComponentData}.
+  {OkOrError, UpdatedPlayerComponentData} = pewpew_player_component_mod:configure(PlayerComponentData, Op, Args),
+  {reply, OkOrError, UpdatedPlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->
   die.
