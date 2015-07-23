@@ -10,7 +10,7 @@
 ]).
 
 -define(MOVEMENT_SPEED, 1).
--define(RADAR_MODES, [<<"longRange">>]).
+-define(RADAR_MODES, [<<"long_range_scan">>]).
 
 set_coordinates(Coordinates, PlayerComponentData) ->
   NewPlayerComponentData = pewpew_player_component_data:update(Coordinates, PlayerComponentData),

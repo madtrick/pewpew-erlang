@@ -1,0 +1,1 @@
+-define(b2a(X), case is_binary(X) of true -> erlang:binary_to_atom(X, latin1); false -> X end).

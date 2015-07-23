@@ -185,7 +185,7 @@ long_range_radar_player_rotated_6_test_() ->
 generate_circular_radar_test(Setup) ->
   CircularRadarSetup = maps:merge(
     Setup,
-    #{radar => circular_scan, radius => 40}
+    #{radar => circular_scan}
   ),
 
   generate_radar_test(CircularRadarSetup).
@@ -193,7 +193,7 @@ generate_circular_radar_test(Setup) ->
 generate_long_range_radar_test(Setup) ->
   LongRangeRadarSetup = maps:merge(
     Setup,
-    #{radar => long_range_scan, radius => 80}
+    #{radar => long_range_scan}
   ),
 
   generate_radar_test(LongRangeRadarSetup).
@@ -210,8 +210,7 @@ generate_radar_test(Setup) ->
     players := Players,
     players_to_find := PlayersToFind,
     walls_to_find := WallsToFind,
-    radar := Radar,
-    radius := Radius
+    radar := Radar
   } = UpdatedSetup,
 
   {setup,
@@ -235,7 +234,7 @@ generate_radar_test(Setup) ->
         ArenaDimensions = pewpew_arena_component:dimensions(ArenaComponent),
         ArenaPlayers    = pewpew_arena_component:players(ArenaComponent),
 
-        Scan            = pewpew_radar_component_mod:Radar(ArenaDimensions, ArenaPlayers, ScanningPlayer, Radius),
+        Scan            = pewpew_radar_component_mod:Radar(ArenaDimensions, ArenaPlayers, ScanningPlayer),
         #{players := ScannedPlayers, walls := WallScan} = Scan,
 
         AllPlayersFound = lists:all(fun(PlayerFound) ->

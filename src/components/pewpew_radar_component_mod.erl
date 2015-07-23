@@ -2,15 +2,16 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([
-  circular_scan/4,
-  long_range_scan/4
+  circular_scan/3,
+  long_range_scan/3
 ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-circular_scan(ArenaDimensions, Players, ScanningPlayer, ScanRadius) ->
+circular_scan(ArenaDimensions, Players, ScanningPlayer) ->
+  ScanRadius = 40,
   {width, ArenaWidth, height, ArenaHeight} = ArenaDimensions,
   PlayersToCheck = [Player || Player <- Players, Player =/= ScanningPlayer],
 
@@ -22,14 +23,18 @@ circular_scan(ArenaDimensions, Players, ScanningPlayer, ScanRadius) ->
     walls => Walls
   }.
 
-long_range_scan(_ArenaDimensions, Players, ScanningPlayer, ScanRadius) ->
+long_range_scan(_ArenaDimensions, Players, ScanningPlayer) ->
+  ScanRadius = 80,
   PlayersToCheck    = [Player || Player <- Players, Player =/= ScanningPlayer],
+  ?debugVal(PlayersToCheck),
   PlayersUnderRadar = players_under_radar(PlayersToCheck, ScanningPlayer, ScanRadius),
 
   % TODO add more tests for this method
   % TODO refactor this
   {x, ScanningPlayerX, y, ScanningPlayerY} = pewpew_player_component:coordinates(ScanningPlayer),
   ScanningPlayerRotation                   = pewpew_player_component:rotation(ScanningPlayer),
+
+  ?debugVal(PlayersUnderRadar),
 
   PlayersUnderLongRangeRadar = lists:filter(
     fun(Player) ->
@@ -41,6 +46,10 @@ long_range_scan(_ArenaDimensions, Players, ScanningPlayer, ScanRadius) ->
             Slope            = ((Y - ScanningPlayerY) / (Adjacent)),
             LeftBoundsSlope  = (math:tan(math:pi() / 6 + ScanningPlayerRotation)),
             RightBoundsSlope = (math:tan(ScanningPlayerRotation - math:pi() / 6)),
+
+            ?debugVal(Slope),
+            ?debugVal(LeftBoundsSlope),
+            ?debugVal(RightBoundsSlope),
 
             (Slope >= RightBoundsSlope) andalso (Slope =< LeftBoundsSlope)
         end

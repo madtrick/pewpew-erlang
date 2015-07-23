@@ -209,6 +209,7 @@ validate_message_in_last_reply_test(ClientId, ExpectedMessage) ->
     Replies = get_last_reply_for_client(ClientId, Context),
 
     MessagePresent = lists:any(fun(Message) ->
+                                   ?debugVal(Message),
       ExpectedMessage =:= Message
     end, Replies),
 

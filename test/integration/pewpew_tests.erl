@@ -403,7 +403,7 @@
 %      [
 %       register_player(ws_player_1_client),
 %       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"radarType\", \"args\": [\"longRange\"]}}">>),
+%       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"radarType\", \"args\": [\"long_range_scan\"]}}">>),
 %       ws_client_recv(ws_player_1_client)
 %      ]
 %    end,
@@ -427,23 +427,7 @@
 %    test => ?_assert(true)
 %   }).
 
-player_can_not_use_invalid_args_to_configure_test_() ->
-  run_test(#{
-    steps => fun(_Context) ->
-      [
-       register_player(ws_player_1_client),
-       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{op => <<"radarType">>, args => [<<"bacon">>]}}),
-       ws_client_sel_recv(ws_player_1_client, <<"InvalidCommandError">>)
-      ]
-    end,
-
-    test => ?_assert(true)
-   }).
-
-%player_can_change_the_radar_mode_to_long_range_test_() ->
+%player_can_not_use_invalid_args_to_configure_test_() ->
 %  run_test(#{
 %    steps => fun(_Context) ->
 %      [
@@ -451,55 +435,76 @@ player_can_not_use_invalid_args_to_configure_test_() ->
 %       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
 %       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
 %       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-%       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"longRange">>] }}),
-%       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>)
+%       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{op => <<"radarType">>, args => [<<"bacon">>]}}),
+%       ws_client_sel_recv(ws_player_1_client, <<"InvalidCommandError">>)
 %      ]
 %    end,
 
-%    test =>  ?_assert(true)
+%    test => ?_assert(true)
 %   }).
 
-%%long_range_radar_detects_player_test() ->
-%%  run_test(#{
-%%    steps => fun(_Context) ->
-%%      [
-%%       register_player(ws_player_1_client),
-%%       register_player(ws_player_2_client),
-%%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%%       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
-%%       fun(Context) ->
-%%           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
-%%           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
+player_can_change_the_radar_mode_to_long_range_scan_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"long_range_scan">>] }}),
+       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>)
+      ]
+    end,
 
-%%           % center the player to avoid the walls
-%%           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
-%%           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 250}, {y, 250}]),
+    test =>  ?_assert(true)
+   }).
 
-%%           {context, Context}
-%%       end,
-%%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-%%       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"radarType\", \"args\": [\"longRange\"]}}">>),
-%%       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>),
-%%       ws_client_recv(ws_player_1_client),
-%%       ws_client_recv(ws_player_2_client)
-%%      ]
-%%    end,
+long_range_scan_radar_detects_player_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       register_player(ws_player_2_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+       fun(Context) ->
+           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
+           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
 
-%%    test => fun(_) ->
-%%      CliendIds = [ ws_player_1_client, ws_player_2_client],
+           ?debugVal(pewpew_player_component:rotation(ScanningPlayer)),
+           ?debugVal(pewpew_player_component:rotation(ScannedPlayer)),
 
-%%      lists:map(fun(ClientId) ->
-%%        ExpectedReply = #{
-%%          <<"type">> => <<"RadarScanNotification">>,
-%%          <<"data">> => #{
-%%              <<"elements">> => [],
-%%              <<"walls">> => []
-%%             }
-%%        },
+           % center the player to avoid the walls
+           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
+           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 250}, {y, 200}]),
 
-%%        validate_last_reply_test(ClientId, ExpectedReply)
-%%      end, CliendIds)
-%%    end
-%%   }).
+           {context, Context}
+       end,
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"long_range_scan">>] }}),
+       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>),
+       ws_client_recv(ws_player_1_client),
+       ws_client_recv(ws_player_2_client)
+      ]
+    end,
+
+    test => fun(_) ->
+        ScannedPlayerExpectation = #{
+            <<"coordinates">> => #{<<"x">> => 250, <<"y">> => 200},
+            <<"type">> => <<"unknown">>
+         },
+
+        ExpectedReply = #{
+          <<"type">> => <<"RadarScanNotification">>,
+          <<"data">> => #{
+              <<"elements">> => [ScannedPlayerExpectation],
+              <<"walls">> => []
+             }
+        },
+
+        validate_message_in_last_reply_test(ws_player_1_client, ExpectedReply)
+    end
+   }).
+
 %% RADAR TEST HITS WALLS
