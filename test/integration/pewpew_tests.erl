@@ -507,7 +507,7 @@ long_range_scan_radar_detects_player_test_() ->
     end
    }).
 
-long_range_scan_radar_does_not_detect_player_test_() ->
+long_range_scan_radar_does_not_detect_player_too_far_test_() ->
   run_test(#{
     steps => fun(_Context) ->
       [
@@ -525,6 +525,49 @@ long_range_scan_radar_does_not_detect_player_test_() ->
            % center the player to avoid the walls
            pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
            pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 290}, {y, 200}]),
+
+           {context, Context}
+       end,
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"long_range_scan">>] }}),
+       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>),
+       ws_client_recv(ws_player_1_client),
+       ws_client_recv(ws_player_2_client)
+      ]
+    end,
+
+    test => fun(_) ->
+        ExpectedReply = #{
+          <<"type">> => <<"RadarScanNotification">>,
+          <<"data">> => #{
+              <<"elements">> => [],
+              <<"walls">> => []
+             }
+        },
+
+        validate_message_in_last_reply_test(ws_player_1_client, ExpectedReply)
+    end
+   }).
+
+long_range_scan_radar_does_not_detect_player_not_under_range_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       register_player(ws_player_2_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+       fun(Context) ->
+           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
+           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
+
+           ?debugVal(pewpew_player_component:rotation(ScanningPlayer)),
+           ?debugVal(pewpew_player_component:rotation(ScannedPlayer)),
+
+           % center the player to avoid the walls
+           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
+           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 120}, {y, 200}]),
 
            {context, Context}
        end,
