@@ -100,6 +100,15 @@ detect_left_bottom_corner_wall_test_() ->
    }).
 
 % TODO rename the following tests
+long_range_scan_not_rotated_does_not_detect_player_test_() ->
+  generate_long_range_radar_test(#{
+    players => [
+      [{id, player_id_1}, {x, 200}, {y, 200}],
+      [{id, player_id_2}, {x, 170}, {y, 200}]
+    ],
+    players_to_find => []
+   }).
+
 long_range_radar_player_o2_rotated_test_() ->
   generate_long_range_radar_test(#{
     players => [

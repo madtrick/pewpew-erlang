@@ -34,24 +34,44 @@ long_range_scan(_ArenaDimensions, Players, ScanningPlayer) ->
   {x, ScanningPlayerX, y, ScanningPlayerY} = pewpew_player_component:coordinates(ScanningPlayer),
   ScanningPlayerRotation                   = pewpew_player_component:rotation(ScanningPlayer),
 
-  ?debugVal(PlayersUnderRadar),
-
   PlayersUnderLongRangeRadar = lists:filter(
     fun(Player) ->
         {x, X, y, Y} = pewpew_player_component:coordinates(Player),
 
         case X - ScanningPlayerX of
           0 -> Y > ScanningPlayerY;
-          Adjacent ->
-            Slope            = ((Y - ScanningPlayerY) / (Adjacent)),
+          _ ->
             LeftBoundsSlope  = (math:tan(math:pi() / 6 + ScanningPlayerRotation)),
             RightBoundsSlope = (math:tan(ScanningPlayerRotation - math:pi() / 6)),
 
-            ?debugVal(Slope),
-            ?debugVal(LeftBoundsSlope),
-            ?debugVal(RightBoundsSlope),
 
-            (Slope >= RightBoundsSlope) andalso (Slope =< LeftBoundsSlope)
+            %
+            % X1, Y1 coordinates of scanned player
+            % X, Y coordiantes of scanning player
+
+            %             |
+            %     X1 < X  | X1 > X
+            %     Y1 > Y  | Y1 > Y
+            %             |
+            %   ---------------------
+            %             |
+            %     X1 < X  | X1 > X
+            %     Y1 < Y  | Y1 < Y
+            %             |
+            %
+
+            Base    = erlang:abs(X - ScanningPlayerX),
+            Height  = erlang:abs(Y - ScanningPlayerY),
+            Tangent = Height / Base,
+
+            Angle = case {X < ScanningPlayerX, Y < ScanningPlayerY} of
+              {true, true} -> math:pi() + Tangent;
+              {true, false} -> math:pi() - Tangent;
+              {false, false} -> Tangent;
+              {false, true} -> math:pi() * (3/2) +  Tangent
+            end,
+
+            Angle >= RightBoundsSlope andalso Angle =< LeftBoundsSlope
         end
     end,
     PlayersUnderRadar
