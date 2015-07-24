@@ -90,7 +90,7 @@ detect_left_top_corner_wall_test_() ->
 detect_right_bottom_corner_wall_test_() ->
   generate_circular_radar_test(#{
     players => [[{id, player_id_1}, {x, 380}, {y, 20}]],
-    walls_to_find => [[{400,0},{345,0}],[{400,54},{400,0}]]
+    walls_to_find => [[{400,54},{400,0}], [{400,0},{345,0}]]
    }).
 
 detect_left_bottom_corner_wall_test_() ->

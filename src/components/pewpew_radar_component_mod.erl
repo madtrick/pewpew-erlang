@@ -26,7 +26,6 @@ circular_scan(ArenaDimensions, Players, ScanningPlayer) ->
 long_range_scan(_ArenaDimensions, Players, ScanningPlayer) ->
   ScanRadius = 80,
   PlayersToCheck    = [Player || Player <- Players, Player =/= ScanningPlayer],
-  ?debugVal(PlayersToCheck),
   PlayersUnderRadar = players_under_radar(PlayersToCheck, ScanningPlayer, ScanRadius),
 
   % TODO add more tests for this method
@@ -105,19 +104,21 @@ players_under_radar(Players, ScanningPlayer, ScanRadius) ->
 
 intersections_with_walls(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius) ->
   Intersections = [
-   intersect_left_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
    intersect_right_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
    intersect_bottom_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
+   intersect_left_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius),
    intersect_top_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius)
   ],
 
+  ?debugVal(Intersections),
+
   [ Intersection || Intersection <- Intersections, Intersection =/= []].
 
-intersect_left_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius) ->
-  LeftWallLine = ArenaWidth,
+intersect_left_wall(ArenaHeight, _ArenaWidth, ScanningPlayer, ScanRadius) ->
+  LeftWallLine = 0,
   intersect_with_line(vertical, ArenaHeight, 0, LeftWallLine, ScanningPlayer, ScanRadius).
-intersect_right_wall(ArenaHeight, _, ScanningPlayer, ScanRadius) ->
-  RightWallLine = 0,
+intersect_right_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius) ->
+  RightWallLine = ArenaWidth,
   intersect_with_line(vertical, ArenaHeight, 0, RightWallLine, ScanningPlayer, ScanRadius).
 intersect_bottom_wall(_, ArenaWidth, ScanningPlayer, ScanRadius) ->
   BottomWallLine = 0,
@@ -163,10 +164,18 @@ calculate_coordinates(
   TC1, TC2,
   R
 ) ->
+  ?debugVal(LineType),
+  ?debugVal(MaxIntersectionPoint),
+  ?debugVal(MinIntersectionPoint),
+  ?debugVal(Z),
+  ?debugVal(R),
+  ?debugVal(TC1),
+  ?debugVal(TC2),
   {C1, C2} = case LineType of
-               horizontal -> {TC2, TC1};
-               vertical -> {TC1, TC2}
+               vertical -> {TC2, TC1};
+               horizontal -> {TC1, TC2}
              end,
+  %{C1, C2} = {TC1, TC2},
 
   A = 1,
   B = -2 * C1,
@@ -186,9 +195,9 @@ calculate_coordinates(
       NormalizedP_2 = normalize_intersection_point(lt, P_2, MinIntersectionPoint),
 
       case LineType of
-        horizontal ->
-          [{Z, NormalizedP_1}, {Z, NormalizedP_2}];
         vertical ->
+          [{Z, NormalizedP_1}, {Z, NormalizedP_2}];
+        horizontal ->
           [{NormalizedP_1, Z}, {NormalizedP_2, Z}]
       end;
     false ->
@@ -197,9 +206,9 @@ calculate_coordinates(
           P_1 = erlang:trunc(-B / 2 * A),
 
           case LineType of
-            horizontal ->
-              [{Z, P_1}];
             vertical ->
+              [{Z, P_1}];
+            horizontal ->
               [{P_1, Z}]
           end;
         _ -> % no intersection

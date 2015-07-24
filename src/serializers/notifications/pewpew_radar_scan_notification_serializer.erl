@@ -14,12 +14,21 @@ toJSON(ScanData) ->
   Struct.
 
 transform_data(ScanData, IsElementTypeReturned) ->
-  #{scanned_players := ScannedPlayers} = ScanData,
+  #{
+    scanned_players := ScannedPlayers,
+    scanned_walls := ScannedWalls
+  } = ScanData,
 
   ScannedPlayersStruct = transform_data(players, ScannedPlayers, IsElementTypeReturned),
+  ScannedWallsStruct   = transform_data(walls, ScannedWalls, false),
 
-  #{elements => ScannedPlayersStruct, walls => []}.
+  #{elements => ScannedPlayersStruct, walls => ScannedWallsStruct}.
 
+transform_data(walls, Walls, _) ->
+  lists:map(fun(Wall) ->
+                ?debugVal(Wall),
+    [[X, Y] || {X, Y} <- Wall]
+  end, Walls);
 transform_data(players, Players, false = _IsElementTypeReturned) ->
   lists:map(fun(Player) ->
     {x, X, y, Y} = pewpew_player_component:coordinates(Player),
