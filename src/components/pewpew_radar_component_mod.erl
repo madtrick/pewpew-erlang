@@ -127,8 +127,6 @@ intersections_with_walls(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius) ->
    intersect_top_wall(ArenaHeight, ArenaWidth, ScanningPlayer, ScanRadius)
   ],
 
-  ?debugVal(Intersections),
-
   [ Intersection || Intersection <- Intersections, Intersection =/= []].
 
 intersect_left_wall(ArenaHeight, _ArenaWidth, ScanningPlayer, ScanRadius) ->
@@ -177,26 +175,18 @@ calculate_coordinates(
   LineType,
   MaxIntersectionPoint,
   MinIntersectionPoint,
-  Z,
-  TC1, TC2,
-  R
+  WallLine,
+  PlayerX, PlayerY,
+  ScanRadius
 ) ->
-  ?debugVal(LineType),
-  ?debugVal(MaxIntersectionPoint),
-  ?debugVal(MinIntersectionPoint),
-  ?debugVal(Z),
-  ?debugVal(R),
-  ?debugVal(TC1),
-  ?debugVal(TC2),
   {C1, C2} = case LineType of
-               vertical -> {TC2, TC1};
-               horizontal -> {TC1, TC2}
+               vertical -> {PlayerY, PlayerX};
+               horizontal -> {PlayerX, PlayerY}
              end,
-  %{C1, C2} = {TC1, TC2},
 
   A = 1,
   B = -2 * C1,
-  C = (Z * Z) - 2 * C2 * Z + (C1 * C1) + (C2 * C2) - (R * R),
+  C = (WallLine * WallLine) - 2 * C2 * WallLine + (C1 * C1) + (C2 * C2) - (ScanRadius * ScanRadius),
 
   FourAC  = 4 * A * C,
   SquareB = math:pow(B, 2),
@@ -213,9 +203,9 @@ calculate_coordinates(
 
       case LineType of
         vertical ->
-          [{Z, NormalizedP_1}, {Z, NormalizedP_2}];
+          [{WallLine, NormalizedP_1}, {WallLine, NormalizedP_2}];
         horizontal ->
-          [{NormalizedP_1, Z}, {NormalizedP_2, Z}]
+          [{NormalizedP_1, WallLine}, {NormalizedP_2, WallLine}]
       end;
     false ->
       case Temp =:= 0.0 of
@@ -224,9 +214,9 @@ calculate_coordinates(
 
           case LineType of
             vertical ->
-              [{Z, P_1}];
+              [{WallLine, P_1}];
             horizontal ->
-              [{P_1, Z}]
+              [{P_1, WallLine}]
           end;
         _ -> % no intersection
           []

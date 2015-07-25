@@ -27,7 +27,6 @@ call(CommandContextData) ->
           case OkOrError of
             ok ->
               ConfigurePlayerAck = pewpew_configure_player_ack:new(CommandOriginChannel),
-              ?debugVal(ConfigurePlayerAck),
               {reply, [{send_to, CommandOriginChannel, ConfigurePlayerAck}]};
             error ->
               InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
