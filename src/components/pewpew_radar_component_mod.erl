@@ -2,13 +2,30 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([
+  change_radar_mode/2,
   circular_scan/3,
   long_range_scan/3
 ]).
 
+-define(RADAR_MODES, #{<<"long_range_scan">> => #{radius => 80}}).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+change_radar_mode(NewMode, RadarConfigData) ->
+  IsValidRadarMode = maps:is_key(NewMode, ?RADAR_MODES),
+
+  case IsValidRadarMode of
+    true ->
+      NewModeConfig               = maps:get(NewMode, ?RADAR_MODES),
+      #{radius := NewModeRadius}  = NewModeConfig,
+      ValuesToUpdate              = [{mode, NewMode}, {radius, NewModeRadius}],
+      UpdatedRadarConfigData      = pewpew_radar_config_data:update(RadarConfigData, ValuesToUpdate),
+
+      {ok, UpdatedRadarConfigData};
+    false -> {error, RadarConfigData}
+  end.
 
 circular_scan(ArenaDimensions, Players, ScanningPlayer) ->
   ScanRadius = 40,

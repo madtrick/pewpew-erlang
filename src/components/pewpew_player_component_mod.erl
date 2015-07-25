@@ -40,8 +40,9 @@ configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
 
   case IsValidRadarType of
     true ->
-      RadarConfigData            = pewpew_player_component_data:radar_config_data(PlayerComponentData),
-      UpdatedRadarConfigData     = pewpew_radar_config_data:update(RadarConfigData, [{mode, NewType}]),
+      RadarConfigData           = pewpew_player_component_data:radar_config_data(PlayerComponentData),
+      %UpdatedRadarConfigData    = pewpew_radar_config_data:update(RadarConfigData, [{mode, NewType}]),
+      {ok, UpdatedRadarConfigData}     = pewpew_radar_component_mod:change_radar_mode(NewType, RadarConfigData),
       UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{radar_config_data, UpdatedRadarConfigData}]),
       {ok, UpdatedPlayerComponentData};
     false ->

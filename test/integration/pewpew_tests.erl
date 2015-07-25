@@ -190,48 +190,49 @@
 
 %  lists:map(fun(Movement) -> generate_valid_move_command_test(Movement) end, Movements).
 
-%send_state_to_control_test_() ->
-%  ExpectedReply = #{
-%    <<"type">> => <<"GameSnapshotNotification">>,
-%    <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [] }}
-%  },
+send_state_to_control_test_() ->
+  ExpectedReply = #{
+    <<"type">> => <<"GameSnapshotNotification">>,
+    <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [] }}
+  },
 
-%  run_test(#{
-%    steps => [
-%      ws_client_recv(ws_control_client)
-%    ],
+  run_test(#{
+    steps => [
+      ws_client_recv(ws_control_client)
+    ],
 
-%    test => validate_message_in_last_reply_test(ws_control_client, ExpectedReply)
-%   }).
+    test => validate_message_in_last_reply_test(ws_control_client, ExpectedReply)
+   }).
 
-%state_update_includes_registered_player_test_() ->
-%  run_test(#{
-%    steps => [
-%      register_player(),
-%      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
-%      ws_client_recv(ws_control_client)
-%    ],
+state_update_includes_registered_player_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_recv(ws_control_client)
+    ],
 
-%    test => fun(Context) ->
-%      Player              = get_player_for_client(ws_player_client, Context),
-%      ExpectedPlayerState = #{
-%        <<"id">> => pewpew_player_component:id(Player),
-%        <<"coordinates">> => #{ 
-%            <<"x">> => pewpew_player_component:x(Player),
-%            <<"y">> => pewpew_player_component:y(Player)
-%        },
-%        <<"life">> => pewpew_player_component:life(Player),
-%        <<"rotation">> => pewpew_player_component:rotation(Player)
-%       },
+    test => fun(Context) ->
+      Player              = get_player_for_client(ws_player_client, Context),
+      ExpectedPlayerState = #{
+        <<"id">> => pewpew_player_component:id(Player),
+        <<"coordinates">> => #{ 
+            <<"x">> => pewpew_player_component:x(Player),
+            <<"y">> => pewpew_player_component:y(Player)
+        },
+        <<"life">> => pewpew_player_component:life(Player),
+        <<"rotation">> => pewpew_player_component:rotation(Player),
+        <<"radar">> => #{<<"type">> => <<"circular_scan">>, <<"radius">> => 40}
+       },
 
-%      ExpectedReply = #{
-%        <<"type">> => <<"GameSnapshotNotification">>,
-%        <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [ExpectedPlayerState]}}
-%      },
+      ExpectedReply = #{
+        <<"type">> => <<"GameSnapshotNotification">>,
+        <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [ExpectedPlayerState]}}
+      },
 
-%      validate_message_in_last_reply_test(ws_control_client, ExpectedReply)
-%    end
-%   }).
+      validate_message_in_last_reply_test(ws_control_client, ExpectedReply)
+    end
+   }).
 
 %state_update_reflects_player_movement_test_() ->
 %  run_test(#{
@@ -430,68 +431,101 @@ circular_radar_detects_walls_test_() ->
     end
    }).
 
-%player_can_not_set_radar_type_before_game_starts_test_() ->
-%  run_test(#{
-%    steps => fun(_Context) ->
-%      [
-%       register_player(ws_player_1_client),
-%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"radarType\", \"args\": [\"long_range_scan\"]}}">>),
-%       ws_client_recv(ws_player_1_client)
-%      ]
-%    end,
+player_can_not_set_radar_type_before_game_starts_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"radarType\", \"args\": [\"long_range_scan\"]}}">>),
+       ws_client_recv(ws_player_1_client)
+      ]
+    end,
 
-%    test =>  validate_type_in_last_reply_test(ws_player_1_client, <<"InvalidCommandError">>)
-%   }).
+    test =>  validate_type_in_last_reply_test(ws_player_1_client, <<"InvalidCommandError">>)
+   }).
 
-%player_can_not_use_invalid_operatios_to_configure_test_() ->
-%  run_test(#{
-%    steps => fun(_Context) ->
-%      [
-%       register_player(ws_player_1_client),
-%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-%       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"lol\", \"args\": [\"bacon\"]}}">>),
-%       ws_client_sel_recv(ws_player_1_client, <<"InvalidCommandError">>)
-%      ]
-%    end,
+player_can_not_use_invalid_operatios_to_configure_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_send(ws_player_1_client, <<"{\"type\":\"ConfigurePlayerCommand\", \"data\":{\"op\":\"lol\", \"args\": [\"bacon\"]}}">>),
+       ws_client_sel_recv(ws_player_1_client, <<"InvalidCommandError">>)
+      ]
+    end,
 
-%    test => ?_assert(true)
-%   }).
+    test => ?_assert(true)
+   }).
 
-%player_can_not_use_invalid_args_to_configure_test_() ->
-%  run_test(#{
-%    steps => fun(_Context) ->
-%      [
-%       register_player(ws_player_1_client),
-%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-%       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{op => <<"radarType">>, args => [<<"bacon">>]}}),
-%       ws_client_sel_recv(ws_player_1_client, <<"InvalidCommandError">>)
-%      ]
-%    end,
+player_can_not_use_invalid_args_to_configure_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{op => <<"radarType">>, args => [<<"bacon">>]}}),
+       ws_client_sel_recv(ws_player_1_client, <<"InvalidCommandError">>)
+      ]
+    end,
 
-%    test => ?_assert(true)
-%   }).
+    test => ?_assert(true)
+   }).
 
-%player_can_change_the_radar_mode_to_long_range_scan_test_() ->
-%  run_test(#{
-%    steps => fun(_Context) ->
-%      [
-%       register_player(ws_player_1_client),
-%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-%       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"long_range_scan">>] }}),
-%       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>)
-%      ]
-%    end,
+player_can_change_the_radar_mode_to_long_range_scan_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_send(ws_player_1_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"long_range_scan">>] }}),
+       ws_client_sel_recv(ws_player_1_client, <<"ConfigurePlayerAck">>)
+      ]
+    end,
 
-%    test =>  ?_assert(true)
-%   }).
+    test =>  ?_assert(true)
+   }).
 
+state_update_includes_radar_type_change_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_send(ws_player_client, #{type => <<"ConfigurePlayerCommand">>, data => #{ op => <<"radarType">>, args => [<<"long_range_scan">>] }}),
+      ws_client_sel_recv(ws_player_client, <<"ConfigurePlayerAck">>),
+      ws_client_recv(ws_control_client)
+    ],
+
+    test => fun(Context) ->
+      Player              = get_player_for_client(ws_player_client, Context),
+      ExpectedPlayerState = #{
+        <<"id">> => pewpew_player_component:id(Player),
+        <<"coordinates">> => #{ 
+            <<"x">> => pewpew_player_component:x(Player),
+            <<"y">> => pewpew_player_component:y(Player)
+        },
+        <<"life">> => pewpew_player_component:life(Player),
+        <<"rotation">> => pewpew_player_component:rotation(Player),
+        <<"radar">> => #{<<"type">> => <<"long_range_scan">>, <<"radius">> => 80}
+       },
+
+      ExpectedReply = #{
+        <<"type">> => <<"GameSnapshotNotification">>,
+        <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [ExpectedPlayerState]}}
+      },
+
+      validate_message_in_last_reply_test(ws_control_client, ExpectedReply)
+    end
+   }).
 %long_range_scan_radar_detects_player_test_() ->
 %  run_test(#{
 %    steps => fun(_Context) ->

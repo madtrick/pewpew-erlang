@@ -117,6 +117,7 @@ configure(PlayerComponent, Op, Args) ->
 
 init([PewpewGameContextData, PlayerData]) ->
   %TODO: check if the player uses the game context data for anything
+  %TODO: move the generation of the radar_config data to arena_component_mod
   PlayerRadarConfigData = pewpew_radar_config_data:new(
     [{mode, circular_scan}, {radius, 40}]
   ),
