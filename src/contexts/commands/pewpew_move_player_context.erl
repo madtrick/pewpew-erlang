@@ -49,6 +49,7 @@ call(CommandContextData) ->
   end.
 
 
+% TODO move this into the command
 validates(Player, ArenaComponent) ->
   Radius = pewpew_player_component:radius(Player),
   X      = pewpew_player_component:x(Player),

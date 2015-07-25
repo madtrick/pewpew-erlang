@@ -10,6 +10,7 @@
 ]).
 
 -define(MOVEMENT_SPEED, 1).
+% TODO remove the RADAR_MODES constant
 -define(RADAR_MODES, [<<"long_range_scan">>]).
 
 set_coordinates(Coordinates, PlayerComponentData) ->
@@ -36,6 +37,7 @@ update(_PlayerComponentData) ->
   {ok, noupdate}.
 
 configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
+  %TODO: remove this check as this is also checked in the radar_mod file
   IsValidRadarType           = lists:member(NewType, ?RADAR_MODES),
 
   case IsValidRadarType of
