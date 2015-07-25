@@ -38,15 +38,11 @@ handle_call({scan, ScanContext, RadarConfigData}, _, Data) ->
     scanning_player := ScanningPlayer
   } = ScanContext,
 
-  ScanMode = ?b2a(pewpew_radar_config_data:mode(RadarConfigData)),
-  ?debugVal(ScanMode),
-
+  ScanMode   = ?b2a(pewpew_radar_config_data:mode(RadarConfigData)),
   ScanResult = pewpew_radar_component_mod:ScanMode(ArenaDimensions, Players, ScanningPlayer),
-  #{
-                                                                                    walls := Sw,
-                                                                                    players := SP
-                                                                                   } = ScanResult,
-  ScanResultData = pewpew_radar_scan_result_data:new([{scanned_walls, Sw}, {scanned_players, SP}]),
+
+  #{ walls := ScannedWalls, players := ScannedPlayers } = ScanResult,
+  ScanResultData = pewpew_radar_scan_result_data:new([{scanned_walls, ScannedWalls}, {scanned_players, ScannedPlayers}]),
   {reply, ScanResultData, Data}.
 
 terminate(_, _) ->
