@@ -42,10 +42,9 @@ configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
 
   case IsValidRadarType of
     true ->
-      RadarConfigData           = pewpew_player_component_data:radar_config_data(PlayerComponentData),
-      %UpdatedRadarConfigData    = pewpew_radar_config_data:update(RadarConfigData, [{mode, NewType}]),
-      {ok, UpdatedRadarConfigData}     = pewpew_radar_component_mod:change_radar_mode(NewType, RadarConfigData),
-      UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{radar_config_data, UpdatedRadarConfigData}]),
+      RadarConfigData              = pewpew_player_component_data:radar_config_data(PlayerComponentData),
+      {ok, UpdatedRadarConfigData} = pewpew_radar_component_mod:change_radar_mode(NewType, RadarConfigData),
+      UpdatedPlayerComponentData   = pewpew_player_component_data:update(PlayerComponentData, [{radar_config_data, UpdatedRadarConfigData}]),
       {ok, UpdatedPlayerComponentData};
     false ->
       {error, PlayerComponentData}
@@ -67,4 +66,11 @@ calculate_new_coordinates(Sign, Speed, PlayerComponentData) ->
   X        = pewpew_player_component_data:x(PlayerComponentData),
   Y        = pewpew_player_component_data:y(PlayerComponentData),
 
-  [{x, X + (DX * Sign)}, {y, Y + (DY * Sign)}].
+  RoundedX = round_value(X + (DX * Sign), 5),
+  RoundedY = round_value(Y + (DY * Sign), 5),
+
+  [{x, RoundedX}, {y, RoundedY}].
+
+round_value(Value, Precision) ->
+  P = math:pow(10, Precision),
+  round(Value * P) / P.
