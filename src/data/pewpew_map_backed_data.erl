@@ -6,10 +6,7 @@
 ]).
 
 new(Options) when is_list(Options) ->
-  lists:foldl(fun(Option, Acc) ->
-    {Key, Value} = Option,
-    maps:put(Key, Value, Acc)
-  end, #{}, Options).
+  pewpew_utils:proplist_to_map(Options).
 
 update(Data, Proplist) when is_list(Proplist) ->
   MapKeys  = maps:keys(Data),
