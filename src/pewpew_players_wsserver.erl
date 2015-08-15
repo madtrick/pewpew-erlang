@@ -15,10 +15,10 @@ config() ->
 
 port() ->
   PortENVVariable = fserlangutils_string:to_integer(os:getenv(?PORT_ENV_VARIABLE)),
-  pewpew_config:get('players_wsserver.port', PortENVVariable).
+  pewpew_config:get([players_wsserver, port], PortENVVariable).
 
 number_of_workers() ->
-  pewpew_config:get('players_wsserver.workers').
+  pewpew_config:get([players_wsserver, workers]).
 
 protocol_modules_options() ->
   [

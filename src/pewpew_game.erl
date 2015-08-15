@@ -88,7 +88,7 @@ pewpew_event_bus(PewpewGameStateData) ->
   pewpew_game_context_data:pewpew_event_bus(PewpewGameContextData).
 
 arena_width() ->
-  pewpew_config:get('arena.width').
+  pewpew_config:get([arena, width]).
 
 arena_height() ->
-  pewpew_config:get('arena.height').
+  pewpew_config:get([arena, height]).

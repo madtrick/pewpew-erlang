@@ -69,7 +69,7 @@ init([Data]) ->
         {radar_component, PewPewRadarComponent},
         {pewpew_player_component_sup, PewpewPlayerComponentSup},
         {pewpew_game_context_data, proplists:get_value(pewpew_game_context_data, Data)},
-        {max_number_of_players, pewpew_config:get('arena.players.max')},
+        {max_number_of_players, pewpew_config:get([arena, players, max])},
         {width, proplists:get_value(width, Data)},
         {height, proplists:get_value(height, Data)}
       ])}.
