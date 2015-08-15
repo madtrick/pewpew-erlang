@@ -1,13 +1,15 @@
 -module(pewpew_config_tests).
 -include_lib("eunit/include/eunit.hrl").
 
+-define(APPLICATION, pewpew).
+
 can_be_initialized_with_proplist_test_() ->
-  Config = [{key, value}],
+  Config = [{key, [{nested_key, value}]}, {other, value}, {another, [1, 2]}],
 
   pewpew_config:init(Config),
-  Value = pewpew_config:get(key),
+  {ok, Env}   = application:get_env(?APPLICATION, config),
 
-  ?_assertEqual(value, Value).
+  ?_assertEqual(#{key => #{nested_key => value}, other => value, another => [1, 2]}, Env).
 
 can_get_with_nested_keys_test_() ->
   Config = [{key, [{nested_key, value}]}],

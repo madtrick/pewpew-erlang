@@ -10,9 +10,13 @@
 -define(APPLICATION, pewpew).
 -define(CONFIG_FILE, "pewpew.conf").
 
-init(Config) when is_list(Config) ->
-  ConfigMap = pewpew_utils:proplist_to_map(Config),
-  application:set_env(?APPLICATION, config, ConfigMap).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+init(Config) ->
+  Map = init_map_from_proplist(Config, #{}),
+  application:set_env(?APPLICATION, config, Map).
 
 load() ->
   {ok, Conf} = fserlangutils_app:read_in_priv(?APPLICATION, ?CONFIG_FILE),
@@ -32,3 +36,26 @@ set(Key, Value) ->
   {ok, Env} = application:get_env(?APPLICATION, config),
   NewEnv    = pewpew_utils:set_value_in_map(Key, Value, Env),
   application:set_env(?APPLICATION, config, NewEnv).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Internal
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+init_map_from_proplist([], Map) ->
+  Map;
+init_map_from_proplist([{Key, Value} | Tail], Map) ->
+  NewMap = case is_proplist(Value) of
+    true ->
+      maps:put(Key, init_map_from_proplist(Value, #{}), Map);
+    false ->
+      maps:put(Key, Value, Map)
+  end,
+
+  init_map_from_proplist(Tail, NewMap).
+
+is_proplist(Value) when not is_list(Value) ->
+  false;
+is_proplist(Value) ->
+  lists:all(fun(E) ->
+    is_tuple(E) andalso tuple_size(E) =:= 2
+  end, Value).
