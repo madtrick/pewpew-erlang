@@ -276,169 +276,170 @@ state_update_includes_registered_player_test_() ->
     end
    }).
 
-%state_update_reflects_player_movement_test_() ->
-%  run_test(#{
-%    steps => [
-%      register_player(),
-%      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>), % ensure the player is registered
-%      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
-%      ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
-%      ws_client_send(ws_player_client, #{type => <<"MovePlayerCommand">>, data => [#{move => forward}] }),
-%      ws_client_recv(ws_control_client)
-%    ],
+state_update_reflects_player_movement_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>), % ensure the player is registered
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
+      ws_client_send(ws_player_client, #{type => <<"MovePlayerCommand">>, data => [#{move => forward}] }),
+      ws_client_recv(ws_control_client)
+    ],
 
-%    test => fun(Context) ->
-%      Player = get_player_for_client(ws_player_client, Context),
-%      ExpectedPlayerState = #{
-%        <<"id">> => pewpew_player_component:id(Player),
-%        <<"coordinates">> => #{
-%            <<"x">> => pewpew_player_component:x(Player),
-%            <<"y">> => pewpew_player_component:y(Player)
-%        },
-%        <<"life">> => pewpew_player_component:life(Player),
-%        <<"rotation">> => pewpew_player_component:rotation(Player)
-%       },
+    test => fun(Context) ->
+      Player = get_player_for_client(ws_player_client, Context),
+      ExpectedPlayerState = #{
+        <<"id">> => pewpew_player_component:id(Player),
+        <<"coordinates">> => #{
+            <<"x">> => pewpew_player_component:x(Player),
+            <<"y">> => pewpew_player_component:y(Player)
+        },
+        <<"life">> => pewpew_player_component:life(Player),
+        <<"rotation">> => pewpew_player_component:rotation(Player),
+        <<"radar">> => #{<<"type">> => <<"circular_scan">>, <<"radius">> => 40}
+       },
 
-%      ExpectedReply = #{
-%        <<"type">> => <<"GameSnapshotNotification">>,
-%        <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [ExpectedPlayerState]}}
-%      },
+      ExpectedReply = #{
+        <<"type">> => <<"GameSnapshotNotification">>,
+        <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [ExpectedPlayerState]}}
+      },
 
-%      validate_message_in_last_reply_test(ws_control_client, ExpectedReply)
-%    end
-%   }).
+      validate_message_in_last_reply_test(ws_control_client, ExpectedReply)
+    end
+   }).
 
-%receive_radar_update_test_() ->
-%  run_test(#{
-%    steps => [
-%      register_player(),
-%      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
-%      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
-%      ws_client_recv(ws_player_client)
-%    ],
+receive_radar_update_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_recv(ws_player_client)
+    ],
 
-%    test => validate_type_in_last_reply_test(ws_player_client, <<"RadarScanNotification">>)
-%  }).
+    test => validate_type_in_last_reply_test(ws_player_client, <<"RadarScanNotification">>)
+  }).
 
-%register_more_that_one_player_test_() ->
-%  run_test(#{
-%    steps => fun(_Context) ->
-%      [
-%       register_player(ws_player_1_client),
-%       register_player(ws_player_2_client),
-%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>)
-%      ]
-%    end,
+register_more_that_one_player_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       register_player(ws_player_2_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>)
+      ]
+    end,
 
-%    test => fun(Context) ->
-%      #{ pewpew_game := Game } = Context,
-%      ArenaComponent                 = pewpew_game:arena_component(Game),
-%      NPlayers = length(pewpew_arena_component:players(ArenaComponent)),
+    test => fun(Context) ->
+      #{ pewpew_game := Game } = Context,
+      ArenaComponent                 = pewpew_game:arena_component(Game),
+      NPlayers = length(pewpew_arena_component:players(ArenaComponent)),
 
-%      [?_assertEqual(2, NPlayers)]
-%    end
-%   }).
+      [?_assertEqual(2, NPlayers)]
+    end
+   }).
 
-%radar_detect_player_test_() ->
-%  run_test(#{
-%    steps => fun(_Context) ->
-%      [
-%       register_player(ws_player_1_client),
-%       register_player(ws_player_2_client),
-%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
-%       fun(Context) ->
-%           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
-%           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
+radar_detect_player_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       register_player(ws_player_2_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+       fun(Context) ->
+           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
+           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
 
-%           % center the player to avoid the walls
-%           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
-%           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 220}, {y, 220}]),
+           % center the player to avoid the walls
+           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
+           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 220}, {y, 220}]),
 
-%           {context, Context}
-%       end,
-%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-%       ws_client_sel_recv(ws_player_2_client, <<"StartGameOrder">>),
-%       ws_client_recv(ws_player_1_client),
-%       ws_client_recv(ws_player_2_client)
-%      ]
-%    end,
+           {context, Context}
+       end,
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_sel_recv(ws_player_2_client, <<"StartGameOrder">>),
+       ws_client_recv(ws_player_1_client),
+       ws_client_recv(ws_player_2_client)
+      ]
+    end,
 
-%    test => fun(_) ->
-%      ScannedPlayersExpectations = [
-%        {ws_player_1_client,
-%          #{
-%            <<"coordinates">> => #{<<"x">> => 220, <<"y">> => 220},
-%            <<"type">> => <<"unknown">>
-%          }
-%        },
-%        {ws_player_2_client,
-%          #{
-%            <<"coordinates">> => #{<<"x">> => 200, <<"y">> => 200},
-%            <<"type">> => <<"unknown">>
-%          }
-%        }
-%      ],
+    test => fun(_) ->
+      ScannedPlayersExpectations = [
+        {ws_player_1_client,
+          #{
+            <<"coordinates">> => #{<<"x">> => 220, <<"y">> => 220},
+            <<"type">> => <<"unknown">>
+          }
+        },
+        {ws_player_2_client,
+          #{
+            <<"coordinates">> => #{<<"x">> => 200, <<"y">> => 200},
+            <<"type">> => <<"unknown">>
+          }
+        }
+      ],
 
-%      lists:map(fun({ClientId, ScannedPlayerExpectation}) ->
-%        ExpectedReply = #{
-%          <<"type">> => <<"RadarScanNotification">>,
-%          <<"data">> => #{
-%              <<"elements">> => [ScannedPlayerExpectation],
-%              <<"walls">> => []
-%             }
-%        },
+      lists:map(fun({ClientId, ScannedPlayerExpectation}) ->
+        ExpectedReply = #{
+          <<"type">> => <<"RadarScanNotification">>,
+          <<"data">> => #{
+              <<"elements">> => [ScannedPlayerExpectation],
+              <<"walls">> => []
+             }
+        },
 
-%        validate_message_in_last_reply_test(ClientId, ExpectedReply)
-%      end, ScannedPlayersExpectations)
-%    end
-%   }).
+        validate_message_in_last_reply_test(ClientId, ExpectedReply)
+      end, ScannedPlayersExpectations)
+    end
+   }).
 
-%radar_does_not_detect_player_test_() ->
-%  run_test(#{
-%    steps => fun(_Context) ->
-%      [
-%       register_player(ws_player_1_client),
-%       register_player(ws_player_2_client),
-%       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
-%       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
-%       fun(Context) ->
-%           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
-%           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
+radar_does_not_detect_player_test_() ->
+  run_test(#{
+    steps => fun(_Context) ->
+      [
+       register_player(ws_player_1_client),
+       register_player(ws_player_2_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+       fun(Context) ->
+           ScanningPlayer = get_player_for_client(ws_player_1_client, Context),
+           ScannedPlayer  = get_player_for_client(ws_player_2_client, Context),
 
-%           % center the player to avoid the walls
-%           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
-%           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 250}, {y, 250}]),
+           % center the player to avoid the walls
+           pewpew_player_component:set_coordinates(ScanningPlayer, [{x, 200}, {y, 200}]),
+           pewpew_player_component:set_coordinates(ScannedPlayer, [{x, 250}, {y, 250}]),
 
-%           {context, Context}
-%       end,
-%       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
-%       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
-%       ws_client_recv(ws_player_1_client),
-%       ws_client_recv(ws_player_2_client)
-%      ]
-%    end,
+           {context, Context}
+       end,
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_recv(ws_player_1_client),
+       ws_client_recv(ws_player_2_client)
+      ]
+    end,
 
-%    test => fun(_) ->
-%      CliendIds = [ ws_player_1_client, ws_player_2_client],
+    test => fun(_) ->
+      CliendIds = [ ws_player_1_client, ws_player_2_client],
 
-%      lists:map(fun(ClientId) ->
-%        ExpectedReply = #{
-%          <<"type">> => <<"RadarScanNotification">>,
-%          <<"data">> => #{
-%              <<"elements">> => [],
-%              <<"walls">> => []
-%             }
-%        },
+      lists:map(fun(ClientId) ->
+        ExpectedReply = #{
+          <<"type">> => <<"RadarScanNotification">>,
+          <<"data">> => #{
+              <<"elements">> => [],
+              <<"walls">> => []
+             }
+        },
 
-%        validate_message_in_last_reply_test(ClientId, ExpectedReply)
-%      end, CliendIds)
-%    end
-%   }).
+        validate_message_in_last_reply_test(ClientId, ExpectedReply)
+      end, CliendIds)
+    end
+   }).
 
 circular_radar_detects_walls_test_() ->
   run_test(#{
