@@ -19,6 +19,13 @@ can_get_with_nested_keys_test_() ->
 
   ?_assertEqual(value, Value).
 
+can_return_default_value_on_missing_key_test_() ->
+  pewpew_config:init([]),
+
+  Value = pewpew_config:get(key, my_nice_default_value),
+
+  ?_assertEqual(my_nice_default_value, Value).
+
 can_set_a_value_test_() ->
   pewpew_config:init([]),
 

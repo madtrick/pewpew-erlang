@@ -23,23 +23,24 @@ load() ->
   pewpew_config:init(proplists:get_value(fserlangutils_app:execution_mode(?APPLICATION), Conf)).
 
 get(KeyOrKeys) ->
-  {ok, Env}  = application:get_env(?APPLICATION, config),
-  pewpew_utils:get_value_in_map(KeyOrKeys, Env).
+  Config = get_config_from_application_env(),
+  pewpew_utils:get_value_in_map(KeyOrKeys, Config).
 
-get(Key, Default) ->
-  case pewpew_config:get(Key) of
-    [] -> Default;
-    Value -> Value
-  end.
+get(KeyOrKeys, Default) ->
+  Config = get_config_from_application_env(),
+  pewpew_utils:get_value_in_map(KeyOrKeys, Config, Default).
 
 set(Key, Value) ->
-  {ok, Env} = application:get_env(?APPLICATION, config),
-  NewEnv    = pewpew_utils:set_value_in_map(Key, Value, Env),
-  application:set_env(?APPLICATION, config, NewEnv).
+  Config    = get_config_from_application_env(),
+  NewConfig = pewpew_utils:set_value_in_map(Key, Value, Config),
+  application:set_env(?APPLICATION, config, NewConfig).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+get_config_from_application_env() ->
+  {ok, Env} = application:get_env(?APPLICATION, config),
+  Env.
 
 init_map_from_proplist([], Map) ->
   Map;

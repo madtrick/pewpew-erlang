@@ -1,9 +1,12 @@
 -module(pewpew_utils).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([
   proplist_to_map/1,
   get_value_in_map/2,
-  set_value_in_map/3
+  get_value_in_map/3,
+  set_value_in_map/3,
+  get_current_time_in_milliseconds/0
 ]).
 
 proplist_to_map(Proplist) ->
@@ -12,6 +15,8 @@ proplist_to_map(Proplist) ->
     maps:put(Key, Value, Map)
   end, #{}, Proplist).
 
+get_value_in_map(KeyOrKeys, Map, Default) ->
+  try get_value_in_map(KeyOrKeys, Map) catch _:bad_key -> Default end.
 get_value_in_map(Key, Map) when is_atom(Key) ->
   get_value_in_map([Key], Map);
 get_value_in_map([], Result) ->
@@ -37,3 +42,8 @@ set_value_in_map(Keys, Value, Map) ->
   end,
 
   maps:put(Key, NewValueForKey, Map).
+
+get_current_time_in_milliseconds() ->
+  {Mega, Sec, Micro} = erlang:now(),
+  MilliSeconds       = (Mega*1000000 + Sec)*1000 + round(Micro/1000),
+  MilliSeconds.

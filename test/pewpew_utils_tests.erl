@@ -14,6 +14,13 @@ get_nested_value_in_map_test_() ->
 
   ?_assertEqual(value, Value).
 
+return_default_value_on_undefined_key_in_map_get_test_() ->
+  Map = #{},
+
+  Value = pewpew_utils:get_value_in_map(lol, Map, undefined),
+
+  ?_assertEqual(undefined, Value).
+
 set_value_in_map_test_() ->
   Map = #{},
 
