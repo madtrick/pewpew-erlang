@@ -17,7 +17,9 @@
     get_last_reply_for_client/2,
     validate_type_in_last_reply_test/2,
     validate_last_reply_data_test/2,
-    validate_message_in_last_reply_test/2
+    validate_message_in_last_reply_test/2,
+    throwing/1,
+    it_threw/1
 ]).
 
 register_player_command_test_() ->
@@ -56,6 +58,46 @@ reject_register_player_twice_test_() ->
 
     test => validate_type_in_last_reply_test(ws_player_client, <<"InvalidCommandError">>)
  }).
+
+register_player_after_game_started_test_() ->
+  run_test(#{
+    steps => [
+      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
+      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
+      ws_client_recv(ws_player_client)
+    ],
+    test => validate_type_in_last_reply_test(ws_player_client, <<"RegisterPlayerAck">>)
+   }).
+
+does_not_receive_start_game_order_when_registering_after_game_start_test_() ->
+  run_test(#{
+    steps => [
+      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
+      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
+      throwing(ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>))
+    ],
+    test => it_threw(ws_client_sel_recv_timeout)
+   }).
+
+receive_start_game_order_when_registering_after_game_start_test_() ->
+  run_test(#{
+    steps => [
+      fun(_) ->
+          % This config property should be set per Game instance
+          % but with the current code only one Game is possible
+          % and that Game is created when starting the server.
+          pewpew_config:set(players_can_join_started_game, true)
+      end,
+      ws_client_send(ws_control_client, <<"{\"type\":\"StartGameCommand\", \"data\":{}}">>),
+      ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
+      ws_client_send(ws_player_client, #{type => <<"RegisterPlayerCommand">>, data => #{}}),
+      ws_client_recv(ws_player_client)
+    ],
+    test => validate_type_in_last_reply_test(ws_player_client, <<"StartGameOrder">>)
+   }).
+
 
 start_game_command_test_() ->
   run_test(#{
@@ -169,7 +211,7 @@ move_player_test_() ->
    #{
     coordinates => Coordinates,
     movements => [#{rotate => 60}, #{move => forward}],
-    expectations => #{x => 10.5, y =>10.86602540378444}
+    expectations => #{x => 10.5, y =>10.86603}
     },
    #{
     coordinates => Coordinates,

@@ -16,7 +16,9 @@
   get_last_reply_for_client/2,
   validate_type_in_last_reply_test/2,
   validate_last_reply_data_test/2,
-  validate_message_in_last_reply_test/2
+  validate_message_in_last_reply_test/2,
+  throwing/1,
+  it_threw/1
 ]).
 
 run_test(Config) ->
@@ -30,11 +32,12 @@ run_test(Config) ->
       ArenaComponent      = pewpew_game:arena_component(PewPewGame),
 
       #{
-        clients => #{ws_control_client => ControlClient},
-        pewpew_game => PewPewGame,
-        arena_component => ArenaComponent,
-        per_client_replies => #{},
-        last_reply_per_client => #{}
+        clients               => #{ws_control_client => ControlClient},
+        pewpew_game           => PewPewGame,
+        arena_component       => ArenaComponent,
+        per_client_replies    => #{},
+        last_reply_per_client => #{},
+        last_thrown_exception => undefined
       }
     end,
     fun(Context) ->
@@ -129,24 +132,32 @@ ws_client_send(ClientId, Message) ->
       {context, UpdatedContext}
   end.
 
-ws_client_sel_recv(ClientId, Client, Type, Replies) ->
-  {text, Reply} = ws_client:recv(Client),
-  JSON = jiffy:decode(Reply, [return_maps]),
+ws_client_sel_recv(ClientId, Client, Type, Timeout, Replies) ->
+  Now = pewpew_utils:get_current_time_in_milliseconds(),
 
-  Any = lists:any(fun(#{<<"type">> := ReplyType}) ->
-                      ReplyType =:= Type
-  end, JSON),
+  case Now >= Timeout of
+    true -> (throw(ws_client_sel_recv_timeout));
+    false ->
+      {text, Reply} = ws_client:recv(Client),
+      JSON = jiffy:decode(Reply, [return_maps]),
 
-  case Any of
-    true ->  {replies, ClientId, lists:reverse([Reply | Replies])};
-    _ -> ws_client_sel_recv(ClientId, Client, Type, [Reply | Replies])
+      Any = lists:any(fun(#{<<"type">> := ReplyType}) ->
+                          ReplyType =:= Type
+      end, JSON),
+
+      case Any of
+        true ->  {replies, ClientId, lists:reverse([Reply | Replies])};
+        _ -> ws_client_sel_recv(ClientId, Client, Type, Timeout, [Reply | Replies])
+      end
   end.
 
 ws_client_sel_recv(ClientId, Type) ->
+  Now = pewpew_utils:get_current_time_in_milliseconds(),
+  Timeout = 1 * 1000,
   fun(Context) ->
       Client = get_client(ClientId, Context),
 
-      ws_client_sel_recv(ClientId, Client, Type, [])
+      ws_client_sel_recv(ClientId, Client, Type, Now + Timeout, [])
   end.
 
 ws_client_flush(ClientId) ->
@@ -212,6 +223,9 @@ validate_message_in_last_reply_test(ClientId, ExpectedMessage) ->
       ExpectedMessage =:= Message
     end, Replies),
 
+    not(MessagePresent) andalso ?debugVal(Replies),
+    not(MessagePresent) andalso ?debugVal(ExpectedMessage),
+
     ?_assert(MessagePresent)
   end.
 
@@ -232,6 +246,23 @@ validate_last_reply_data_test(ClientId, ExpectedData) ->
     ] = Reply,
 
     ?_assertEqual(ExpectedData, Data)
+  end.
+
+throwing(Fun) ->
+  fun(Context) ->
+      try Fun(Context)
+      catch
+        Exception ->
+          UpdatedContext = Context#{last_thrown_exception => Exception},
+          {context, UpdatedContext}
+      end
+  end.
+
+it_threw(Exception) ->
+  fun (Context) ->
+    #{last_thrown_exception := LastThrownException} = Context,
+
+    ?_assertEqual(Exception, LastThrownException)
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

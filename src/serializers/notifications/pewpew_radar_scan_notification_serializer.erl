@@ -26,7 +26,6 @@ transform_data(ScanData, IsElementTypeReturned) ->
 
 transform_data(walls, Walls, _) ->
   lists:map(fun(Wall) ->
-                ?debugVal(Wall),
     [[X, Y] || {X, Y} <- Wall]
   end, Walls);
 transform_data(players, Players, false = _IsElementTypeReturned) ->

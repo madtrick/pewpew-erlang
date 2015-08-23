@@ -126,7 +126,7 @@ transform_replies(Replies) ->
   Dict = dict:new(),
   Transformation = transform_replies(Replies, Dict),
   dict:fold(fun(Channel, Messages, Acc) ->
-    [{reply, [{send_to, Channel, Messages}]} | Acc]
+    [{reply, [{send_to, Channel, lists:reverse(Messages)}]} | Acc]
   end, [], Transformation).
 
 transform_replies([], Dict) ->
