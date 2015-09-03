@@ -13,8 +13,7 @@
 -export([
   init/1,
   handle_cast/2,
-  handle_call/3,
-  handle_info/2
+  handle_call/3
 ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,21 +43,11 @@ update(PewPewGame) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(_) ->
-  {ok, EventBus}        = pewpew_event_bus:start_link(),
-  PewpewGameContextData = pewpew_game_context_data:new([{pewpew_event_bus, EventBus}]),
+  PewpewGameContextData = pewpew_game_context_data:new(),
   {ok, ArenaComponent}  = pewpew_arena_component:start_link([{pewpew_game_context_data, PewpewGameContextData}, {width, arena_width()}, {height, arena_height()}]),
   PewPewGameStateData   = pewpew_game_state_data:new([{pewpew_arena_component, ArenaComponent}, {pewpew_game_context_data, PewpewGameContextData}]),
 
-  {ok, PewPewGameStateData, 0}.
-
-handle_info(timeout, PewpewGameStateData) ->
-  pewpew_event_bus:on(pewpew_event_bus(PewpewGameStateData), <<"player.disconnected">>, fun(Data) ->
-        spawn(fun() ->
-              JSON = jiffy:encode({[{type, <<"DisconnectPlayerOrder">>}, {data, {[{id, proplists:get_value(id, Data)}]}}]}),
-              pewpew_multicast:publish(JSON, pewpew_registry:entries())
-          end)
-  end),
-  {noreply, PewpewGameStateData}.
+  {ok, PewPewGameStateData}.
 
 handle_cast(start, PewpewGameStateData) ->
   UpdatedPewPewGameStateData = pewpew_game_state_data:update(PewpewGameStateData, [{pewpew_game_status, started}]),
@@ -82,11 +71,6 @@ handle_call(arena_component, _, PewpewGameStateData) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-pewpew_event_bus(PewpewGameStateData) ->
-  PewpewGameContextData = pewpew_game_state_data:pewpew_game_context_data(PewpewGameStateData),
-  pewpew_game_context_data:pewpew_event_bus(PewpewGameContextData).
-
 arena_width() ->
   pewpew_config:get([arena, width]).
 

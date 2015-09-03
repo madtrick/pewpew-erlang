@@ -205,12 +205,6 @@ react_to_process_down(PlayerComponentData, Pid) ->
   react_to_process_down_if_origin(PlayerComponentData, pewpew_player_component_data:origin(PlayerComponentData), Pid).
 
 react_to_process_down_if_origin(PlayerComponentData, Origin, Pid) when Origin =:= Pid ->
-  pewpew_event_bus:trigger(pewpew_event_bus(PlayerComponentData), <<"player.disconnected">>, [[{id, pewpew_player_component_data:id(PlayerComponentData)}]]),
   {stop, normal, PlayerComponentData};
 react_to_process_down_if_origin(PlayerComponentData, _, _) ->
   {noreply, PlayerComponentData}.
-
-pewpew_event_bus(PlayerComponentData) ->
-  pewpew_game_context_data:pewpew_event_bus(
-    pewpew_player_component_data:pewpew_game_context_data(PlayerComponentData)
-  ).
