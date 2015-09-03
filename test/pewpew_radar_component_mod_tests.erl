@@ -78,13 +78,13 @@ detect_tangent_bottom_wall_test_() ->
 detect_right_top_corner_wall_test_() ->
   generate_circular_radar_test(#{
     players => [[{id, player_id_1}, {x, 380}, {y, 380}]],
-    walls_to_find => [[{400,400},{345,400}],[{400,400},{400,345}]]
+    walls_to_find => [[{400,400},{400,345}], [{400,400},{345,400}]]
    }).
 
 detect_left_top_corner_wall_test_() ->
   generate_circular_radar_test(#{
     players => [[{id, player_id_1}, {x, 20}, {y, 380}]],
-    walls_to_find => [[{54,400},{0,400}],[{0,400},{0,345}]]
+    walls_to_find => [[{0,400},{0,345}], [{54,400},{0,400}]]
    }).
 
 detect_right_bottom_corner_wall_test_() ->
