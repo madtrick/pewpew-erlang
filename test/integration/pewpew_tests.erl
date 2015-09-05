@@ -19,7 +19,8 @@
     validate_last_reply_data_test/2,
     validate_message_in_last_reply_test/2,
     throwing/1,
-    it_threw/1
+    it_threw/1,
+    place_player_at/2
 ]).
 
 register_player_command_test_() ->
@@ -181,7 +182,7 @@ reject_move_player_command_when_player_hits_arena_edges_include_radius_test_() -
 
 reject_move_player_command_when_player_hits_negative_arena_edges_test_() ->
   generate_reject_move_command_test(#{
-    coordinates => [{x, 6}, {y, 6}],
+    coordinates => [{x, 5}, {y, 6}],
     movements => [#{move => backward}]
    }).
 
@@ -203,6 +204,23 @@ reject_move_player_command_when_two_rotations_test_() ->
 reject_move_player_command_when_two_moves_test_() ->
   generate_reject_move_command_test(#{
     movements => [#{move => forward}, #{move => forward}]
+   }).
+
+reject_move_player_command_when_collides_with_other_player_test_() ->
+  run_test(#{
+    steps => [
+       register_player(ws_player_1_client),
+       register_player(ws_player_2_client),
+       ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+       ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+       place_player_at(ws_player_1_client, [{x, 200}, {y, 200}]),
+       place_player_at(ws_player_2_client, [{x, 206}, {y, 200}]),
+       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+       ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+       ws_client_send(ws_player_1_client, #{type => <<"MovePlayerCommand">>, data => [#{move => <<"forward">>}]}),
+       ws_client_sel_recv(ws_player_1_client, <<"InvalidCommandError">>)
+   ],
+    test => ?_assert(true)
    }).
 
 move_player_test_() ->

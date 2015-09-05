@@ -18,7 +18,8 @@
   validate_last_reply_data_test/2,
   validate_message_in_last_reply_test/2,
   throwing/1,
-  it_threw/1
+  it_threw/1,
+  place_player_at/2
 ]).
 
 run_test(Config) ->
@@ -263,6 +264,13 @@ it_threw(Exception) ->
     #{last_thrown_exception := LastThrownException} = Context,
 
     ?_assertEqual(Exception, LastThrownException)
+  end.
+
+place_player_at(CliendId, Coordinates) ->
+  fun (Context) ->
+    Player = get_player_for_client(CliendId, Context),
+    pewpew_player_component:set_coordinates(Player, Coordinates),
+    ok
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

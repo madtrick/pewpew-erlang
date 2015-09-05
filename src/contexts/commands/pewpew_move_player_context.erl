@@ -23,6 +23,7 @@ call(CommandContextData) ->
         true ->
           case Player of
             undefined ->
+
               InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
               {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
             _ ->
@@ -51,6 +52,31 @@ call(CommandContextData) ->
 
 % TODO move this into the command
 validates(Player, ArenaComponent) ->
+  not collides_with_walls(Player, ArenaComponent) andalso not collides_with_players(Player, ArenaComponent).
+
+collides_with_players(Player, ArenaComponent) ->
+  Radius = pewpew_player_component:radius(Player),
+  X      = pewpew_player_component:x(Player),
+  Y      = pewpew_player_component:y(Player),
+
+  Players = pewpew_arena_component:players(ArenaComponent),
+
+  lists:any(fun (P) ->
+    case P =:= Player of
+      true -> false;
+      _ ->
+        PR = pewpew_player_component:radius(P),
+        PX = pewpew_player_component:x(P),
+        PY = pewpew_player_component:y(P),
+
+        % Formula got at http://stackoverflow.com/a/8367547/1078859
+        % (R0-R1)^2 <= (x0-x1)^2+(y0-y1)^2 <= (R0+R1)^2
+        Value = math:pow((PX - X), 2) + math:pow((PY - Y), 2),
+        math:pow(Radius - PR, 2) =< Value andalso Value =< math:pow(Radius + PR, 2)
+    end
+  end, Players).
+
+collides_with_walls(Player, ArenaComponent) ->
   Radius = pewpew_player_component:radius(Player),
   X      = pewpew_player_component:x(Player),
   Y      = pewpew_player_component:y(Player),
@@ -58,7 +84,7 @@ validates(Player, ArenaComponent) ->
   {width, ArenaWidth, height, ArenaHeight} = pewpew_arena_component:dimensions(ArenaComponent),
 
 
-  ((X + Radius) < ArenaWidth) andalso
-  ((Y + Radius) < ArenaHeight) andalso
-  ((X - Radius) > 0) andalso
-  ((Y - Radius) > 0).
+  ((X + Radius) > ArenaWidth) orelse
+  ((Y + Radius) > ArenaHeight) orelse
+  ((X - Radius) < 0) orelse
+  ((Y - Radius) < 0).
