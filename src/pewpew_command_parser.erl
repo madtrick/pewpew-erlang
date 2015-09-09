@@ -23,8 +23,8 @@ build_command(?COMMAND("RegisterPlayerCommand", Data)) ->
   pewpew_command_context_data:new(pewpew_register_player_context, register_player_command:fromJSON(Data));
 build_command(?COMMAND("MovePlayerCommand", Data)) ->
   pewpew_command_context_data:new(pewpew_move_player_context, pewpew_move_player_command:fromJSON(Data));
-build_command(?COMMAND("ShootPlayerCommand", Data)) ->
-  pewpew_command_context_data:new(pewpew_shoot_player_context, pewpew_shoot_player_command:fromJSON(Data));
+build_command(?COMMAND("PlayerShootCommand", Data)) ->
+  pewpew_command_context_data:new(pewpew_player_shoot_context, pewpew_player_shoot_command:fromJSON(Data));
 build_command(?COMMAND("DestroyPlayerCommand", Data)) ->
   pewpew_command_context_data:new(pewpew_destroy_player_context, pewpew_destroy_player_command:fromJSON(Data));
 build_command(?COMMAND("RotatePlayerCommand", Data)) ->
