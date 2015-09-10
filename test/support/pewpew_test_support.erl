@@ -54,7 +54,7 @@ run_test(Config) ->
       meck:unload(pewpew_core)
     end,
     fun(Context) ->
-      Test   = maps:get(test, Config, ?_assert(true)),
+      Test   = maps:get(test, Config, []),
       Steps  = maps:get(steps, Config, undefined),
 
       StepsList = case is_function(Steps) of
@@ -64,7 +64,7 @@ run_test(Config) ->
 
       NewContext = execute_steps(StepsList, Context),
       #{tests := ContextTests} = NewContext,
-      Tests = lists:reverse([Test | ContextTests]),
+      Tests = lists:flatten(lists:reverse([Test | ContextTests])),
       run_tests(Tests, NewContext)
     end
     }.
