@@ -38,7 +38,8 @@ run_test(Config) ->
         arena_component       => ArenaComponent,
         per_client_replies    => #{},
         last_reply_per_client => #{},
-        last_thrown_exception => undefined
+        last_thrown_exception => undefined,
+        tests                 => []
       }
     end,
     fun(Context) ->
@@ -53,7 +54,7 @@ run_test(Config) ->
       meck:unload(pewpew_core)
     end,
     fun(Context) ->
-      Test   = maps:get(test, Config),
+      Test   = maps:get(test, Config, ?_assert(true)),
       Steps  = maps:get(steps, Config, undefined),
 
       StepsList = case is_function(Steps) of
@@ -62,7 +63,9 @@ run_test(Config) ->
                   end,
 
       NewContext = execute_steps(StepsList, Context),
-      run_tests(Test, NewContext)
+      #{tests := ContextTests} = NewContext,
+      Tests = lists:reverse([Test | ContextTests]),
+      run_tests(Tests, NewContext)
     end
     }.
 
@@ -235,7 +238,7 @@ validate_type_in_last_reply_test(ClientId, ExpectedType) ->
     Reply       = get_last_reply_for_client(ClientId, Context),
     TypePresent = is_reply_type_present_in_messages(ExpectedType, Reply),
 
-    ?_assert(TypePresent)
+    {test, ?_assert(TypePresent)}
   end.
 
 validate_last_reply_data_test(ClientId, ExpectedData) ->
@@ -316,6 +319,9 @@ execute_step(Fun, Context) ->
        };
     {context, UpdatedContext} ->
       UpdatedContext;
+    {test, Test} ->
+      #{tests := Tests} = Context,
+      Context#{tests => [Test | Tests]};
     _ -> Context
   end.
 

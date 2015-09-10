@@ -719,7 +719,20 @@ reject_shoot_when_game_not_started_test_() ->
       register_player(),
       ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
       ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
-      ws_client_recv(ws_player_client)
-    ],
-    test => validate_type_in_last_reply_test(ws_player_client, <<"InvalidCommandError">>)
+      ws_client_recv(ws_player_client),
+      validate_type_in_last_reply_test(ws_player_client, <<"InvalidCommandError">>)
+    ]
+   }).
+
+player_shoot_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+      ws_client_recv(ws_player_client),
+      validate_type_in_last_reply_test(ws_player_client, <<"PlayerShootAck">>)
+    ]
    }).

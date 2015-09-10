@@ -22,6 +22,7 @@ call(CommandContextData) ->
           InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
           {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
         true ->
-          lol
+          PlayerShootAck = pewpew_player_shoot_ack:new(CommandOriginChannel),
+          {reply, [{send_to, CommandOriginChannel, PlayerShootAck}]}
       end
   end.
