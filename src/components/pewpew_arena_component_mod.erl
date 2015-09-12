@@ -1,4 +1,5 @@
 -module(pewpew_arena_component_mod).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([
   get_player/2,
@@ -49,7 +50,7 @@ create_shot(ArenaComponentData, ShotData) ->
 
   {x, X, y, Y} = pick_shot_coordinates(PlayerRotation, PlayerRadius, PlayerCoordinates),
 
-  {ok, Shot} = pewpew_shot_component_sup:add_shot(ShotsSupervisor, [{x, X}, {y, Y} | ShotData]),
+  {ok, Shot} = pewpew_shot_component_sup:add_shot(ShotsSupervisor, [{rotation, PlayerRotation}, {x, X}, {y, Y} | ShotData]),
   {ok, Shot}.
 
 move_player(Player, Movement, _) ->
@@ -84,7 +85,16 @@ update(ArenaComponentData) ->
     RadarUpdate
   end, Players),
 
-  {ok, lists:flatten(PlayersUpdates)}.
+  Shots = pewpew_arena_component_data:shots(ArenaComponentData),
+  ShotsUpdates = lists:map(fun(Shot) ->
+    ShotUpdate = {shot, Shot, update, pewpew_shot_component:update(Shot)},
+
+    ShotUpdate
+  end, Shots),
+
+  Updates = [PlayersUpdates, ShotsUpdates],
+
+  {ok, lists:flatten(Updates)}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

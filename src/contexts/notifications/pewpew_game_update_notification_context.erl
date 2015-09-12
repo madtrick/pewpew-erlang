@@ -22,7 +22,9 @@ call(NotificationContextData) ->
               {notification, Notification} ->
                 PlayerChannel = pewpew_player_component:channel(Player),
                 {reply, [{send_to, PlayerChannel, Notification}]}
-            end
+            end;
+          {shot, _, update, _} ->
+            noreply %ignore them for now
         end
       end, Updates)
   end.
