@@ -736,3 +736,26 @@ player_shoot_test_() ->
       validate_type_in_last_reply_test(ws_player_client, <<"PlayerShootAck">>)
     ]
    }).
+
+only_one_shot_per_command_is_created_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>),
+      ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>)
+    ],
+
+    test => fun (Context) ->
+                #{pewpew_game := PewPewGame} = Context,
+                ArenaComponent = pewpew_game:arena_component(PewPewGame),
+                Shots = pewpew_arena_component:shots(ArenaComponent),
+                NumberOfShots = erlang:length(Shots),
+
+                ?_assertEqual(2, NumberOfShots)
+    end
+  }).

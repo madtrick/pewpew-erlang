@@ -6,8 +6,10 @@
 -export([
   get_player/2,
   players/1,
+  shots/1,
   positions_left/1,
   create_player/2,
+  create_shot/2,
   move_player/2,
   dimensions/1,
   snapshot/1,
@@ -40,6 +42,9 @@ positions_left(ArenaComponent) ->
 create_player(ArenaComponent, Data) ->
   gen_server:call(ArenaComponent, {create_player, Data}).
 
+create_shot(ArenaComponent, Data) ->
+  gen_server:call(ArenaComponent, {create_shot, Data}).
+
 get_player(ArenaComponent, Data) ->
   gen_server:call(ArenaComponent, {get_player, Data}).
 
@@ -51,6 +56,9 @@ dimensions(ArenaComponent) ->
 
 players(ArenaComponent) ->
   gen_server:call(ArenaComponent, players).
+
+shots(ArenaComponent) ->
+  gen_server:call(ArenaComponent, shots).
 
 snapshot(ArenaComponent) ->
   gen_server:call(ArenaComponent, snapshot).
@@ -64,10 +72,12 @@ update(ArenaComponent) ->
 
 init([Data]) ->
   {ok, PewpewPlayerComponentSup} = pewpew_player_component_sup:start_link(),
+  {ok, PewpewShotComponentSup} = pewpew_shot_component_sup:start_link(),
   {ok, PewPewRadarComponent} = pewpew_radar_component:start_link(),
   {ok, pewpew_arena_component_data:new([
         {radar_component, PewPewRadarComponent},
         {pewpew_player_component_sup, PewpewPlayerComponentSup},
+        {shot_component_sup, PewpewShotComponentSup},
         {pewpew_game_context_data, proplists:get_value(pewpew_game_context_data, Data)},
         {max_number_of_players, pewpew_config:get([arena, players, max])},
         {width, proplists:get_value(width, Data)},
@@ -93,6 +103,14 @@ handle_call({create_player, Data}, _, ArenaComponentData) ->
   NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, UpdatedPlayersList),
 
   {reply, Player, NewArenaComponentData};
+handle_call({create_shot, Data}, _, ArenaComponentData) ->
+  {ok, Shot} = pewpew_arena_component_mod:create_shot(ArenaComponentData, Data),
+
+  Shots                 = pewpew_arena_component_data:shots(ArenaComponentData),
+  UpdatedShotsList      = [{shots, [Shot | Shots]}],
+  NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, UpdatedShotsList),
+
+  {reply, {ok, Shot}, NewArenaComponentData};
 
 handle_call({get_player, PlayerId}, _, ArenaComponentData) ->
   {ok, Player} = pewpew_arena_component_mod:get_player(PlayerId, ArenaComponentData),
@@ -106,6 +124,9 @@ handle_call({move_player, PlayerId, Data}, _, ArenaComponentData) ->
 
 handle_call(players, _, ArenaComponentData) ->
   {reply, pewpew_arena_component_data:players(ArenaComponentData), ArenaComponentData};
+
+handle_call(shots, _, ArenaComponentData) ->
+  {reply, pewpew_arena_component_data:shots(ArenaComponentData), ArenaComponentData};
 
 handle_call(positions_left, _, ArenaComponentData) ->
   {reply, real_positions_left(ArenaComponentData), ArenaComponentData};

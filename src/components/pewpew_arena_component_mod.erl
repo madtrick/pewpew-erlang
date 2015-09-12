@@ -3,6 +3,7 @@
 -export([
   get_player/2,
   create_player/2,
+  create_shot/2,
   move_player/3,
   dimensions/1,
   update/1
@@ -38,6 +39,12 @@ create_player(ArenaComponentData, PlayerData) ->
   monitor_player_componet(Player),
 
   {ok, Player}.
+
+create_shot(ArenaComponentData, _ShotData) ->
+  ShotsSupervisor = pewpew_arena_component_data:shot_component_sup(ArenaComponentData),
+
+  {ok, Shot} = pewpew_shot_component_sup:add_shot(ShotsSupervisor, []),
+  {ok, Shot}.
 
 move_player(Player, Movement, _) ->
   pewpew_player_component:move(Player, Movement),
