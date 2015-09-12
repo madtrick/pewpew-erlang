@@ -40,10 +40,16 @@ create_player(ArenaComponentData, PlayerData) ->
 
   {ok, Player}.
 
-create_shot(ArenaComponentData, _ShotData) ->
-  ShotsSupervisor = pewpew_arena_component_data:shot_component_sup(ArenaComponentData),
+create_shot(ArenaComponentData, ShotData) ->
+  ShotsSupervisor   = pewpew_arena_component_data:shot_component_sup(ArenaComponentData),
+  Player            = proplists:get_value(player, ShotData),
+  PlayerCoordinates = pewpew_player_component:coordinates(Player),
+  PlayerRotation    = pewpew_player_component:rotation(Player),
+  PlayerRadius      = pewpew_player_component:radius(Player),
 
-  {ok, Shot} = pewpew_shot_component_sup:add_shot(ShotsSupervisor, []),
+  {x, X, y, Y} = pick_shot_coordinates(PlayerRotation, PlayerRadius, PlayerCoordinates),
+
+  {ok, Shot} = pewpew_shot_component_sup:add_shot(ShotsSupervisor, [{x, X}, {y, Y} | ShotData]),
   {ok, Shot}.
 
 move_player(Player, Movement, _) ->
@@ -114,6 +120,21 @@ pick_player_coordinates(ArenaComponentData) ->
   Y = pick_player_y_coordinate(ArenaHeight - 32) + 16,
 
   {x, X, y, Y}.
+
+pick_shot_coordinates(PlayerRotation, PlayerRadius, {x, PlayerX, y, PlayerY}) ->
+  % Rotate from players origin to
+  % get the origin of the shot
+
+  Radians = math:pi() * PlayerRotation / 180,
+  X = math:cos(Radians) * (PlayerRadius),
+  Y = math:sin(Radians) * (PlayerRadius),
+
+  % Translate points with relation to arena origin
+  % using the players coordinates
+  TranslatedX = X + PlayerX,
+  TranslatedY = Y + PlayerY,
+
+  {x, TranslatedX, y, TranslatedY}.
 
 pick_player_x_coordinate(MaxX) ->
   random:uniform(MaxX).

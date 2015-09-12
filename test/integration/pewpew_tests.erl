@@ -759,3 +759,71 @@ only_one_shot_per_command_is_created_test_() ->
                 ?_assertEqual(2, NumberOfShots)
     end
   }).
+
+shot_starts_at_players_boundaries_at_players_rotation_and_player_not_rotated_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>)
+    ],
+
+    test => fun(Context) ->
+      #{pewpew_game := PewPewGame} = Context,
+      ArenaComponent = pewpew_game:arena_component(PewPewGame),
+      [Shot] = pewpew_arena_component:shots(ArenaComponent),
+      Player = get_player_for_client(ws_player_client, Context),
+
+      PlayerRadius             = pewpew_player_component:radius(Player),
+      {x, PlayerX, y, PlayerY} = pewpew_player_component:coordinates(Player),
+      {x, ShotX, y, ShotY}     = pewpew_shot_component:coordinates(Shot),
+
+      ExpectedX = (PlayerX + PlayerRadius) * 1.0,
+      ExpectedY = PlayerY * 1.0,
+
+      [
+       ?_assertEqual(ExpectedX, ShotX),
+       ?_assertEqual(ExpectedY, ShotY)
+      ]
+    end
+   }).
+
+shot_starts_at_players_boundaries_at_players_rotation_and_player_rotated_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_send(ws_player_client, #{type => <<"MovePlayerCommand">>, data => [#{rotate => 35}]}),
+      ws_client_sel_recv(ws_player_client, <<"MovePlayerAck">>),
+      ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>)
+    ],
+
+    test => fun(Context) ->
+      #{pewpew_game := PewPewGame} = Context,
+      ArenaComponent = pewpew_game:arena_component(PewPewGame),
+      [Shot] = pewpew_arena_component:shots(ArenaComponent),
+      Player = get_player_for_client(ws_player_client, Context),
+
+      PlayerRotation           = pewpew_player_component:rotation(Player),
+      PlayerRadius             = pewpew_player_component:radius(Player),
+      PlayerRotationInRadians  = PlayerRotation * math:pi() / 180,
+      {x, PlayerX, y, PlayerY} = pewpew_player_component:coordinates(Player),
+      {x, ShotX, y, ShotY}     = pewpew_shot_component:coordinates(Shot),
+
+      X = math:cos(PlayerRotationInRadians) * (PlayerRadius),
+      Y = math:sin(PlayerRotationInRadians) * (PlayerRadius),
+      ExpectedX = X + PlayerX,
+      ExpectedY = Y + PlayerY,
+
+      [
+       ?_assertEqual(ExpectedX, ShotX),
+       ?_assertEqual(ExpectedY, ShotY)
+      ]
+    end
+   }).
