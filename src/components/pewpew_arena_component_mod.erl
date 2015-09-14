@@ -86,15 +86,26 @@ update(ArenaComponentData) ->
   end, Players),
 
   Shots = pewpew_arena_component_data:shots(ArenaComponentData),
-  ShotsUpdates = lists:map(fun(Shot) ->
-    ShotUpdate = {shot, Shot, update, pewpew_shot_component:update(Shot)},
+  ShotUpdateContext = #{
+    arena_dimensions => #{width => Width, height => Height}
+  },
+  {UACD, ShotsUpdates2} = lists:foldl(fun(Shot, {ACD, ShotUpdates}) ->
 
-    ShotUpdate
-  end, Shots),
+    {Action, NewACD} = case pewpew_shot_component:update(Shot, ShotUpdateContext) of
+      updated ->
+        {do_nothing, ACD};
+      destroyed ->
+        UpdatedShotsList = lists:filter(fun(S) -> S =/= Shot  end, Shots),
+        UpdatedArenaComponentData = pewpew_arena_component_data:update(ACD, [{shots, UpdatedShotsList}]),
+        {do_nothing, UpdatedArenaComponentData}
+     end,
 
-  Updates = [PlayersUpdates, ShotsUpdates],
+    {NewACD, [Action | ShotUpdates]}
+  end, {ArenaComponentData, []}, Shots),
 
-  {ok, lists:flatten(Updates)}.
+  Updates = [PlayersUpdates, ShotsUpdates2],
+
+  {ok, lists:flatten(Updates), UACD}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

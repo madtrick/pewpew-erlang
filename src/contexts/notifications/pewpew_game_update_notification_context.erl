@@ -24,7 +24,9 @@ call(NotificationContextData) ->
                 {reply, [{send_to, PlayerChannel, Notification}]}
             end;
           {shot, _, update, _} ->
-            noreply %ignore them for now
+            noreply; %ignore them for now
+          do_nothing ->
+            noreply %ignore this
         end
       end, Updates)
   end.

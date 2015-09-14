@@ -6,7 +6,8 @@
   get_value_in_map/2,
   get_value_in_map/3,
   set_value_in_map/3,
-  get_current_time_in_milliseconds/0
+  get_current_time_in_milliseconds/0,
+  ceil/1
 ]).
 
 proplist_to_map(Proplist) ->
@@ -47,3 +48,12 @@ get_current_time_in_milliseconds() ->
   {Mega, Sec, Micro} = erlang:now(),
   MilliSeconds       = (Mega*1000000 + Sec)*1000 + round(Micro/1000),
   MilliSeconds.
+
+ceil(X) when X < 0 ->
+  trunc(X);
+ceil(X) ->
+  T = trunc(X),
+  case X - T == 0 of
+    true -> T;
+    false -> T + 1
+  end.

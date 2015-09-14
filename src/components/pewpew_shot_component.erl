@@ -6,7 +6,7 @@
 -export([
   coordinates/1,
   rotation/1,
-  update/1
+  update/2
 ]).
 -export([
   init/1,
@@ -27,8 +27,8 @@ coordinates(ShotComponent) ->
 rotation(ShotComponent) ->
   gen_server:call(ShotComponent, rotation).
 
-update(ShotComponent) ->
-  gen_server:call(ShotComponent, update).
+update(ShotComponent, UpdateContext) ->
+  gen_server:call(ShotComponent, {update, UpdateContext}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callback
@@ -38,9 +38,13 @@ init([ShotData]) ->
   ShotComponentData = pewpew_shot_component_data:new(ShotData),
   {ok, ShotComponentData}.
 
-handle_call(update, _, ShotComponentData) ->
-  {ok, UpdatedShotComponentData} = pewpew_shot_component_mod:update(ShotComponentData),
-  {reply, ok, UpdatedShotComponentData};
+handle_call({update, UpdateContext}, _, ShotComponentData) ->
+  case pewpew_shot_component_mod:update(ShotComponentData, UpdateContext) of
+    {ok, UpdatedShotComponentData} ->
+      {reply, updated, UpdatedShotComponentData};
+    {destroy, UpdatedShotComponentData} ->
+      {stop, normal, destroyed, UpdatedShotComponentData}
+  end;
 handle_call(rotation, _, ShotComponentData) ->
   {reply, pewpew_shot_component_data:rotation(ShotComponentData), ShotComponentData};
 handle_call(coordinates, _, ShotComponentData) ->

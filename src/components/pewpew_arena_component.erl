@@ -90,8 +90,8 @@ handle_info(?PLAYER_DOWN(Pid), ArenaComponentData) ->
   {noreply, NewArenaComponentData}.
 
 handle_call(update, _, ArenaComponentData) ->
-  {ok, Update} = pewpew_arena_component_mod:update(ArenaComponentData),
-  {reply, Update, ArenaComponentData};
+  {ok, Updates, UpdatedArenaComponentData} = pewpew_arena_component_mod:update(ArenaComponentData),
+  {reply, Updates, UpdatedArenaComponentData};
 handle_call(snapshot, _, ArenaComponentData) ->
   Snapshot = pewpew_arena_component_snapshot:new(ArenaComponentData),
   {reply, Snapshot, ArenaComponentData};

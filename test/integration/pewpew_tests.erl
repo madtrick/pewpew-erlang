@@ -880,3 +880,34 @@ shot_moves_forward_and_with_original_rotation_test_() ->
       ]
     end
    }).
+
+shot_is_destroyed_when_it_hits_the_wall_test_() ->
+  run_test(#{
+    steps => [
+      register_player(),
+      ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      fun (Context) ->
+          #{pewpew_game := PewPewGame} = Context,
+          ArenaComponent = pewpew_game:arena_component(PewPewGame),
+          [Player] = pewpew_arena_component:players(ArenaComponent),
+          pewpew_player_component:set_coordinates(Player, [{x, 799}, {y, 300}])
+      end,
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+      ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>),
+      ws_client_flush(ws_control_client),
+      ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
+    ],
+
+    test => fun(Context) ->
+      #{ pewpew_game := PewPewGame } = Context,
+
+      ArenaComponent = pewpew_game:arena_component(PewPewGame),
+      Shots          = pewpew_arena_component:shots(ArenaComponent),
+
+      [
+       ?_assertEqual([], Shots)
+      ]
+    end
+   }).

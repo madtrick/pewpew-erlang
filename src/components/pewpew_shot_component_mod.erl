@@ -1,8 +1,9 @@
 -module(pewpew_shot_component_mod).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([
   get_coordinates/1,
-  update/1
+  update/2
 ]).
 
 -define(SPEED, 1.5).
@@ -13,7 +14,7 @@ get_coordinates(ShotComponentData) ->
 
   {ok, {x, X, y, Y}}.
 
-update(ShotComponentData) ->
+update(ShotComponentData, UpdateContext) ->
   Rotation = pewpew_shot_component_data:rotation(ShotComponentData),
   RadianRotation = (Rotation * math:pi()) / 180,
   DX       = ?SPEED * math:cos(RadianRotation),
@@ -24,9 +25,16 @@ update(ShotComponentData) ->
   RoundedX = round_value(X + DX, 5),
   RoundedY = round_value(Y + DY, 5),
 
+  #{ arena_dimensions := ArenaDimensions } = UpdateContext,
+
   UpdatedShotComponentData = pewpew_shot_component_data:update(ShotComponentData, [{x, RoundedX}, {y, RoundedY}]),
 
-  {ok, UpdatedShotComponentData}.
+  case is_out_of_bounds(RoundedX, RoundedY, ArenaDimensions) of
+    true ->
+      {destroy, UpdatedShotComponentData};
+    false ->
+      {ok, UpdatedShotComponentData}
+  end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
@@ -34,3 +42,11 @@ update(ShotComponentData) ->
 round_value(Value, Precision) ->
   P = math:pow(10, Precision),
   round(Value * P) / P.
+
+is_out_of_bounds(X, Y, ArenaDimensions) ->
+  #{ width := ArenaWidth, height := ArenaHeight } = ArenaDimensions,
+
+  Y < 0 orelse
+  X < 0 orelse
+  X > ArenaWidth orelse
+  Y > ArenaHeight.
