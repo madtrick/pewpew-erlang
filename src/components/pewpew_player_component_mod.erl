@@ -1,11 +1,12 @@
 -module(pewpew_player_component_mod).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([
   set_coordinates/2,
   get_coordinates/1,
   move/2,
   snapshot/1,
-  update/1,
+  update/2,
   configure/3
 ]).
 
@@ -33,8 +34,39 @@ snapshot(PlayerComponentData) ->
 
   {ok, Snapshot}.
 
-update(_PlayerComponentData) ->
-  {ok, noupdate}.
+update(PlayerComponentData, UpdateContext) ->
+  #{shots := Shots} = UpdateContext,
+
+  Radius = pewpew_player_component_data:radius(PlayerComponentData),
+  PX = pewpew_player_component_data:x(PlayerComponentData),
+  PY = pewpew_player_component_data:y(PlayerComponentData),
+
+  ?debugVal(Shots),
+   ?debugVal(PX),
+
+  UpdatedData = lists:foldl(fun (Shot, Data) ->
+    {x, ShotX, y, ShotY, radius, ShotRadius} = Shot,
+
+    % collision detection formula got at:
+    % http://stackoverflow.com/a/8367547/1078859
+    Constant = math:pow(PX - ShotX, 2) + math:pow(PY - ShotY, 2),
+    Collides = math:pow(ShotRadius - Radius, 2) =< Constant orelse
+               Constant =< math:pow(ShotRadius + Radius, 2),
+
+   ?debugVal(ShotX),
+    ?debugVal(Collides),
+
+    case Collides of
+      true ->
+        CurrentLife = pewpew_player_component_data:life(Data),
+        NewLife = CurrentLife - 5,
+        pewpew_player_component_data:update(Data, [{life, NewLife}]);
+      false ->
+        Data
+    end
+  end, PlayerComponentData, Shots),
+
+  {ok, UpdatedData}.
 
 configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
   %TODO: remove this check as this is also checked in the radar_mod file

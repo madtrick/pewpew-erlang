@@ -27,7 +27,7 @@
   radius/1,
   coordinates/1,
   snapshot/1,
-  update/1,
+  update/2,
   radar_config/1,
   configure/3
 ]).
@@ -102,8 +102,8 @@ coordinates(PlayerComponent) ->
 snapshot(PlayerComponent) ->
   gen_server:call(PlayerComponent, snapshot).
 
-update(PlayerComponent) ->
-  gen_server:call(PlayerComponent, update).
+update(PlayerComponent, UpdateContext) ->
+  gen_server:call(PlayerComponent, {update, UpdateContext}).
 
 radar_config(PlayerComponent) ->
   gen_server:call(PlayerComponent, radar_config).
@@ -150,9 +150,9 @@ handle_cast({set_coordinates, Coordinates}, PlayerComponentData) ->
 handle_cast({set_state, Data}, _) ->
   {noreply, Data}.
 
-handle_call(update, _, PlayerComponentData) ->
-  {ok, Update} = pewpew_player_component_mod:update(PlayerComponentData),
-  {reply, Update, PlayerComponentData};
+handle_call({update, UpdateContext}, _, PlayerComponentData) ->
+  {ok, UpdatedPlayerComponentData} = pewpew_player_component_mod:update(PlayerComponentData, UpdateContext),
+  {reply, ok, UpdatedPlayerComponentData};
 handle_call(get_state, _, PlayerComponentData) ->
   {reply, PlayerComponentData, PlayerComponentData};
 handle_call(id, _, PlayerComponentData) ->

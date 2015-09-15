@@ -897,6 +897,7 @@ shot_is_destroyed_when_it_hits_the_wall_test_() ->
       ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
       ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>),
       ws_client_flush(ws_control_client),
+      ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>),
       ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
     ],
 
@@ -909,5 +910,38 @@ shot_is_destroyed_when_it_hits_the_wall_test_() ->
       [
        ?_assertEqual([], Shots)
       ]
+    end
+   }).
+
+shots_reduce_players_life_when_they_hit_them_test_() ->
+  run_test(#{
+    steps => [
+      register_player(ws_player_1_client),
+      register_player(ws_player_2_client),
+      ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+      ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+      fun (Context) ->
+         Player1 = get_player_for_client(ws_player_1_client, Context),
+         Player2 = get_player_for_client(ws_player_2_client, Context),
+         Radius  = pewpew_player_component:radius(Player1),
+
+         pewpew_player_component:set_coordinates(Player1, [{x, 200}, {y, 200}]),
+         pewpew_player_component:set_coordinates(Player2, [{x, 200 + Radius + 1}, {y, 200}]),
+
+         ok
+      end,
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+      ws_client_send(ws_player_1_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_1_client, <<"PlayerShootAck">>),
+      ws_client_flush(ws_control_client),
+      ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
+    ],
+
+    test => fun (Context) ->
+      Player2 = get_player_for_client(ws_player_2_client, Context),
+      Player2Life = pewpew_player_component:life(Player2),
+
+      ?_assertEqual(95, Player2Life)
     end
    }).

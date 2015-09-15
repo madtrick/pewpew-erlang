@@ -70,22 +70,11 @@ update(ArenaComponentData) ->
   Width = pewpew_arena_component_data:width(ArenaComponentData),
   ArenaDimensions = {width, Width, height, Height},
 
-  PlayersUpdates = lists:map(fun(Player) ->
-    RadarConfig      = pewpew_player_component:radar_config(Player),
-    ScanContext = #{
-      arena_dimensions => ArenaDimensions,
-      players => Players,
-      scanning_player => Player
-     },
-    ScanResult       = pewpew_radar_component:scan(RadarComponent, ScanContext, RadarConfig),
-    ScanNotification = radar_scan_to_notification(ScanResult),
-    RadarUpdate      = {player, Player, update, ScanNotification},
-    %PlayerUpdate = {player, Player, update, pewpew_player_component:update(Player)},
-
-    RadarUpdate
-  end, Players),
-
   Shots = pewpew_arena_component_data:shots(ArenaComponentData),
+  lists:foreach(fun(Shot) ->
+                    pewpew_shot_component:move(Shot)
+                end, Shots),
+
   ShotUpdateContext = #{
     arena_dimensions => #{width => Width, height => Height}
   },
@@ -102,6 +91,35 @@ update(ArenaComponentData) ->
 
     {NewACD, [Action | ShotUpdates]}
   end, {ArenaComponentData, []}, Shots),
+  ?debugVal(Shots),
+
+  ShotsContext = lists:map(fun(Shot) ->
+    {x, X, y, Y} = pewpew_shot_component:coordinates(Shot),
+    Radius = 1,
+    {x, X, y, Y, radius, Radius}
+  end, pewpew_arena_component_data:shots(UACD)),
+
+  ?debugVal(pewpew_arena_component_data:shots(UACD)),
+
+  PlayersUpdates = lists:map(fun(Player) ->
+    RadarConfig      = pewpew_player_component:radar_config(Player),
+    ScanContext = #{
+      arena_dimensions => ArenaDimensions,
+      players => Players,
+      scanning_player => Player
+     },
+    ScanResult       = pewpew_radar_component:scan(RadarComponent, ScanContext, RadarConfig),
+    ScanNotification = radar_scan_to_notification(ScanResult),
+    RadarUpdate      = {player, Player, update, ScanNotification},
+
+
+    UpdateContext = #{shots => ShotsContext},
+    pewpew_player_component:update(Player, UpdateContext),
+    %PlayerUpdate = {player, Player, update, pewpew_player_component:update(Player)},
+
+    RadarUpdate
+  end, Players),
+
 
   Updates = [PlayersUpdates, ShotsUpdates2],
 
