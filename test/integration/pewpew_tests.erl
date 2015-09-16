@@ -742,6 +742,14 @@ only_one_shot_per_command_is_created_test_() ->
     steps => [
       register_player(),
       ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+      fun (Context) ->
+          % prevent the player from being to close to the wall so
+          % that the shots are destroyed earlier than expected
+          #{pewpew_game := PewPewGame} = Context,
+          ArenaComponent = pewpew_game:arena_component(PewPewGame),
+          [Player] = pewpew_arena_component:players(ArenaComponent),
+          pewpew_player_component:set_coordinates(Player, [{x, 200}, {y, 200}])
+      end,
       ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
       ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
       ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
@@ -943,5 +951,42 @@ shots_reduce_players_life_when_they_hit_them_test_() ->
       Player2Life = pewpew_player_component:life(Player2),
 
       ?_assertEqual(95, Player2Life)
+    end
+   }).
+
+%TODO: test simultaneous hits to a player
+
+shots_are_destroyed_when_they_hit_a_player_test_() ->
+  run_test(#{
+    steps => [
+      register_player(ws_player_1_client),
+      register_player(ws_player_2_client),
+      ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+      ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+      fun (Context) ->
+         Player1 = get_player_for_client(ws_player_1_client, Context),
+         Player2 = get_player_for_client(ws_player_2_client, Context),
+         Radius  = pewpew_player_component:radius(Player1),
+
+         pewpew_player_component:set_coordinates(Player1, [{x, 200}, {y, 200}]),
+         pewpew_player_component:set_coordinates(Player2, [{x, 200 + Radius + 1}, {y, 200}]),
+
+         ok
+      end,
+      ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+      ws_client_send(ws_player_1_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+      ws_client_sel_recv(ws_player_1_client, <<"PlayerShootAck">>),
+      ws_client_flush(ws_control_client),
+      ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
+    ],
+
+    test => fun (Context) ->
+      #{pewpew_game := PewPewGame} = Context,
+
+      ArenaComponent = pewpew_game:arena_component(PewPewGame),
+      Shots = pewpew_arena_component:shots(ArenaComponent),
+
+      ?_assertEqual([], Shots)
     end
    }).

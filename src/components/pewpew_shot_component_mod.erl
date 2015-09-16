@@ -31,7 +31,7 @@ move(ShotComponentData) ->
   {ok, UpdatedShotComponentData}.
 
 update(ShotComponentData, UpdateContext) ->
-  #{ arena_dimensions := ArenaDimensions } = UpdateContext,
+  #{ arena_dimensions := ArenaDimensions, players := Players} = UpdateContext,
   X = pewpew_shot_component_data:x(ShotComponentData),
   Y = pewpew_shot_component_data:y(ShotComponentData),
 
@@ -39,7 +39,19 @@ update(ShotComponentData, UpdateContext) ->
     true ->
       {destroy, ShotComponentData};
     false ->
-      {ok, ShotComponentData}
+      ShotCircleDescriptor = {x, X, y, Y, radius, 1},
+      HitsPlayer = lists:any(fun(Player) ->
+        ?debugVal(ShotCircleDescriptor),
+        ?debugVal(Player),
+        pewpew_utils:circles_intersect(Player, ShotCircleDescriptor)
+       end, Players),
+      case HitsPlayer of
+        true ->
+          ?debugMsg("SHot destroyed by player hit"),
+          {destroy, ShotComponentData};
+        false ->
+          {ok, ShotComponentData}
+      end
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

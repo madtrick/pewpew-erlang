@@ -42,3 +42,11 @@ set_value_in_map_for_non_existing_nested_key_test_() ->
   NewMap = pewpew_utils:set_value_in_map([key, nested_key], value, Map),
 
   ?_assertEqual(#{key => #{nested_key => value}}, NewMap).
+
+circles_intersect_test_() ->
+  Circle1 = {x, 200, y, 200, radius, 5},
+  Circle2 = {x, 206.5, y, 200, radius, 1},
+
+  Intersect = pewpew_utils:circles_intersect(Circle1, Circle2),
+
+  ?_assert(not Intersect).

@@ -75,8 +75,21 @@ update(ArenaComponentData) ->
                     pewpew_shot_component:move(Shot)
                 end, Shots),
 
+  ShotsContext = lists:map(fun(Shot) ->
+    {x, X, y, Y} = pewpew_shot_component:coordinates(Shot),
+    Radius = 1,
+    {x, X, y, Y, radius, Radius}
+  end, pewpew_arena_component_data:shots(ArenaComponentData)),
+
+  PlayersContext = lists:map(fun(Player) ->
+    {x, X, y, Y} = pewpew_player_component:coordinates(Player),
+    Radius = pewpew_player_component:radius(Player),
+    {x, X, y, Y, radius, Radius}
+                             end, Players),
+
   ShotUpdateContext = #{
-    arena_dimensions => #{width => Width, height => Height}
+    arena_dimensions => #{width => Width, height => Height},
+    players => PlayersContext
   },
   {UACD, ShotsUpdates2} = lists:foldl(fun(Shot, {ACD, ShotUpdates}) ->
 
@@ -93,11 +106,6 @@ update(ArenaComponentData) ->
   end, {ArenaComponentData, []}, Shots),
   ?debugVal(Shots),
 
-  ShotsContext = lists:map(fun(Shot) ->
-    {x, X, y, Y} = pewpew_shot_component:coordinates(Shot),
-    Radius = 1,
-    {x, X, y, Y, radius, Radius}
-  end, pewpew_arena_component_data:shots(UACD)),
 
   ?debugVal(pewpew_arena_component_data:shots(UACD)),
 
