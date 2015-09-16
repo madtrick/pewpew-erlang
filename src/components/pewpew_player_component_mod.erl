@@ -13,6 +13,7 @@
 -define(MOVEMENT_SPEED, 1).
 % TODO remove the RADAR_MODES constant
 -define(RADAR_MODES, [<<"long_range_scan">>]).
+-define(LIFE_LOSS_BY_SHOT_HIT, 5).
 
 set_coordinates(Coordinates, PlayerComponentData) ->
   NewPlayerComponentData = pewpew_player_component_data:update(Coordinates, PlayerComponentData),
@@ -37,35 +38,7 @@ snapshot(PlayerComponentData) ->
 update(PlayerComponentData, UpdateContext) ->
   #{shots := Shots} = UpdateContext,
 
-  Radius = pewpew_player_component_data:radius(PlayerComponentData),
-  PX = pewpew_player_component_data:x(PlayerComponentData),
-  PY = pewpew_player_component_data:y(PlayerComponentData),
-
-  ?debugVal(Shots),
-   ?debugVal(PX),
-
-  UpdatedData = lists:foldl(fun (Shot, Data) ->
-    {x, ShotX, y, ShotY, radius, ShotRadius} = Shot,
-
-    % collision detection formula got at:
-    % http://stackoverflow.com/a/8367547/1078859
-    Constant = math:pow(PX - ShotX, 2) + math:pow(PY - ShotY, 2),
-    Collides = math:pow(ShotRadius - Radius, 2) =< Constant orelse
-               Constant =< math:pow(ShotRadius + Radius, 2),
-
-   ?debugVal(ShotX),
-    ?debugVal(Collides),
-
-    case Collides of
-      true ->
-        CurrentLife = pewpew_player_component_data:life(Data),
-        NewLife = CurrentLife - 5,
-        pewpew_player_component_data:update(Data, [{life, NewLife}]);
-      false ->
-        Data
-    end
-  end, PlayerComponentData, Shots),
-
+  UpdatedData = evaluate_shots(Shots, PlayerComponentData),
   {ok, UpdatedData}.
 
 configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
@@ -106,3 +79,26 @@ calculate_new_coordinates(Sign, Speed, PlayerComponentData) ->
 round_value(Value, Precision) ->
   P = math:pow(10, Precision),
   round(Value * P) / P.
+
+evaluate_shots(Shots, PlayerComponentData) ->
+  InitialLife = pewpew_player_component_data:life(PlayerComponentData),
+  evaluate_shots(Shots, InitialLife, PlayerComponentData, []).
+
+evaluate_shots([], _, PlayerComponentData, _) ->
+  PlayerComponentData;
+evaluate_shots([Shot | Tail], Life, PlayerComponentData, Notifications) ->
+  Radius = pewpew_player_component_data:radius(PlayerComponentData),
+  PX = pewpew_player_component_data:x(PlayerComponentData),
+  PY = pewpew_player_component_data:y(PlayerComponentData),
+
+  PlayerCircle = {x, PX, y, PY, radius, Radius},
+  Intersect = pewpew_utils:circles_intersect(Shot, PlayerCircle),
+
+  case Intersect of
+    true ->
+      CurrentLife = pewpew_player_component_data:life(PlayerComponentData),
+      NewLife = CurrentLife - ?LIFE_LOSS_BY_SHOT_HIT,
+      evaluate_shots(Tail, NewLife, pewpew_player_component_data:update(PlayerComponentData, [{life, NewLife}]), Notifications);
+    false ->
+      evaluate_shots(Tail, Life, PlayerComponentData, Notifications)
+  end.
