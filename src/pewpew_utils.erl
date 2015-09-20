@@ -8,7 +8,9 @@
   set_value_in_map/3,
   get_current_time_in_milliseconds/0,
   ceil/1,
-  circles_intersect/2
+  circles_intersect/2,
+  contact_points_between_line_and_circle/2,
+  degrees_to_radians/1
 ]).
 
 proplist_to_map(Proplist) ->
@@ -70,3 +72,90 @@ circles_intersect(Circle1, Circle2) ->
              Constant =< math:pow(C1_r + C2_r, 2),
 
   Collides.
+
+contact_points_between_line_and_circle(
+  {x, X, y, Y, rotation, Rotation},
+  {x, Cx, y, Cy, radius, Cr}
+ ) when Rotation =:= 90; Rotation =:= 270 ->
+  % Invert the coordinates to transform the vertical line
+  % into a horizontal one
+  InvertedLine = {x, Y, y, X, rotation, 0},
+  InvertedCircle = {x, Cy, y, Cx, radius, Cr},
+
+  Results = contact_points_between_line_and_circle(InvertedLine, InvertedCircle),
+  lists:map(fun (Result) ->
+                {x, X1, y, Y1} = Result,
+                {x, Y1, y, X1}
+            end, Results);
+%
+% We substitute the equation of the
+% line (y = mx + f) on the circle equation
+%
+% Circle equation:
+%
+%   (x−cx)^2+(y−cy)^2=r^2
+%
+% Substituting y:
+%
+%   (x - cx)^2 + (y - y1)^2 = r^2
+%   (x - cx)^2 + (mx1 + f − cy)^2 = r^2.
+%
+% Expanding:
+%
+%  (m^2 + 1)x^2 + 2(mf − mcy − cx)x + (cy^2 − r^2 + p^2 − 2fcy + f^2) = 0
+%
+% A = (m^2 + 1)
+% B = 2(mf − mcy − cx)
+% C = cy^2 − r^2 + p^2 − 2fcy + f^2
+%
+contact_points_between_line_and_circle(Line, Circle) ->
+  {x, X, y, Y, rotation, Rotation} = Line,
+  {x, CX, y, CY, radius, CR} = Circle,
+
+  M = math:tan(degrees_to_radians(Rotation)),
+  F = -M*X + Y,
+
+  A = math:pow(M, 2) + 1,
+  B = 2 * (M*F - M*CY - CX),
+  C = math:pow(CY, 2) - math:pow(CR, 2) + math:pow(CX, 2) - 2*F*CY + math:pow(F, 2),
+
+  case cuadratic_equation(A, B, C) of
+    no_solution -> [];
+    {val1, Val1, val2, Val2} ->
+      NewY1 = M*Val1 + F,
+      NewY2 = M*Val2 + F,
+
+      case Val1 =:= Val2 of
+        true -> % tangential
+          [
+           {x, round_value(Val1, 5), y, round_value(NewY1, 5)}
+          ];
+        false -> % intersection
+          [
+           {x, round_value(Val1, 5), y, round_value(NewY1, 5)},
+           {x, round_value(Val2, 5), y, round_value(NewY2, 5)}
+          ]
+      end
+  end.
+
+cuadratic_equation(A, B, C) ->
+  B_2 = math:pow(B, 2),
+  Discriminant = B_2 - 4 * A * C,
+
+  case Discriminant < 0 of
+    true ->
+      no_solution;
+    false ->
+      Temp = math:sqrt(Discriminant),
+      Val1 = (-B - Temp) / (2*A),
+      Val2 = (-B + Temp) / (2*A),
+
+      {val1, Val1, val2, Val2}
+  end.
+
+degrees_to_radians(Degrees) ->
+  math:pi() * Degrees / 180.
+
+round_value(Value, Precision) ->
+  P = math:pow(10, Precision),
+  round(Value * P) / P.

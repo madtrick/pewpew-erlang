@@ -50,3 +50,43 @@ circles_intersect_test_() ->
   Intersect = pewpew_utils:circles_intersect(Circle1, Circle2),
 
   ?_assert(not Intersect).
+
+contact_points_between_line_and_circle_test() ->
+  Line   = {x, 4, y, 0, rotation, 0},
+  Circle = {x, 5, y, 0, radius, 2},
+
+  Results = pewpew_utils:contact_points_between_line_and_circle(Line, Circle),
+
+  ?assertEqual([{x, 3.0, y, 0.0}, {x, 7.0, y, 0.0}], Results).
+
+contact_points_between_line_and_circle_2_test() ->
+  Line   = {x, 0, y, 0, rotation, 90},
+  Circle = {x, 0, y, 5, radius, 2},
+
+  Results = pewpew_utils:contact_points_between_line_and_circle(Line, Circle),
+
+  ?assertEqual([{x, 0.0, y, 3.0}, {x, 0.0, y, 7.0}], Results).
+
+contact_points_between_line_and_circle_3_test() ->
+  Line   = {x, 0, y, 0, rotation, 45},
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_line_and_circle(Line, Circle),
+
+  ?assertEqual([{x, 1.29289, y, 1.29289}, {x, 2.70711, y, 2.70711}], Results).
+
+contact_points_between_line_and_circle_4_test() ->
+  Line   = {x, 0, y, 3, rotation, 0},
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_line_and_circle(Line, Circle),
+
+  ?assertEqual([{x, 2.0, y, 3.0}], Results).
+
+contact_points_between_line_and_circle_5_test() ->
+  Line   = {x, 0, y, 30, rotation, 0},
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_line_and_circle(Line, Circle),
+
+  ?assertEqual([], Results).
