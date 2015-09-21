@@ -9,8 +9,10 @@
   get_current_time_in_milliseconds/0,
   ceil/1,
   circles_intersect/2,
+  contact_points_between_segment_and_circle/2,
   contact_points_between_line_and_circle/2,
-  degrees_to_radians/1
+  degrees_to_radians/1,
+  round_value/2
 ]).
 
 proplist_to_map(Proplist) ->
@@ -72,6 +74,26 @@ circles_intersect(Circle1, Circle2) ->
              Constant =< math:pow(C1_r + C2_r, 2),
 
   Collides.
+
+contact_points_between_segment_and_circle(
+  [{x, X, y, Y1}, {x, X, y, Y2}],
+  Circle
+) ->
+  Line   = {x, X, y, Y1, rotation, 90},
+  Points = contact_points_between_line_and_circle(Line, Circle),
+  [Point || Point <- Points, check_if_point_belongs_to_segment(y, Point, Y1, Y2)];
+contact_points_between_segment_and_circle(Segment, Circle) ->
+  [{x, X1, y, Y1}, {x, X2, y, Y2}] = Segment,
+
+  Slope          = abs((Y1 - Y2) / (X1 - X2)),
+  AngleInRadians = math:atan(Slope),
+  AngleInDegrees = (180 * AngleInRadians) / math:pi(),
+  Line           = {x, X1, y, Y1, rotation, AngleInDegrees},
+  ?debugVal(Circle),
+  Points         = contact_points_between_line_and_circle(Line, Circle),
+  ?debugVal(Points),
+
+  [Point || Point <- Points, check_if_point_belongs_to_segment(x, Point, X1, X2)].
 
 contact_points_between_line_and_circle(
   {x, X, y, Y, rotation, Rotation},
@@ -138,6 +160,16 @@ contact_points_between_line_and_circle(Line, Circle) ->
       end
   end.
 
+degrees_to_radians(Degrees) ->
+  math:pi() * Degrees / 180.
+
+round_value(Value, Precision) ->
+  P = math:pow(10, Precision),
+  round(Value * P) / P.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Internal
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cuadratic_equation(A, B, C) ->
   B_2 = math:pow(B, 2),
   Discriminant = B_2 - 4 * A * C,
@@ -153,9 +185,12 @@ cuadratic_equation(A, B, C) ->
       {val1, Val1, val2, Val2}
   end.
 
-degrees_to_radians(Degrees) ->
-  math:pi() * Degrees / 180.
+check_if_point_belongs_to_segment(x, {x, X, _, _}, SegmentEnd1, SegmentEnd2) ->
+  is_point_value_between_segment_ends(X, SegmentEnd1, SegmentEnd2);
+check_if_point_belongs_to_segment(y, {_, _, y, Y}, SegmentEnd1, SegmentEnd2) ->
+  is_point_value_between_segment_ends(Y, SegmentEnd1, SegmentEnd2).
 
-round_value(Value, Precision) ->
-  P = math:pow(10, Precision),
-  round(Value * P) / P.
+is_point_value_between_segment_ends(PointValue, SegmentEnd1, SegmentEnd2) when SegmentEnd1 < SegmentEnd2 ->
+  SegmentEnd1 =< PointValue andalso PointValue =< SegmentEnd2;
+is_point_value_between_segment_ends(PointValue, SegmentEnd1, SegmentEnd2) when SegmentEnd1 > SegmentEnd2 ->
+  SegmentEnd2 =< PointValue andalso PointValue =< SegmentEnd1.

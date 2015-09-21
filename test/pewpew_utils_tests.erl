@@ -90,3 +90,75 @@ contact_points_between_line_and_circle_5_test() ->
   Results = pewpew_utils:contact_points_between_line_and_circle(Line, Circle),
 
   ?assertEqual([], Results).
+
+contact_points_between_segment_and_circle_test() ->
+  Segment = [{x, 0, y, 0}, {x, 2, y, 2}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x, 1.29289, y, 1.29289}], Results).
+
+contact_points_between_segment_and_circle_2_test() ->
+  Segment = [{x, 0, y, 2}, {x, 4, y, 2}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x, 1.0, y, 2.0}, {x, 3.0, y, 2.0}], Results).
+
+contact_points_between_segment_and_circle_3_test() ->
+  Segment = [{x, 2, y, 0}, {x, 2, y, 4}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x, 2.0, y, 1.0}, {x, 2.0, y, 3.0}], Results).
+
+contact_points_between_segment_and_circle_4_test() ->
+  Segment = [{x, 2, y, 2}, {x, 4, y, 2}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x, 3.0, y, 2.0}], Results).
+
+contact_points_between_segment_and_circle_5_test() ->
+  Segment = [{x, 1, y, 1}, {x, 3, y, 3}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x,1.29289,y,1.29289},{x,2.70711,y,2.70711}], Results).
+
+contact_points_between_segment_and_circle_6_test() ->
+  Segment = [{x, 1, y, 1}, {x, 2, y, 2}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x,1.29289,y,1.29289}], Results).
+
+contact_points_between_segment_and_circle_7_test() ->
+  Segment = [{x, 1, y, 4}, {x, 1, y, 1}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x, 1.0, y, 2.0}], Results).
+
+contact_points_between_segment_and_circle_8_test() ->
+  Segment = [{x, 1, y, 2}, {x, 2, y, 2}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x, 1.0, y, 2.0}], Results).
+
+contact_points_between_segment_and_circle_9_test() ->
+  Segment = [{x, 2, y, 1}, {x, 2, y, 2}],
+  Circle = {x, 2, y, 2, radius, 1},
+
+  Results = pewpew_utils:contact_points_between_segment_and_circle(Segment, Circle),
+
+  ?assertEqual([{x, 2.0, y, 1.0}], Results).
