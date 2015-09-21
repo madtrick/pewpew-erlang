@@ -16,6 +16,7 @@
   get_last_reply_for_client/2,
   validate_type_in_last_reply_test/2,
   validate_last_reply_data_test/2,
+  validate_last_reply_data_for_type_test/3,
   validate_message_in_last_reply_test/2,
   throwing/1,
   it_threw/1,
@@ -74,7 +75,7 @@ run_list_of_tests([], _, TestObjects) ->
 run_list_of_tests([{_, _} = T | Tail], Context, TestObjects) ->
   run_list_of_tests(Tail, Context, [T | TestObjects]);
 run_list_of_tests([T | Tail], Context, TestObjects) ->
-  NewTestObjects      = T(Context),
+  NewTestObjects      = run_tests(T, Context),
   UpdatedTestsObjects = lists:flatten([NewTestObjects | TestObjects]),
   run_list_of_tests(Tail, Context, UpdatedTestsObjects).
 
@@ -83,7 +84,8 @@ run_tests({_, _} = Test, _) ->
 run_tests(Tests, Context) when is_function(Tests) ->
   Result = Tests(Context),
   case Result of
-    Fun when is_function(Fun) -> Fun(Context);
+    %TODO: handle {test, _} Results
+    Fun when is_function(Fun) -> Fun(Context); % TODO: do we really need this case?
     List when is_list(List) -> run_list_of_tests(List, Context, []);
     _ -> Result
   end;
@@ -239,6 +241,20 @@ validate_type_in_last_reply_test(ClientId, ExpectedType) ->
     TypePresent = is_reply_type_present_in_messages(ExpectedType, Reply),
 
     {test, ?_assert(TypePresent)}
+  end.
+
+validate_last_reply_data_for_type_test(ClientId, ExpectedData, Type) ->
+  fun(Context) ->
+      Reply = get_last_reply_for_client(ClientId, Context),
+
+      [ReplyOfType] = lists:takewhile(fun(R) ->
+          #{<<"type">> := T} = R,
+          T =:= Type
+      end, Reply),
+
+      #{<<"data">> := Data} = ReplyOfType,
+
+      ?_assertEqual(ExpectedData, Data)
   end.
 
 validate_last_reply_data_test(ClientId, ExpectedData) ->

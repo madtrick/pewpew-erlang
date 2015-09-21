@@ -109,7 +109,7 @@ update(ArenaComponentData) ->
 
   ?debugVal(pewpew_arena_component_data:shots(UACD)),
 
-  PlayersUpdates = lists:map(fun(Player) ->
+  PlayersUpdates = lists:foldl(fun(Player, Acc) ->
     RadarConfig      = pewpew_player_component:radar_config(Player),
     ScanContext = #{
       arena_dimensions => ArenaDimensions,
@@ -122,14 +122,15 @@ update(ArenaComponentData) ->
 
 
     UpdateContext = #{shots => ShotsContext},
-    pewpew_player_component:update(Player, UpdateContext),
+    {ok, PlayerUpdateNotifications} = pewpew_player_component:update(Player, UpdateContext),
     %PlayerUpdate = {player, Player, update, pewpew_player_component:update(Player)},
 
-    RadarUpdate
-  end, Players),
+    %[PlayerUpdateNotifications | RadarUpdate]
+    [PlayerUpdateNotifications, RadarUpdate | Acc]
+  end, [], Players),
 
+  Updates = lists:append([PlayersUpdates, ShotsUpdates2]),
 
-  Updates = [PlayersUpdates, ShotsUpdates2],
 
   {ok, lists:flatten(Updates), UACD}.
 

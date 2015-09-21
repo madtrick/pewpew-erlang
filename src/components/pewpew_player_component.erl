@@ -151,8 +151,8 @@ handle_cast({set_state, Data}, _) ->
   {noreply, Data}.
 
 handle_call({update, UpdateContext}, _, PlayerComponentData) ->
-  {ok, UpdatedPlayerComponentData} = pewpew_player_component_mod:update(PlayerComponentData, UpdateContext),
-  {reply, ok, UpdatedPlayerComponentData};
+  {ok, UpdatedPlayerComponentData, Notifications} = pewpew_player_component_mod:update(PlayerComponentData, UpdateContext),
+  {reply, {ok, Notifications}, UpdatedPlayerComponentData};
 handle_call(get_state, _, PlayerComponentData) ->
   {reply, PlayerComponentData, PlayerComponentData};
 handle_call(id, _, PlayerComponentData) ->

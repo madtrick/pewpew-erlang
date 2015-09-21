@@ -17,6 +17,8 @@ call(NotificationContextData) ->
       lists:map(fun(Update) ->
                     %?debugVal(Update),
         case Update of
+          {player, _, no_update} ->
+            noreply; %ignore this
           {player, Player, update, U} ->
             case U of
               {notification, Notification} ->
