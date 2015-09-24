@@ -89,9 +89,7 @@ contact_points_between_segment_and_circle(Segment, Circle) ->
   AngleInRadians = math:atan(Slope),
   AngleInDegrees = (180 * AngleInRadians) / math:pi(),
   Line           = {x, X1, y, Y1, rotation, AngleInDegrees},
-  ?debugVal(Circle),
   Points         = contact_points_between_line_and_circle(Line, Circle),
-  ?debugVal(Points),
 
   [Point || Point <- Points, check_if_point_belongs_to_segment(x, Point, X1, X2)].
 

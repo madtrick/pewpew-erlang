@@ -38,8 +38,7 @@ snapshot(PlayerComponentData) ->
 update(PlayerComponentData, UpdateContext) ->
   #{shots := Shots} = UpdateContext,
 
-  {UpdatedPlayerComponentData, Notifications} = evaluate_shots(Shots, PlayerComponentData),
-  {ok, UpdatedPlayerComponentData, Notifications}.
+  evaluate_shots(Shots, PlayerComponentData).
 
 configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
   %TODO: remove this check as this is also checked in the radar_mod file
@@ -81,7 +80,7 @@ evaluate_shots(Shots, PlayerComponentData) ->
   evaluate_shots(Shots, InitialLife, PlayerComponentData, []).
 
 evaluate_shots([], _, PlayerComponentData, Notifications) ->
-  {PlayerComponentData, Notifications};
+  {ok, PlayerComponentData, Notifications};
 evaluate_shots([Shot | Tail], Life, PlayerComponentData, Notifications) ->
   Radius = pewpew_player_component_data:radius(PlayerComponentData),
   PX = pewpew_player_component_data:x(PlayerComponentData),
@@ -97,9 +96,16 @@ evaluate_shots([Shot | Tail], Life, PlayerComponentData, Notifications) ->
       CurrentLife = pewpew_player_component_data:life(PlayerComponentData),
       NewLife = CurrentLife - ?LIFE_LOSS_BY_SHOT_HIT,
       UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{life, NewLife}]),
-      Notification = player_hit_by_shot_notification(UpdatedPlayerComponentData),
-      UpdatedNotifications = [Notification | Notifications],
-      evaluate_shots(Tail, NewLife, UpdatedPlayerComponentData, UpdatedNotifications);
+      case NewLife =< 0 of
+        false ->
+          Notification = player_hit_by_shot_notification(UpdatedPlayerComponentData),
+          UpdatedNotifications = [Notification | Notifications],
+          evaluate_shots(Tail, NewLife, UpdatedPlayerComponentData, UpdatedNotifications);
+        true ->
+          Notification = player_destroyed_notification(UpdatedPlayerComponentData),
+          UpdatedNotifications = [Notification | Notifications],
+          {destroyed, UpdatedPlayerComponentData, UpdatedNotifications}
+      end;
     false ->
       evaluate_shots(Tail, Life, PlayerComponentData, Notifications)
   end.
@@ -107,5 +113,10 @@ evaluate_shots([Shot | Tail], Life, PlayerComponentData, Notifications) ->
 player_hit_by_shot_notification(PlayerComponentData) ->
   Life = pewpew_player_component_data:life(PlayerComponentData),
   PlayerData = {life, Life},
+  Channel = pewpew_player_component_data:origin(PlayerComponentData),
 
-  {player, self(), update, {notification, pewpew_player_hit_by_shot_notification:new(PlayerData)}}.
+  {player, Channel, update, {notification, pewpew_player_hit_by_shot_notification:new(PlayerData)}}.
+
+player_destroyed_notification(PlayerComponentData) ->
+  Channel = pewpew_player_component_data:origin(PlayerComponentData),
+  {player, Channel, destroyed, {notification, pewpew_player_destroyed_notification:new()}}.

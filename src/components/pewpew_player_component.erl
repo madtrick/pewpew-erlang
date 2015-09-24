@@ -1,5 +1,6 @@
 -module(pewpew_player_component).
 -behaviour(gen_server).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([start_link/2]).
 -export([
@@ -151,8 +152,12 @@ handle_cast({set_state, Data}, _) ->
   {noreply, Data}.
 
 handle_call({update, UpdateContext}, _, PlayerComponentData) ->
-  {ok, UpdatedPlayerComponentData, Notifications} = pewpew_player_component_mod:update(PlayerComponentData, UpdateContext),
-  {reply, {ok, Notifications}, UpdatedPlayerComponentData};
+  case pewpew_player_component_mod:update(PlayerComponentData, UpdateContext) of
+    {ok, UpdatedPlayerComponentData, Notifications} ->
+      {reply, {updated, Notifications}, UpdatedPlayerComponentData};
+    {destroyed, UpdatedPlayerComponentData, Notifications} ->
+      {stop, normal, {destroyed, Notifications}, UpdatedPlayerComponentData}
+  end;
 handle_call(get_state, _, PlayerComponentData) ->
   {reply, PlayerComponentData, PlayerComponentData};
 handle_call(id, _, PlayerComponentData) ->
@@ -183,6 +188,7 @@ handle_call({configure, Op, Args}, _, PlayerComponentData) ->
   {reply, OkOrError, UpdatedPlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->
+  ?debugMsg("Player dying"),
   die.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

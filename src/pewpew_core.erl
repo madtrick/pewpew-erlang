@@ -139,7 +139,8 @@ transform_reply(noreply, Dict) ->
   Dict;
 transform_reply(close, Dict) ->
   Dict; % TODO: fix this when replace the 'channel_placeholder' in send_replies
-transform_reply({reply, Data}, Dict) when is_list(Data)->
+transform_reply({reply, Data}, Dict) when is_list(Data) ->
+  %group_messages_by_channel(Data, Dict).
   lists:foldl(fun(Element, Acc) ->
     {send_to, Channel, Message} = Element,
     case dict:is_key(Channel, Acc) of
@@ -152,6 +153,20 @@ transform_reply({reply, Data}, Dict) when is_list(Data)->
   end, Dict, Data);
 transform_reply({reply, Data}, Dict) ->
   transform_reply({reply, [Data]}, Dict).
+
+%group_messages_by_channel(Messages, Dict) when not is_list(Messages) ->
+%  group_messages_by_channel([Messages], Dict);
+%group_messages_by_channel(Messages, Dict) ->
+%  lists:foldl(fun(Element, Acc) ->
+%    {send_to, Channel, Message} = Element,
+%    case dict:is_key(Channel, Acc) of
+%      true ->
+%        Messages = dict:fetch(Channel, Acc),
+%        dict:store(Channel, [Message | Messages], Acc);
+%      false ->
+%        dict:store(Channel, [Message], Acc)
+%    end
+%  end, Dict, Messages).
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),

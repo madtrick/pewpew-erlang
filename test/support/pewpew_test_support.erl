@@ -240,7 +240,7 @@ validate_type_in_last_reply_test(ClientId, ExpectedType) ->
     Reply       = get_last_reply_for_client(ClientId, Context),
     TypePresent = is_reply_type_present_in_messages(ExpectedType, Reply),
 
-    {test, ?_assert(TypePresent)}
+    ?_assert(TypePresent)
   end.
 
 validate_last_reply_data_for_type_test(ClientId, ExpectedData, Type) ->
@@ -338,6 +338,8 @@ execute_step(Fun, Context) ->
     {test, Test} ->
       #{tests := Tests} = Context,
       Context#{tests => [Test | Tests]};
+    List when is_list(List) ->
+      execute_steps(List, Context);
     _ -> Context
   end.
 

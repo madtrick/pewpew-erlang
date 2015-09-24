@@ -1,5 +1,6 @@
 -module(pewpew_arena_component).
 -behaviour(gen_server).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([start_link/1, stop/1]).
 
@@ -85,6 +86,7 @@ init([Data]) ->
       ])}.
 
 handle_info(?PLAYER_DOWN(Pid), ArenaComponentData) ->
+  ?debugMsg("Player down"),
   NewPlayers = [Player || Player <- pewpew_arena_component_data:players(ArenaComponentData), Player =/= Pid ],
   NewArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, NewPlayers}]),
   {noreply, NewArenaComponentData}.

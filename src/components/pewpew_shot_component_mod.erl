@@ -41,13 +41,10 @@ update(ShotComponentData, UpdateContext) ->
     false ->
       ShotCircleDescriptor = {x, X, y, Y, radius, 1},
       HitsPlayer = lists:any(fun(Player) ->
-        ?debugVal(ShotCircleDescriptor),
-        ?debugVal(Player),
         pewpew_utils:circles_intersect(Player, ShotCircleDescriptor)
        end, Players),
       case HitsPlayer of
         true ->
-          ?debugMsg("SHot destroyed by player hit"),
           {destroy, ShotComponentData};
         false ->
           {ok, ShotComponentData}
