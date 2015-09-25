@@ -247,7 +247,7 @@ validate_last_reply_data_for_type_test(ClientId, ExpectedData, Type) ->
   fun(Context) ->
       Reply = get_last_reply_for_client(ClientId, Context),
 
-      [ReplyOfType] = lists:takewhile(fun(R) ->
+      [ReplyOfType] = lists:filter(fun(R) ->
           #{<<"type">> := T} = R,
           T =:= Type
       end, Reply),

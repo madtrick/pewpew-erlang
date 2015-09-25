@@ -104,65 +104,53 @@ update(ArenaComponentData) ->
 
     {NewACD, [Action | ShotUpdates]}
   end, {ArenaComponentData, []}, Shots),
-  ?debugVal(Shots),
+
+  UpdateContext = #{shots => ShotsContext},
+  {UACD4, NonDestroyedPlayers, PlayersUpdates} = update_players(UpdateContext, Players, UACD),
+  {UACD33, RadarUpdate} = update_radars(NonDestroyedPlayers, UACD4),
+
+  Updates = lists:append([RadarUpdate, PlayersUpdates, ShotsUpdates2]),
 
 
-  ?debugVal(pewpew_arena_component_data:shots(UACD)),
-
-  %{ UACD4, PlayersUpdates } = lists:foldl(fun(Player, {UACD2, AccNotifications}) ->
-  %  RadarConfig      = pewpew_player_component:radar_config(Player),
-  %  ScanContext = #{
-  %    arena_dimensions => ArenaDimensions,
-  %    players => Players,
-  %    scanning_player => Player
-  %   },
-  %  ScanResult       = pewpew_radar_component:scan(RadarComponent, ScanContext, RadarConfig),
-  %  ScanNotification = radar_scan_to_notification(ScanResult),
-  %  RadarUpdate      = {player, Player, update, ScanNotification},
-
-
-    UpdateContext = #{shots => ShotsContext},
-  %  %{ok, PlayerUpdateNotifications} = pewpew_player_component:update(Player, UpdateContext),
-  %  %PlayerUpdate = {player, Player, update, pewpew_player_component:update(Player)},
-  %  {UACD3, PlayerUpdateNotifications} = case pewpew_player_component:update(Player, UpdateContext) of
-  %    {updated, Notifications} ->
-  %      {UACD2, Notifications};
-  %    {destroyed, Notifications} ->
-  %      UpdatedPlayersList = lists:filter(fun(P) -> P =/= Player end, Players),
-  %      UpdatedArenaComponentData = pewpew_arena_component_data:update(UACD2, [{players, UpdatedPlayersList}]),
-  %      {UpdatedArenaComponentData, Notifications}
-  %  end,
-
-  %  %[PlayerUpdateNotifications | RadarUpdate]
-  %  {UACD3, [PlayerUpdateNotifications, RadarUpdate | AccNotifications]}
-  %end, {UACD, []}, Players),
-
-  {UACD4, PlayersUpdates} = update_players(UpdateContext, Players, UACD),
-
-  Updates = lists:append([PlayersUpdates, ShotsUpdates2]),
-
-
-  {ok, lists:flatten(Updates), UACD4}.
+  {ok, lists:flatten(Updates), UACD33}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 update_players(UpdateContext, Players, ArenaComponentData) ->
-  update_players(UpdateContext, Players, ArenaComponentData, []).
+  update_players(UpdateContext, Players, ArenaComponentData, [], []).
 
-update_players(_, [], ArenaComponentData, Notifications) ->
+update_players(_, [], ArenaComponentData, NonDestroyedPlayers, Notifications) ->
+  {ArenaComponentData, NonDestroyedPlayers, Notifications};
+update_players(UpdateContext, [Player | Players], ArenaComponentData, NonDestroyedPlayers, Notifications) ->
+  {UACD3, UpdatedNonDestroyedPlayers, PN} = case pewpew_player_component:update(Player, UpdateContext) of
+                                         {updated, PlayerUpdateNotifications} ->
+                                           {ArenaComponentData, [Player | NonDestroyedPlayers], PlayerUpdateNotifications};
+                                         {destroyed, PlayerUpdateNotifications} ->
+                                           UpdatedPlayersList = lists:filter(fun(P) -> P =/= Player end, Players),
+                                           UpdatedArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, UpdatedPlayersList}]),
+                                           {UpdatedArenaComponentData, NonDestroyedPlayers, PlayerUpdateNotifications}
+                                       end,
+
+  N = [PN | Notifications],
+  update_players(UpdateContext, Players, UACD3, UpdatedNonDestroyedPlayers, N).
+
+update_radars(Players, ArenaComponentData) ->
+  update_radar(Players, Players, ArenaComponentData, []).
+
+update_radar([], _, ArenaComponentData, Notifications) ->
   {ArenaComponentData, Notifications};
-update_players(UpdateContext, [Player | Players], ArenaComponentData, Notifications) ->
-  RadarConfig = pewpew_player_component:radar_config(Player),
-  Height = pewpew_arena_component_data:height(ArenaComponentData),
-  Width = pewpew_arena_component_data:width(ArenaComponentData),
+update_radar([Player | Players], AllPlayers, ArenaComponentData, Notifications) ->
+  RadarComponent  = pewpew_arena_component_data:radar_component(ArenaComponentData),
+  Height          = pewpew_arena_component_data:height(ArenaComponentData),
+  Width           = pewpew_arena_component_data:width(ArenaComponentData),
+  RadarConfig     = pewpew_player_component:radar_config(Player),
+  Channel         = pewpew_player_component:channel(Player),
   ArenaDimensions = {width, Width, height, Height},
-  RadarComponent = pewpew_arena_component_data:radar_component(ArenaComponentData),
-  Channel = pewpew_player_component:channel(Player),
 
   ScanContext = #{
     arena_dimensions => ArenaDimensions,
-    players => Players,
+    players => AllPlayers,
     scanning_player => Player
    },
 
@@ -170,23 +158,7 @@ update_players(UpdateContext, [Player | Players], ArenaComponentData, Notificati
   ScanNotification = radar_scan_to_notification(ScanResult),
   RadarUpdate      = {player, Channel, update, ScanNotification},
 
-
-  %PlayerUpdateContext = #{shots => ShotsContext},
-  %{ok, PlayerUpdateNotifications} = pewpew_player_component:update(Player, UpdateContext),
-  %PlayerUpdate = {player, Player, update, pewpew_player_component:update(Player)},
-  {UACD3, PN} = case pewpew_player_component:update(Player, UpdateContext) of
-                                         {updated, PlayerUpdateNotifications} ->
-                                           {ArenaComponentData, PlayerUpdateNotifications};
-                                         {destroyed, PlayerUpdateNotifications} ->
-                                           UpdatedPlayersList = lists:filter(fun(P) -> P =/= Player end, Players),
-                                           UpdatedArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, UpdatedPlayersList}]),
-                                           {UpdatedArenaComponentData, PlayerUpdateNotifications}
-                                       end,
-
-  %[PlayerUpdateNotifications | RadarUpdate]
-  N = [PN, RadarUpdate | Notifications],
-  update_players(UpdateContext, Players, UACD3, N).
-
+  update_radar(Players, AllPlayers, ArenaComponentData, [RadarUpdate | Notifications]).
 
 radar_scan_to_notification(ScanResult) ->
   ScanNotification = pewpew_radar_scan_notification:new(ScanResult),
