@@ -26,6 +26,7 @@
 run_test(Config) ->
   {setup,
     fun() ->
+        ?debugMsg("Setup"),
       meck:new(pewpew_core, [passthrough]),
       application:set_env(pewpew, execution_mode, test),
       pewpew:start(),
@@ -44,6 +45,7 @@ run_test(Config) ->
       }
     end,
     fun(Context) ->
+      ?debugMsg("TearDown"),
       #{
         clients := Clients
       } = Context,
@@ -68,7 +70,7 @@ run_test(Config) ->
       Tests = lists:flatten(lists:reverse([Test | ContextTests])),
       run_tests(Tests, NewContext)
     end
-    }.
+  }.
 
 run_list_of_tests([], _, TestObjects) ->
   TestObjects;
@@ -158,9 +160,9 @@ ws_client_sel_recv(ClientId, Client, Type, Timeout, Replies) ->
   end.
 
 ws_client_sel_recv(ClientId, Type) ->
-  Now = pewpew_utils:get_current_time_in_milliseconds(),
-  Timeout = 1 * 1000,
   fun(Context) ->
+      Now = pewpew_utils:get_current_time_in_milliseconds(),
+      Timeout = 1 * 1000,
       Client = get_client(ClientId, Context),
 
       ws_client_sel_recv(ClientId, Client, Type, Now + Timeout, [])
