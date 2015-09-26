@@ -13,10 +13,13 @@
   register_player/0,
   register_player/1,
   get_player_for_client/2,
+  get_nth_reply_for_client/3,
+  get_replies_for_client/2,
   get_last_reply_for_client/2,
   validate_type_in_last_reply_test/2,
   validate_last_reply_data_test/2,
   validate_last_reply_data_for_type_test/3,
+  validate_message_in_nth_reply_test/3,
   validate_message_in_last_reply_test/2,
   throwing/1,
   it_threw/1,
@@ -26,7 +29,6 @@
 run_test(Config) ->
   {setup,
     fun() ->
-        ?debugMsg("Setup"),
       meck:new(pewpew_core, [passthrough]),
       application:set_env(pewpew, execution_mode, test),
       pewpew:start(),
@@ -45,7 +47,6 @@ run_test(Config) ->
       }
     end,
     fun(Context) ->
-      ?debugMsg("TearDown"),
       #{
         clients := Clients
       } = Context,
@@ -175,10 +176,22 @@ ws_client_flush(ClientId) ->
       ok
   end.
 
-get_last_reply_for_client(ClientId, Context) ->
-  #{per_client_replies := PerClientReplies} = Context,
+get_nth_reply_for_client(Number, ClientId, Context) when Number >= 1 ->
+  Replies = get_replies_for_client(ClientId, Context),
+  lists:nth(Number, Replies);
+get_nth_reply_for_client(0, _, _) ->
+  throw(invalid_reply_index_0);
+get_nth_reply_for_client(Number, ClientId, Context) ->
+  Replies = get_replies_for_client(ClientId, Context),
+  RepliesLength = length(Replies),
+  lists:nth(RepliesLength + Number + 1, Replies).
 
-  Replies = maps:get(ClientId, PerClientReplies),
+get_replies_for_client(ClientId, Context) ->
+  #{per_client_replies := PerClientReplies} = Context,
+  maps:get(ClientId, PerClientReplies).
+
+get_last_reply_for_client(ClientId, Context) ->
+  Replies = get_replies_for_client(ClientId, Context),
   Last    = lists:last(Replies),
   Last.
 
@@ -223,9 +236,9 @@ generate_valid_move_command_test(Options) ->
     )
  ).
 
-validate_message_in_last_reply_test(ClientId, ExpectedMessage) ->
+validate_message_in_nth_reply_test(Number, ClientId, ExpectedMessage) ->
   fun(Context) ->
-    Replies = get_last_reply_for_client(ClientId, Context),
+    Replies = get_nth_reply_for_client(Number, ClientId, Context),
 
     MessagePresent = lists:any(fun(Message) ->
       ExpectedMessage =:= Message
@@ -236,6 +249,9 @@ validate_message_in_last_reply_test(ClientId, ExpectedMessage) ->
 
     ?_assert(MessagePresent)
   end.
+
+validate_message_in_last_reply_test(ClientId, ExpectedMessage) ->
+  validate_message_in_nth_reply_test(-1, ClientId, ExpectedMessage).
 
 validate_type_in_last_reply_test(ClientId, ExpectedType) ->
   fun(Context) ->

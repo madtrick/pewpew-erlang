@@ -20,7 +20,7 @@
 
 tests() ->
   %%TODO: test simultaneous hits to a player
-  {"Shooting", focus, [
+  {"Shooting", [
           {"It rejects shot command when game has not been started",
             run_test(#{
               steps => [

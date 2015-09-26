@@ -13,7 +13,8 @@
     register_player/1,
     validate_type_in_last_reply_test/2,
     get_player_for_client/2,
-    validate_message_in_last_reply_test/2
+    validate_message_in_last_reply_test/2,
+    validate_message_in_nth_reply_test/3
 ]).
 
 tests() ->
@@ -383,5 +384,63 @@ tests() ->
                   validate_message_in_last_reply_test(ws_player_1_client, ExpectedReply)
               end
              })
+          },
+          {"Destroyed player does not appear in the scan notification in the same cycle when it is destroyed",
+            run_test(#{
+              steps => [
+                register_player(ws_player_1_client),
+                register_player(ws_player_2_client),
+                ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+                ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+                fun (Context) ->
+                    Player1 = get_player_for_client(ws_player_1_client, Context),
+                    Player2 = get_player_for_client(ws_player_2_client, Context),
+                    Radius  = pewpew_player_component:radius(Player1),
+
+                    pewpew_player_component:set_coordinates(Player1, [{x, 200}, {y, 200}]),
+                    pewpew_player_component:set_coordinates(Player2, [{x, 200 + 2 * Radius + 1}, {y, 200}]),
+
+                    ok
+                end,
+                ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+                ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+                fun (_) ->
+                  Steps = lists:seq(1, 20),
+                  lists:map(fun(_) ->
+                    fun(_) ->
+                        [
+                         ws_client_send(ws_player_1_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+                         ws_client_sel_recv(ws_player_1_client, <<"PlayerShootAck">>)
+                        ]
+                    end
+                  end, Steps)
+                end,
+                ws_client_recv(ws_player_1_client)
+              ],
+
+              test => fun(Context) ->
+                          Player1       = get_player_for_client(ws_player_1_client, Context),
+                          Player1Radius = pewpew_player_component:radius(Player1),
+
+                          [
+                           validate_message_in_nth_reply_test(-2, ws_player_1_client, #{
+                             <<"type">> => <<"RadarScanNotification">>,
+                             <<"data">> => #{
+                                 <<"elements">> => [
+                                                #{
+                                                 <<"type">> => <<"unknown">>,
+                                                 <<"coordinates">> => #{<<"x">> => 200 + 2 * Player1Radius + 1, <<"y">> => 200}
+                                                }],
+                                 <<"walls">> => []
+                                }
+                           }),
+                           validate_message_in_last_reply_test(ws_player_1_client, #{
+                             <<"type">> => <<"RadarScanNotification">>,
+                             <<"data">> => #{<<"elements">> => [], <<"walls">> => []}
+                            })
+                          ]
+              end
+             })
           }
+
   ]}.
