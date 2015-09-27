@@ -4,7 +4,8 @@
 -export([
   get_coordinates/1,
   update/2,
-  move/1
+  move/1,
+  snapshot/1
 ]).
 
 -define(SPEED, 1.5).
@@ -50,6 +51,10 @@ update(ShotComponentData, UpdateContext) ->
           {ok, ShotComponentData}
       end
   end.
+
+snapshot(ShotComponentData) ->
+  Snapshot = pewpew_shot_component_snapshot:new(ShotComponentData),
+  {ok, Snapshot}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

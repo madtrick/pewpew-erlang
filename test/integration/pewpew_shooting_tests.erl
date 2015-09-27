@@ -13,6 +13,7 @@
     register_player/0,
     register_player/1,
     get_player_for_client/2,
+    get_last_reply_for_client/2,
     validate_type_in_last_reply_test/2,
     validate_last_reply_data_for_type_test/3,
     place_player_at/2
@@ -398,12 +399,82 @@ tests() ->
                 ?_assertEqual(100 - ExpectedNumberOfHits*5, Player3Life)
               end
              })
+          },
+          {"Shots are included in game snapshot notifications",
+           focus,
+            run_test(#{
+              steps => [
+                register_player(ws_player_1_client),
+                ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+                place_player_at(ws_player_1_client, [{x, 200}, {y, 200}]),
+                ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+                ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+                fun (_) ->
+                  Steps = lists:seq(1, 1),
+                  lists:map(fun(_) ->
+                    fun(_) ->
+                        [
+                         ws_client_send(ws_player_1_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+                         ws_client_sel_recv(ws_player_1_client, <<"PlayerShootAck">>)
+                        ]
+                    end
+                  end, Steps)
+                end,
+                ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
+              ],
+
+              test => fun(Context) ->
+                #{pewpew_game := PewPewGame} = Context,
+                ArenaComponent = pewpew_game:arena_component(PewPewGame),
+                [Shot] = pewpew_arena_component:shots(ArenaComponent),
+                [LastReply] = get_last_reply_for_client(ws_control_client, Context),
+                ExpectedShotState = #{
+                  <<"coordinates">> => #{
+                      <<"x">> => pewpew_shot_component:x(Shot),
+                      <<"y">> => pewpew_shot_component:y(Shot)
+                  }
+                 },
+
+                ExpectedReply = #{
+                  <<"type">> => <<"GameSnapshotNotification">>,
+                  <<"data">> => #{<<"arena_snapshot">> => #{ <<"shot_snapshots">> => [ExpectedShotState]}}
+                },
+
+                ?_assert(matches_message(LastReply, ExpectedReply))
+              end
+             })
           }
         ]}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+matches_message(Message, Expectation) ->
+  % get keys in Message and Expe
+  % if keys in Expec contained in Message OK
+  % if values for keys in Expc === values for those keys in Message OK
+  % do this recursively
+  MessageKeys = maps:keys(Message),
+  ExpectationKeys = maps:keys(Expectation),
+  AllKeysMatched = lists:all(fun (ExpectationKey) -> lists:member(ExpectationKey, MessageKeys) end, ExpectationKeys),
+  case AllKeysMatched of
+    true ->
+      AllValuesMatches = lists:all(fun (ExpectationKey) ->
+              ExpectationValue = maps:get(ExpectationKey, Expectation),
+              MessageValue = maps:get(ExpectationKey, Message),
+              case is_map(ExpectationValue) of
+                true ->
+                  matches_message(MessageValue, ExpectationValue);
+                false ->
+                  ExpectationValue =:= MessageValue
+              end
+          end, ExpectationKeys),
+      AllValuesMatches;
+    false ->
+      false
+  end.
+
+
 place_player_at_others_boundary() ->
   fun (Context) ->
       Player1 = get_player_for_client(ws_player_1_client, Context),

@@ -7,7 +7,10 @@
   coordinates/1,
   rotation/1,
   update/2,
-  move/1
+  move/1,
+  x/1,
+  y/1,
+  snapshot/1
 ]).
 -export([
   init/1,
@@ -34,6 +37,17 @@ update(ShotComponent, UpdateContext) ->
 move(ShotComponent) ->
   gen_server:call(ShotComponent, move).
 
+x(ShotComponent) ->
+  {x, X, y, _} =gen_server:call(ShotComponent, coordinates),
+  X.
+
+y(ShotComponent) ->
+  {x, _, y, Y} =gen_server:call(ShotComponent, coordinates),
+  Y.
+
+snapshot(ShotComponent) ->
+  gen_server:call(ShotComponent, snapshot).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callback
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,8 +70,10 @@ handle_call(rotation, _, ShotComponentData) ->
   {reply, pewpew_shot_component_data:rotation(ShotComponentData), ShotComponentData};
 handle_call(coordinates, _, ShotComponentData) ->
   {ok, Coordinates} = pewpew_shot_component_mod:get_coordinates(ShotComponentData),
-
-  {reply, Coordinates, ShotComponentData}.
+  {reply, Coordinates, ShotComponentData};
+handle_call(snapshot, _, ShotComponentData) ->
+  {ok, ShotSnapshot} = pewpew_shot_component_mod:snapshot(ShotComponentData),
+  {reply, ShotSnapshot, ShotComponentData}.
 
 terminate(_Repos, _ShotComponentData) ->
   die.
