@@ -400,8 +400,76 @@ tests() ->
             end
             })
       },
+      {"Game snapshots reflect reduction in players life",
+       run_test(#{
+            steps => [
+              register_player(ws_player_1_client),
+              register_player(ws_player_2_client),
+              ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+              ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+              fun (Context) ->
+                  Player1 = get_player_for_client(ws_player_1_client, Context),
+                  Player2 = get_player_for_client(ws_player_2_client, Context),
+                  Radius  = pewpew_player_component:radius(Player1),
+
+                  pewpew_player_component:set_coordinates(Player1, [{x, 200}, {y, 200}]),
+                  pewpew_player_component:set_coordinates(Player2, [{x, 200 + 2 * Radius + 1}, {y, 200}]),
+
+                  ok
+              end,
+              ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+              ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
+              fun (_) ->
+                  Steps = lists:seq(1, 30),
+                  lists:map(fun(_) ->
+                        fun(_) ->
+                            [
+                              ws_client_send(ws_player_1_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+                              ws_client_sel_recv(ws_player_1_client, <<"PlayerShootAck">>),
+                              ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>),
+                              fun (Context) ->
+                                  #{pewpew_game := PewPewGame} = Context,
+                                  ArenaComponent = pewpew_game:arena_component(PewPewGame),
+                                  Players = pewpew_arena_component:players(ArenaComponent),
+                                  [LastReply] = get_last_reply_for_client(ws_control_client, Context),
+                                  ExpectedPlayerStates = lists:map(fun(Player) ->
+                                          #{
+                                            <<"id">> => pewpew_player_component:id(Player),
+                                            <<"coordinates">> => #{
+                                              <<"x">> => pewpew_player_component:x(Player),
+                                              <<"y">> => pewpew_player_component:y(Player)
+                                              },
+                                            <<"life">> => pewpew_player_component:life(Player),
+                                            <<"rotation">> => pewpew_player_component:rotation(Player),
+                                            <<"radar">> => #{<<"type">> => <<"circular_scan">>, <<"radius">> => 40}
+                                            }
+                                      end, Players),
+
+                                  ExpectedReply = #{
+                                      <<"type">> => <<"GameSnapshotNotification">>,
+                                      <<"data">> => #{
+                                        <<"arena_snapshot">> => #{
+                                          <<"players_snapshots">> => ExpectedPlayerStates,
+                                          <<"shot_snapshots">> => '_'
+                                          }
+                                        }
+                                      },
+
+                                  MatchesMessages = matches_message(LastReply, ExpectedReply),
+
+                                  not MatchesMessages andalso ?debugVal(LastReply),
+                                  not MatchesMessages andalso ?debugVal(ExpectedReply),
+
+                                  {test, ?_assert(MatchesMessages)}
+                              end
+                              ]
+                        end
+                    end, Steps)
+              end
+              ]
+            })
+      },
       {"Destroyed player is not included in game snapshot notifications",
-       focus,
        run_test(#{
             steps => [
               register_player(ws_player_1_client),
@@ -613,7 +681,10 @@ matches_message(Message, Expectation) ->
                 true ->
                   matches_message(MessageValue, ExpectationValue);
                 false ->
-                  ExpectationValue =:= MessageValue
+                  case ExpectationValue of
+                    '_' -> true; %match all
+                    _   -> ExpectationValue =:= MessageValue
+                  end
               end
           end, ExpectationKeys),
       AllValuesMatches;
