@@ -400,6 +400,110 @@ tests() ->
             end
             })
       },
+      {"Destroyed player is not included in game snapshot notifications",
+       focus,
+       run_test(#{
+            steps => [
+              register_player(ws_player_1_client),
+              register_player(ws_player_2_client),
+              ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+              ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+              fun (Context) ->
+                  Player1 = get_player_for_client(ws_player_1_client, Context),
+                  Player2 = get_player_for_client(ws_player_2_client, Context),
+                  Radius  = pewpew_player_component:radius(Player1),
+
+                  pewpew_player_component:set_coordinates(Player1, [{x, 200}, {y, 200}]),
+                  pewpew_player_component:set_coordinates(Player2, [{x, 200 + 2 * Radius + 1}, {y, 200}]),
+
+                  ok
+              end,
+              ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+              ws_client_sel_recv(ws_control_client, <<"StartGameAck">>),
+              ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>),
+              fun (Context) ->
+                  #{pewpew_game := PewPewGame} = Context,
+                  ArenaComponent = pewpew_game:arena_component(PewPewGame),
+                  Players = pewpew_arena_component:players(ArenaComponent),
+                  [LastReply] = get_last_reply_for_client(ws_control_client, Context),
+                  ExpectedPlayerStates = lists:map(fun(Player) ->
+                          #{
+                            <<"id">> => pewpew_player_component:id(Player),
+                            <<"coordinates">> => #{
+                              <<"x">> => pewpew_player_component:x(Player),
+                              <<"y">> => pewpew_player_component:y(Player)
+                              },
+                            <<"life">> => pewpew_player_component:life(Player),
+                            <<"rotation">> => pewpew_player_component:rotation(Player),
+                            <<"radar">> => #{<<"type">> => <<"circular_scan">>, <<"radius">> => 40}
+                            }
+                      end, Players),
+
+                  ExpectedReply = #{
+                      <<"type">> => <<"GameSnapshotNotification">>,
+                      <<"data">> => #{
+                        <<"arena_snapshot">> => #{
+                          <<"players_snapshots">> => ExpectedPlayerStates,
+                          <<"shot_snapshots">> => []
+                          }
+                        }
+                      },
+
+                  MatchesMessages = matches_message(LastReply, ExpectedReply),
+
+                  not MatchesMessages andalso ?debugVal(LastReply),
+                  not MatchesMessages andalso ?debugVal(ExpectedReply),
+
+                  {test, ?_assert(MatchesMessages)}
+              end,
+              fun (_) ->
+                  Steps = lists:seq(1, 20),
+                  lists:map(fun(_) ->
+                        fun(_) ->
+                            [
+                              ws_client_send(ws_player_1_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+                              ws_client_sel_recv(ws_player_1_client, <<"PlayerShootAck">>)
+                              ]
+                        end
+                    end, Steps)
+              end,
+              ws_client_sel_recv(ws_player_2_client, <<"PlayerDestroyedNotification">>),
+              ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
+              ],
+
+            test => fun(Context) ->
+                [LastReply] = get_last_reply_for_client(ws_control_client, Context),
+                Player1 = get_player_for_client(ws_player_1_client, Context),
+                ExpectePlayerState = #{
+                    <<"id">> => pewpew_player_component:id(Player1),
+                    <<"coordinates">> => #{
+                      <<"x">> => pewpew_player_component:x(Player1),
+                      <<"y">> => pewpew_player_component:y(Player1)
+                      },
+                    <<"life">> => pewpew_player_component:life(Player1),
+                    <<"rotation">> => pewpew_player_component:rotation(Player1),
+                    <<"radar">> => #{<<"type">> => <<"circular_scan">>, <<"radius">> => 40}
+                    },
+
+                ExpectedReply = #{
+                    <<"type">> => <<"GameSnapshotNotification">>,
+                    <<"data">> => #{
+                      <<"arena_snapshot">> => #{
+                        <<"players_snapshots">> => [ExpectePlayerState],
+                        <<"shot_snapshots">> => []
+                        }
+                      }
+                    },
+
+                MatchesMessages = matches_message(LastReply, ExpectedReply),
+
+                not MatchesMessages andalso ?debugVal(LastReply),
+                not MatchesMessages andalso ?debugVal(ExpectedReply),
+
+                ?_assert(MatchesMessages)
+            end
+            })
+      },
       {"Shots are included in game snapshot notifications",
        run_test(#{
             steps => [
@@ -444,7 +548,6 @@ tests() ->
             })
       },
       {"Shots are not included in game snapshot notifications after being destroyed",
-       focus,
        run_test(#{
             steps => [
               register_player(ws_player_1_client),
