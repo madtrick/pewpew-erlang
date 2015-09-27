@@ -350,6 +350,54 @@ tests() ->
                 ?_assertEqual([Player1], Players)
               end
              })
+          },
+          {"Destroyed player does not interfere with other shots",
+            run_test(#{
+              steps => [
+                register_player(ws_player_1_client),
+                register_player(ws_player_2_client),
+                register_player(ws_player_3_client),
+                ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+                ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+                ws_client_sel_recv(ws_player_3_client, <<"RegisterPlayerAck">>),
+                fun (Context) ->
+                    Player1 = get_player_for_client(ws_player_1_client, Context),
+                    Player2 = get_player_for_client(ws_player_2_client, Context),
+                    Player3 = get_player_for_client(ws_player_3_client, Context),
+                    Radius  = pewpew_player_component:radius(Player1),
+
+                    pewpew_player_component:set_coordinates(Player1, [{x, 200}, {y, 200}]),
+                    pewpew_player_component:set_coordinates(Player2, [{x, 200 + 2 * Radius + 1}, {y, 200}]),
+                    pewpew_player_component:set_coordinates(Player3, [{x, 200 + 4 * Radius + 1}, {y, 200}]),
+
+                    ok
+                end,
+                ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+                ws_client_sel_recv(ws_player_1_client, <<"StartGameOrder">>),
+                fun (_) ->
+                  Steps = lists:seq(1, 30),
+                  lists:map(fun(_) ->
+                    fun(_) ->
+                        [
+                         ws_client_send(ws_player_1_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+                         ws_client_sel_recv(ws_player_1_client, <<"PlayerShootAck">>)
+                        ]
+                    end
+                  end, Steps)
+                end
+              ],
+
+              test => fun(Context) ->
+                Player3 = get_player_for_client(ws_player_3_client, Context),
+                PlayersRadius = pewpew_player_component:radius(Player3),
+                % 10 is the number of extra shots fired after destroying the player_2
+                % 1.5 is the speed of the shoot
+                ExpectedNumberOfHits = 10 - pewpew_utils:ceil((2 * PlayersRadius) / 1.5),
+                Player3Life = pewpew_player_component:life(Player3),
+
+                ?_assertEqual(100 - ExpectedNumberOfHits*5, Player3Life)
+              end
+             })
           }
         ]}.
 

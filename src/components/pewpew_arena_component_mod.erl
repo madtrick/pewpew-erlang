@@ -127,7 +127,7 @@ update_players(UpdateContext, [Player | Players], ArenaComponentData, NonDestroy
                                          {updated, PlayerUpdateNotifications} ->
                                            {ArenaComponentData, [Player | NonDestroyedPlayers], PlayerUpdateNotifications};
                                          {destroyed, PlayerUpdateNotifications} ->
-                                           UpdatedPlayersList = lists:filter(fun(P) -> P =/= Player end, Players),
+                                           UpdatedPlayersList = lists:filter(fun(P) -> P =/= Player end, pewpew_arena_component_data:players(ArenaComponentData)),
                                            UpdatedArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, UpdatedPlayersList}]),
                                            {UpdatedArenaComponentData, NonDestroyedPlayers, PlayerUpdateNotifications}
                                        end,
