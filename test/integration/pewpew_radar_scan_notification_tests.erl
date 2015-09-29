@@ -14,7 +14,8 @@
     validate_type_in_last_reply_test/2,
     get_player_for_client/2,
     validate_message_in_last_reply_test/2,
-    validate_message_in_nth_reply_test/3
+    validate_message_in_nth_reply_test/3,
+    validate_message_in_last_reply_matches/2
 ]).
 
 tests() ->
@@ -253,10 +254,14 @@ tests() ->
 
                 ExpectedReply = #{
                   <<"type">> => <<"GameSnapshotNotification">>,
-                  <<"data">> => #{<<"arena_snapshot">> => #{ <<"players_snapshots">> => [ExpectedPlayerState]}}
+                  <<"data">> => #{
+                      <<"arena_snapshot">> => #{
+                        <<"players_snapshots">> => [ExpectedPlayerState]
+                        }
+                      }
                 },
 
-                validate_message_in_last_reply_test(ws_control_client, ExpectedReply)
+                validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
               end
              })
           },

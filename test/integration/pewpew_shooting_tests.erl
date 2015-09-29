@@ -13,9 +13,9 @@
     register_player/0,
     register_player/1,
     get_player_for_client/2,
-    get_last_reply_for_client/2,
     validate_type_in_last_reply_test/2,
     validate_last_reply_data_for_type_test/3,
+    validate_message_in_last_reply_matches/2,
     place_player_at/2
     ]).
 
@@ -431,7 +431,6 @@ tests() ->
                                   #{pewpew_game := PewPewGame} = Context,
                                   ArenaComponent = pewpew_game:arena_component(PewPewGame),
                                   Players = pewpew_arena_component:players(ArenaComponent),
-                                  [LastReply] = get_last_reply_for_client(ws_control_client, Context),
                                   ExpectedPlayerStates = lists:map(fun(Player) ->
                                           #{
                                             <<"id">> => pewpew_player_component:id(Player),
@@ -455,12 +454,7 @@ tests() ->
                                         }
                                       },
 
-                                  MatchesMessages = matches_message(LastReply, ExpectedReply),
-
-                                  not MatchesMessages andalso ?debugVal(LastReply),
-                                  not MatchesMessages andalso ?debugVal(ExpectedReply),
-
-                                  {test, ?_assert(MatchesMessages)}
+                                  validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
                               end
                               ]
                         end
@@ -493,7 +487,6 @@ tests() ->
                   #{pewpew_game := PewPewGame} = Context,
                   ArenaComponent = pewpew_game:arena_component(PewPewGame),
                   Players = pewpew_arena_component:players(ArenaComponent),
-                  [LastReply] = get_last_reply_for_client(ws_control_client, Context),
                   ExpectedPlayerStates = lists:map(fun(Player) ->
                           #{
                             <<"id">> => pewpew_player_component:id(Player),
@@ -517,12 +510,7 @@ tests() ->
                         }
                       },
 
-                  MatchesMessages = matches_message(LastReply, ExpectedReply),
-
-                  not MatchesMessages andalso ?debugVal(LastReply),
-                  not MatchesMessages andalso ?debugVal(ExpectedReply),
-
-                  {test, ?_assert(MatchesMessages)}
+                  validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
               end,
               fun (_) ->
                   Steps = lists:seq(1, 20),
@@ -540,7 +528,6 @@ tests() ->
               ],
 
             test => fun(Context) ->
-                [LastReply] = get_last_reply_for_client(ws_control_client, Context),
                 Player1 = get_player_for_client(ws_player_1_client, Context),
                 ExpectePlayerState = #{
                     <<"id">> => pewpew_player_component:id(Player1),
@@ -563,12 +550,7 @@ tests() ->
                       }
                     },
 
-                MatchesMessages = matches_message(LastReply, ExpectedReply),
-
-                not MatchesMessages andalso ?debugVal(LastReply),
-                not MatchesMessages andalso ?debugVal(ExpectedReply),
-
-                ?_assert(MatchesMessages)
+                validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
             end
             })
       },
@@ -598,7 +580,6 @@ tests() ->
                 #{pewpew_game := PewPewGame} = Context,
                 ArenaComponent = pewpew_game:arena_component(PewPewGame),
                 [Shot] = pewpew_arena_component:shots(ArenaComponent),
-                [LastReply] = get_last_reply_for_client(ws_control_client, Context),
                 ExpectedShotState = #{
                     <<"coordinates">> => #{
                       <<"x">> => pewpew_shot_component:x(Shot),
@@ -611,7 +592,7 @@ tests() ->
                     <<"data">> => #{<<"arena_snapshot">> => #{ <<"shot_snapshots">> => [ExpectedShotState]}}
                     },
 
-                ?_assert(matches_message(LastReply, ExpectedReply))
+                validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
             end
             })
       },
@@ -630,7 +611,6 @@ tests() ->
                 #{pewpew_game := PewPewGame} = Context,
                 ArenaComponent = pewpew_game:arena_component(PewPewGame),
                 [Shot] = pewpew_arena_component:shots(ArenaComponent),
-                [LastReply] = get_last_reply_for_client(ws_control_client, Context),
                 ExpectedShotState = #{
                     <<"coordinates">> => #{
                       <<"x">> => pewpew_shot_component:x(Shot),
@@ -643,19 +623,18 @@ tests() ->
                     <<"data">> => #{<<"arena_snapshot">> => #{ <<"shot_snapshots">> => [ExpectedShotState]}}
                     },
 
-                {test, ?_assert(matches_message(LastReply, ExpectedReply))}
+                validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
               end,
               ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
               ],
 
-            test => fun(Context) ->
-                [LastReply] = get_last_reply_for_client(ws_control_client, Context),
+            test => fun(_) ->
                 ExpectedReply = #{
                     <<"type">> => <<"GameSnapshotNotification">>,
                     <<"data">> => #{<<"arena_snapshot">> => #{ <<"shot_snapshots">> => []}}
                     },
 
-                ?_assert(matches_message(LastReply, ExpectedReply))
+                validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
             end
             })
       }
@@ -664,35 +643,6 @@ tests() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-matches_message(Message, Expectation) ->
-  % get keys in Message and Expe
-  % if keys in Expec contained in Message OK
-  % if values for keys in Expc === values for those keys in Message OK
-  % do this recursively
-  MessageKeys = maps:keys(Message),
-  ExpectationKeys = maps:keys(Expectation),
-  AllKeysMatched = lists:all(fun (ExpectationKey) -> lists:member(ExpectationKey, MessageKeys) end, ExpectationKeys),
-  case AllKeysMatched of
-    true ->
-      AllValuesMatches = lists:all(fun (ExpectationKey) ->
-              ExpectationValue = maps:get(ExpectationKey, Expectation),
-              MessageValue = maps:get(ExpectationKey, Message),
-              case is_map(ExpectationValue) of
-                true ->
-                  matches_message(MessageValue, ExpectationValue);
-                false ->
-                  case ExpectationValue of
-                    '_' -> true; %match all
-                    _   -> ExpectationValue =:= MessageValue
-                  end
-              end
-          end, ExpectationKeys),
-      AllValuesMatches;
-    false ->
-      false
-  end.
-
-
 place_player_at_others_boundary() ->
   fun (Context) ->
       Player1 = get_player_for_client(ws_player_1_client, Context),

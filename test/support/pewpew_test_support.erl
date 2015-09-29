@@ -21,6 +21,7 @@
   validate_last_reply_data_for_type_test/3,
   validate_message_in_nth_reply_test/3,
   validate_message_in_last_reply_test/2,
+  validate_message_in_last_reply_matches/2,
   throwing/1,
   it_threw/1,
   place_player_at/2
@@ -237,11 +238,15 @@ generate_valid_move_command_test(Options) ->
  ).
 
 validate_message_in_nth_reply_test(Number, ClientId, ExpectedMessage) ->
+  Matcher = fun (Message, Expectation) -> Message =:= Expectation end,
+  validate_message_in_nth_reply_test(Number, ClientId, ExpectedMessage, Matcher).
+
+validate_message_in_nth_reply_test(Number, ClientId, ExpectedMessage, Matcher) ->
   fun(Context) ->
     Replies = get_nth_reply_for_client(Number, ClientId, Context),
 
     MessagePresent = lists:any(fun(Message) ->
-      ExpectedMessage =:= Message
+              Matcher(Message, ExpectedMessage)
     end, Replies),
 
     not(MessagePresent) andalso ?debugVal(Replies),
@@ -252,6 +257,9 @@ validate_message_in_nth_reply_test(Number, ClientId, ExpectedMessage) ->
 
 validate_message_in_last_reply_test(ClientId, ExpectedMessage) ->
   validate_message_in_nth_reply_test(-1, ClientId, ExpectedMessage).
+
+validate_message_in_last_reply_matches(ClientId, ExpectedMessage) ->
+  validate_message_in_nth_reply_test(-1, ClientId, ExpectedMessage, fun expectation_matches_message/2).
 
 validate_type_in_last_reply_test(ClientId, ExpectedType) ->
   fun(Context) ->
@@ -435,4 +443,32 @@ maybe_start_client(ClientId, Context) ->
       {ClientPid, UpdatedContext};
     _ ->
       {Client, Context}
+  end.
+
+expectation_matches_message(Message, Expectation) ->
+  % get keys in Message and Expe
+  % if keys in Expec contained in Message OK
+  % if values for keys in Expc === values for those keys in Message OK
+  % do this recursively
+  MessageKeys = maps:keys(Message),
+  ExpectationKeys = maps:keys(Expectation),
+  AllKeysMatched = lists:all(fun (ExpectationKey) -> lists:member(ExpectationKey, MessageKeys) end, ExpectationKeys),
+  case AllKeysMatched of
+    true ->
+      AllValuesMatches = lists:all(fun (ExpectationKey) ->
+              ExpectationValue = maps:get(ExpectationKey, Expectation),
+              MessageValue = maps:get(ExpectationKey, Message),
+              case is_map(ExpectationValue) of
+                true ->
+                  expectation_matches_message(MessageValue, ExpectationValue);
+                false ->
+                  case ExpectationValue of
+                    '_' -> true; %match all
+                    _   -> ExpectationValue =:= MessageValue
+                  end
+              end
+          end, ExpectationKeys),
+      AllValuesMatches;
+    false ->
+      false
   end.
