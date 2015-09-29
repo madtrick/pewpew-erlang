@@ -27,7 +27,6 @@ move(ShotComponentData) ->
   RoundedX = round_value(X + DX, 5),
   RoundedY = round_value(Y + DY, 5),
 
-
   UpdatedShotComponentData = pewpew_shot_component_data:update(ShotComponentData, [{x, RoundedX}, {y, RoundedY}]),
   {ok, UpdatedShotComponentData}.
 
@@ -66,7 +65,7 @@ round_value(Value, Precision) ->
 is_out_of_bounds(X, Y, ArenaDimensions) ->
   #{ width := ArenaWidth, height := ArenaHeight } = ArenaDimensions,
 
-  Y < 0 orelse
-  X < 0 orelse
-  X > ArenaWidth orelse
-  Y > ArenaHeight.
+  Y =< 0 orelse
+  X =< 0 orelse
+  X >= ArenaWidth orelse
+  Y >= ArenaHeight.
