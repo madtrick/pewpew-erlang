@@ -26,10 +26,21 @@ create_player(ArenaComponentData, PlayerData) ->
   {x, X, y, Y} = pick_player_coordinates(ArenaComponentData),
   Name         = pick_player_name(ArenaComponentData),
   Radius       = pick_player_radius(),
+  ShootingShotCost = pewpew_config:get([players, shooting, cost]),
+  ShootingInitialTokens = pewpew_config:get([players, shooting, initial_tokens]),
+  ShootingInfo = #{cost => ShootingShotCost, tokens => ShootingInitialTokens},
 
   PlayersSupervisor = pewpew_arena_component_data:pewpew_player_component_sup(ArenaComponentData),
   GameContextData   = pewpew_arena_component_data:pewpew_game_context_data(ArenaComponentData),
-  PlayerConfig      = [{color, Color}, {id, Id}, {x, X}, {y, Y}, {name, Name}, {radius, Radius} | PlayerData],
+  PlayerConfig      = [
+      {color, Color},
+      {id, Id},
+      {x, X},
+      {y, Y},
+      {name, Name},
+      {radius, Radius},
+      {shooting_info, ShootingInfo}
+      | PlayerData],
 
   {ok, Player}      = pewpew_player_component_sup:add_player(
     PlayersSupervisor,

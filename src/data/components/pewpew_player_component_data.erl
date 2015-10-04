@@ -12,7 +12,8 @@
   life/1,
   rotation/1,
   radius/1,
-  radar_config_data/1
+  radar_config_data/1,
+  shooting_info/1
 ]).
 -export([update/2]).
 
@@ -31,6 +32,7 @@ rotation(#{ rotation := Rotation }) -> Rotation.
 pewpew_game_context_data(#{ pewpew_game_context_data := Data }) -> Data.
 radius(#{ radius := Value }) -> Value.
 radar_config_data(#{ radar_config_data := Value }) -> Value.
+shooting_info(#{ shooting_info := Value }) -> Value.
 
 update(PewPewPlayerComponentData, Data) ->
   pewpew_map_backed_data:update(PewPewPlayerComponentData, Data).
