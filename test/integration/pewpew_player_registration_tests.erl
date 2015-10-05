@@ -21,7 +21,6 @@
 tests() ->
   {"RegisterPlayerCommand", [
       {"Register player command",
-       focus,
        run_test(#{
             steps => [
               register_player(),

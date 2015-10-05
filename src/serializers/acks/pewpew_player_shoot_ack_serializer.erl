@@ -2,14 +2,11 @@
 
 -export([toJSON/1]).
 
-toJSON(_AckData) ->
-  %Struct = #{
-  %  type => <<"PlayerShootAck">>,
-  %  data => #{}
-  % },
-  Struct = {[
-      {type, <<"PlayerShootAck">>},
-      {data, {[]}}
-    ]},
+toJSON(AckData) ->
+  ShootingInfo = pewpew_player_shoot_ack_data:shooting_info(AckData),
+  Struct = #{
+    type => <<"PlayerShootAck">>,
+      data => #{shooting => ShootingInfo}
+   },
 
   Struct.

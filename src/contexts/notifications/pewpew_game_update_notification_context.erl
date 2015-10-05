@@ -23,7 +23,6 @@ call(NotificationContextData) ->
                 {reply, [{send_to, PlayerChannel, Notification}]}
             end;
           {player, PlayerChannel, destroyed, U} ->
-              ?debugMsg("Player destroyed notification"),
               {notification, Notification} = U,
               %PlayerChannel = pewpew_player_component:channel(Player),
               {reply, [{send_to, PlayerChannel, Notification}]};

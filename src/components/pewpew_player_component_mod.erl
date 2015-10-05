@@ -7,7 +7,8 @@
   move/2,
   snapshot/1,
   update/2,
-  configure/3
+  configure/3,
+  shoot/1
 ]).
 
 -define(MOVEMENT_SPEED, 1).
@@ -53,6 +54,20 @@ configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
     false ->
       {error, PlayerComponentData}
   end.
+
+shoot(PlayerComponentData) ->
+  ShootingInfo = pewpew_player_component_data:shooting_info(PlayerComponentData),
+
+  #{
+    cost := ShootingCost,
+    tokens := ShootingTokens
+    } = ShootingInfo,
+
+  UpdatedShootingTokens = ShootingTokens - ShootingCost,
+  UpdatedShootingInfo = maps:put(tokens, UpdatedShootingTokens, ShootingInfo),
+  UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{shooting_info, UpdatedShootingInfo}]),
+
+  {ok, UpdatedPlayerComponentData}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

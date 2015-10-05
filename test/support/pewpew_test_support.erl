@@ -16,6 +16,7 @@
   get_nth_reply_for_client/3,
   get_replies_for_client/2,
   get_last_reply_for_client/2,
+  get_message_in_last_reply_for_client/3,
   validate_type_in_last_reply_test/2,
   validate_last_reply_data_test/2,
   validate_last_reply_data_for_type_test/3,
@@ -195,6 +196,15 @@ get_last_reply_for_client(ClientId, Context) ->
   Replies = get_replies_for_client(ClientId, Context),
   Last    = lists:last(Replies),
   Last.
+
+get_message_in_last_reply_for_client(CliendId, MessageType, Context) ->
+  LastReply = get_last_reply_for_client(CliendId, Context),
+
+  [Message] = lists:filter(fun(Message) ->
+          #{<<"type">> := Type} = Message,
+          Type =:= MessageType
+    end, LastReply),
+  Message.
 
 generate_reject_move_command_test(Options) ->
   DefaultOptions = #{

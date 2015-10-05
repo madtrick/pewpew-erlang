@@ -59,6 +59,8 @@ create_shot(ArenaComponentData, ShotData) ->
   PlayerRotation    = pewpew_player_component:rotation(Player),
   PlayerRadius      = pewpew_player_component:radius(Player),
 
+  pewpew_player_component:shoot(Player),
+
   {x, X, y, Y} = pick_shot_coordinates(PlayerRotation, PlayerRadius, PlayerCoordinates),
 
   {ok, Shot} = pewpew_shot_component_sup:add_shot(ShotsSupervisor, [{rotation, PlayerRotation}, {x, X}, {y, Y} | ShotData]),

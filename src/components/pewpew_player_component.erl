@@ -31,7 +31,8 @@
   update/2,
   radar_config/1,
   configure/3,
-  shooting_info/1
+  shooting_info/1,
+  shoot/1
 ]).
 
 % Exported only for testing
@@ -116,6 +117,9 @@ configure(PlayerComponent, Op, Args) ->
 shooting_info(PlayerComponent) ->
   gen_server:call(PlayerComponent, shooting_info).
 
+shoot(PlayerComponent) ->
+  gen_server:call(PlayerComponent, shoot).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% gen_server callback
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -191,7 +195,10 @@ handle_call({configure, Op, Args}, _, PlayerComponentData) ->
   {OkOrError, UpdatedPlayerComponentData} = pewpew_player_component_mod:configure(PlayerComponentData, Op, Args),
   {reply, OkOrError, UpdatedPlayerComponentData};
 handle_call(shooting_info, _, PlayerComponentData) ->
-  {reply, pewpew_player_component_data:shooting_info(PlayerComponentData), PlayerComponentData}.
+  {reply, pewpew_player_component_data:shooting_info(PlayerComponentData), PlayerComponentData};
+handle_call(shoot, _, PlayerComponentData) ->
+  {ok, UpdatedPlayerComponentData} = pewpew_player_component_mod:shoot(PlayerComponentData),
+  {reply, ok, UpdatedPlayerComponentData}.
 
 terminate(_Repos, _PlayerComponentData) ->
   ?debugMsg("Player dying"),

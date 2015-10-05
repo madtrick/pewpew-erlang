@@ -12,6 +12,8 @@
     ws_client_sel_recv/2,
     register_player/0,
     register_player/1,
+    get_last_reply_for_client/2,
+    get_message_in_last_reply_for_client/3,
     get_player_for_client/2,
     validate_type_in_last_reply_test/2,
     validate_last_reply_data_for_type_test/3,
@@ -44,6 +46,37 @@ tests() ->
               ws_client_recv(ws_player_client),
               validate_type_in_last_reply_test(ws_player_client, <<"PlayerShootAck">>)
               ]
+            })
+      },
+      {"Shot ack includes information about the shooting tokens/cost",
+       run_test(#{
+            steps => [
+              register_player(),
+              ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+              fun (Context) ->
+                  [LastReply] = get_last_reply_for_client(ws_player_client, Context),
+                  ShootingCost = pewpew_utils:get_value_in_map([<<"data">>, <<"shooting">>, <<"cost">>], LastReply),
+                  ShootingTokens = pewpew_utils:get_value_in_map([<<"data">>, <<"shooting">>, <<"tokens">>], LastReply),
+
+                  UpdatedContext = maps:put(shooting_cost, ShootingCost, maps:put(shooting_tokens, ShootingTokens, Context)),
+                  {context, UpdatedContext}
+              end,
+              ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+              ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+              ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+              ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>)
+              ],
+            test => fun (Context) ->
+                Message = get_message_in_last_reply_for_client(ws_player_client, <<"PlayerShootAck">>, Context),
+                #{shooting_cost := ShootingCost, shooting_tokens := ShootingTokens } = Context,
+                UpdatedShootingCost = pewpew_utils:get_value_in_map([<<"data">>, <<"shooting">>, <<"cost">>], Message),
+                UpdatedShootingTokens = pewpew_utils:get_value_in_map([<<"data">>, <<"shooting">>, <<"tokens">>], Message),
+
+                [
+                  ?_assertEqual(UpdatedShootingCost, ShootingCost),
+                  ?_assertEqual(UpdatedShootingTokens, ShootingTokens - ShootingCost)
+                ]
+            end
             })
       },
       {"It only creates one shot per command",
