@@ -333,6 +333,8 @@ place_player_at(CliendId, Coordinates) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 is_reply_type_present_in_messages(Type, Messages) ->
+  ?debugVal(Type),
+  ?debugVal(Messages),
   lists:any(fun(#{<<"type">> := ReplyType}) ->
     ReplyType =:= Type
   end, Messages).

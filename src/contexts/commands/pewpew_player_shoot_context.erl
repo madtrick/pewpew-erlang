@@ -24,11 +24,20 @@ call(CommandContextData) ->
           InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
           {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
         true ->
-          CommandModule:run(PlayerShootCommandData, CommandContextData),
           Player       = pewpew_arena_component:get_player(ArenaComponent, CommandOriginChannel),
-          ShootingInfo = pewpew_player_component:shooting_info(Player),
+          InitialShootingInfo = pewpew_player_component:shooting_info(Player),
+          #{cost := ShootingCost, tokens := ShootingTokens} = InitialShootingInfo,
 
-          PlayerShootAck = pewpew_player_shoot_ack:new(CommandOriginChannel, ShootingInfo),
-          {reply, [{send_to, CommandOriginChannel, PlayerShootAck}]}
+          case ShootingTokens >= ShootingCost of
+            true ->
+              CommandModule:run(PlayerShootCommandData, CommandContextData),
+              ShootingInfo = pewpew_player_component:shooting_info(Player),
+
+              PlayerShootAck = pewpew_player_shoot_ack:new(CommandOriginChannel, ShootingInfo),
+              {reply, [{send_to, CommandOriginChannel, PlayerShootAck}]};
+            false ->
+              InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
+              {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}
+          end
       end
   end.

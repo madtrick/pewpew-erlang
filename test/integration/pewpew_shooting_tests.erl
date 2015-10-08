@@ -670,7 +670,39 @@ tests() ->
                 validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
             end
             })
-      }
+      },
+      {"Players can't shoot when they don't have enough shooting tokens",
+       focus,
+       run_test(#{
+            steps => [
+              register_player(),
+              ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+              ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+              ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+              fun (Context) ->
+                  Player = get_player_for_client(ws_player_client, Context),
+                  ShootingInfo = pewpew_player_component:shooting_info(Player),
+                  #{ cost := ShootingCost, tokens := ShootingTokens } = ShootingInfo,
+                  MaxShots = trunc(ShootingTokens / ShootingCost),
+
+                  Steps = lists:seq(1, MaxShots),
+                  lists:map(fun(_) ->
+                        fun(_) ->
+                            [
+                              ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+                              ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>)
+                              ]
+                        end
+                    end, Steps)
+              end,
+              ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+              ws_client_recv(ws_player_client),
+              fun (_) ->
+                {test, validate_type_in_last_reply_test(ws_player_client, <<"InvalidCommandError">>)}
+              end
+              ]
+            })
+        }
       ]}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
