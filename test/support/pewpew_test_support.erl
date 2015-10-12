@@ -1,5 +1,5 @@
--module(pewpew_test_support).
 -include_lib("eunit/include/eunit.hrl").
+-module(pewpew_test_support).
 
 -export([
   run_test/1,
@@ -23,9 +23,11 @@
   validate_message_in_nth_reply_test/3,
   validate_message_in_last_reply_test/2,
   validate_message_in_last_reply_matches/2,
+  validate_message_matches/2,
   throwing/1,
   it_threw/1,
-  place_player_at/2
+  place_player_at/2,
+  test_step/1
 ]).
 
 run_test(Config) ->
@@ -147,7 +149,9 @@ ws_client_sel_recv(ClientId, Client, Type, Timeout, Replies) ->
   Now = pewpew_utils:get_current_time_in_milliseconds(),
 
   case Now >= Timeout of
-    true -> (throw(ws_client_sel_recv_timeout));
+    true ->
+      ?debugMsg("Timeout waiting for " ++ Type),
+      (throw(ws_client_sel_recv_timeout));
     false ->
       {text, Reply} = ws_client:recv(Client),
       JSON = jiffy:decode(Reply, [return_maps]),
@@ -271,10 +275,22 @@ validate_message_in_last_reply_test(ClientId, ExpectedMessage) ->
 validate_message_in_last_reply_matches(ClientId, ExpectedMessage) ->
   validate_message_in_nth_reply_test(-1, ClientId, ExpectedMessage, fun expectation_matches_message/2).
 
+validate_message_matches(Message, ExpectedMessage) ->
+  fun (_) ->
+      Matches = expectation_matches_message(Message, ExpectedMessage),
+
+      not Matches andalso ?debugVal(Message),
+      not Matches andalso ?debugVal(ExpectedMessage),
+
+      ?_assert(Matches)
+  end.
+
 validate_type_in_last_reply_test(ClientId, ExpectedType) ->
   fun(Context) ->
     Reply       = get_last_reply_for_client(ClientId, Context),
     TypePresent = is_reply_type_present_in_messages(ExpectedType, Reply),
+
+    not TypePresent andalso ?debugVal(ExpectedType),
 
     ?_assert(TypePresent)
   end.
@@ -328,13 +344,20 @@ place_player_at(CliendId, Coordinates) ->
     ok
   end.
 
+test_step(Step) when is_function(Step) ->
+  fun (Context) ->
+      {test, Step(Context)}
+  end;
+test_step(Step) ->
+  fun (_) ->
+      {test, Step}
+  end.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 is_reply_type_present_in_messages(Type, Messages) ->
-  ?debugVal(Type),
-  ?debugVal(Messages),
   lists:any(fun(#{<<"type">> := ReplyType}) ->
     ReplyType =:= Type
   end, Messages).

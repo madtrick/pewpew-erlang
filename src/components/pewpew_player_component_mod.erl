@@ -39,7 +39,8 @@ snapshot(PlayerComponentData) ->
 update(PlayerComponentData, UpdateContext) ->
   #{shots := Shots} = UpdateContext,
 
-  evaluate_shots(Shots, PlayerComponentData).
+  UpdatedPlayerComponentData = update_shooting_info(PlayerComponentData),
+  evaluate_shots(Shots, UpdatedPlayerComponentData).
 
 configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
   %TODO: remove this check as this is also checked in the radar_mod file
@@ -135,3 +136,12 @@ player_hit_by_shot_notification(PlayerComponentData) ->
 player_destroyed_notification(PlayerComponentData) ->
   Channel = pewpew_player_component_data:origin(PlayerComponentData),
   {player, Channel, destroyed, {notification, pewpew_player_destroyed_notification:new()}}.
+
+update_shooting_info(PlayerComponentData) ->
+  ShootingInfo = pewpew_player_component_data:shooting_info(PlayerComponentData),
+  #{ tokens := Tokens, new_tokens_per_cycle := NewTokensPerCycle } = ShootingInfo,
+
+  UpdatedTokensValue = Tokens + NewTokensPerCycle,
+  UpdatedShootingInfo = maps:put(tokens, UpdatedTokensValue, ShootingInfo),
+
+  pewpew_player_component_data:update(PlayerComponentData, [{shooting_info, UpdatedShootingInfo}]).

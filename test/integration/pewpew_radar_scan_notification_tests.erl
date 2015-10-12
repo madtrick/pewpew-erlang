@@ -393,6 +393,11 @@ tests() ->
           {"Destroyed player does not appear in the scan notification in the same cycle when it is destroyed",
             run_test(#{
               steps => [
+                fun (_) ->
+                    % Increase intial tokens to be able to destroy the other player
+                    % without having to worry about the rate limiting
+                    pewpew_config:set([players, shooting, initial_tokens], 200)
+                end,
                 register_player(ws_player_1_client),
                 register_player(ws_player_2_client),
                 ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),

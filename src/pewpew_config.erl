@@ -30,9 +30,9 @@ get(KeyOrKeys, Default) ->
   Config = get_config_from_application_env(),
   pewpew_utils:get_value_in_map(KeyOrKeys, Config, Default).
 
-set(Key, Value) ->
+set(KeyOrKeys, Value) ->
   Config    = get_config_from_application_env(),
-  NewConfig = pewpew_utils:set_value_in_map(Key, Value, Config),
+  NewConfig = pewpew_utils:set_value_in_map(KeyOrKeys, Value, Config),
   application:set_env(?APPLICATION, config, NewConfig).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
