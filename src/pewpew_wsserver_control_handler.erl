@@ -10,6 +10,9 @@ init(Options) ->
   pewpew_core:register_control_channel(Channel),
   #pewpew_state{pewpew_channel = Channel}.
 
+handle(connection_close, _) ->
+  lager:info("websockets control handler stopped"),
+  ok;
 handle({close, _}, State) ->
   lager:info("websockets control handler stopped"),
   {close, State};

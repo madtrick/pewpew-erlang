@@ -9,8 +9,11 @@ init(Options) ->
   {ok, Channel} = pewpew_channel:create(Worker, [{is_control, false}]),
   #pewpew_state{pewpew_channel = Channel}.
 
-handle({close, _}, State) ->
+handle(connection_close, _) ->
   lager:info("websockets player handler stopped"),
+  ok;
+handle({close, _}, State) ->
+  lager:info("websockets control handler stopped"),
   {close, State};
 handle({pong, _}, State) ->
   {noreply, State};
