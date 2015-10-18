@@ -67,8 +67,13 @@ create_shot(ArenaComponentData, ShotData) ->
   pewpew_player_component:shoot(Player),
 
   {x, X, y, Y} = pick_shot_coordinates(PlayerRotation, PlayerRadius, PlayerCoordinates),
+  ShotId = pick_shot_id(),
 
-  {ok, Shot} = pewpew_shot_component_sup:add_shot(ShotsSupervisor, [{rotation, PlayerRotation}, {x, X}, {y, Y} | ShotData]),
+  {ok, Shot} = pewpew_shot_component_sup:add_shot(ShotsSupervisor, [
+        {rotation, PlayerRotation},
+        {x, X},
+        {y, Y},
+        {id, ShotId} | ShotData]),
   {ok, Shot}.
 
 move_player(Player, Movement, _) ->
@@ -247,3 +252,6 @@ available_colors(AllColors, UsedColors) ->
 
 monitor_player_componet(Player) ->
   erlang:monitor(process, Player).
+
+pick_shot_id() ->
+  pewpew_utils:get_current_time_in_milliseconds().

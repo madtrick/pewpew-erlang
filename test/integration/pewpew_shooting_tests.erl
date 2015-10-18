@@ -505,7 +505,7 @@ tests() ->
                                       <<"data">> => #{
                                         <<"arena_snapshot">> => #{
                                           <<"players_snapshots">> => ExpectedPlayerStates,
-                                          <<"shot_snapshots">> => '_'
+                                          <<"shots_snapshots">> => '_'
                                           }
                                         }
                                       },
@@ -564,7 +564,7 @@ tests() ->
                       <<"data">> => #{
                         <<"arena_snapshot">> => #{
                           <<"players_snapshots">> => ExpectedPlayerStates,
-                          <<"shot_snapshots">> => []
+                          <<"shots_snapshots">> => []
                           }
                         }
                       },
@@ -604,7 +604,7 @@ tests() ->
                     <<"data">> => #{
                       <<"arena_snapshot">> => #{
                         <<"players_snapshots">> => [ExpectePlayerState],
-                        <<"shot_snapshots">> => []
+                        <<"shots_snapshots">> => []
                         }
                       }
                     },
@@ -643,12 +643,13 @@ tests() ->
                     <<"coordinates">> => #{
                       <<"x">> => pewpew_shot_component:x(Shot),
                       <<"y">> => pewpew_shot_component:y(Shot)
-                      }
+                      },
+                    <<"id">> => pewpew_shot_component:id(Shot)
                     },
 
                 ExpectedReply = #{
                     <<"type">> => <<"GameSnapshotNotification">>,
-                    <<"data">> => #{<<"arena_snapshot">> => #{ <<"shot_snapshots">> => [ExpectedShotState]}}
+                    <<"data">> => #{<<"arena_snapshot">> => #{ <<"shots_snapshots">> => [ExpectedShotState]}}
                     },
 
                 validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
@@ -674,12 +675,13 @@ tests() ->
                     <<"coordinates">> => #{
                       <<"x">> => pewpew_shot_component:x(Shot),
                       <<"y">> => pewpew_shot_component:y(Shot)
-                      }
+                      },
+                      <<"id">> => pewpew_shot_component:id(Shot)
                     },
 
                 ExpectedReply = #{
                     <<"type">> => <<"GameSnapshotNotification">>,
-                    <<"data">> => #{<<"arena_snapshot">> => #{ <<"shot_snapshots">> => [ExpectedShotState]}}
+                    <<"data">> => #{<<"arena_snapshot">> => #{ <<"shots_snapshots">> => [ExpectedShotState]}}
                     },
 
                 validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)
@@ -690,7 +692,7 @@ tests() ->
             test => fun(_) ->
                 ExpectedReply = #{
                     <<"type">> => <<"GameSnapshotNotification">>,
-                    <<"data">> => #{<<"arena_snapshot">> => #{ <<"shot_snapshots">> => []}}
+                    <<"data">> => #{<<"arena_snapshot">> => #{ <<"shots_snapshots">> => []}}
                     },
 
                 validate_message_in_last_reply_matches(ws_control_client, ExpectedReply)

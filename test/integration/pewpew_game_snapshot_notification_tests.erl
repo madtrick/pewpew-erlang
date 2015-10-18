@@ -27,7 +27,7 @@ tests() ->
                 <<"data">> => #{
                   <<"arena_snapshot">> => #{
                     <<"players_snapshots">> => [],
-                    <<"shot_snapshots">> => []
+                    <<"shots_snapshots">> => []
                     }
                   }
                 })
@@ -59,7 +59,7 @@ tests() ->
                     <<"data">> => #{
                       <<"arena_snapshot">> => #{
                         <<"players_snapshots">> => [ExpectedPlayerState],
-                        <<"shot_snapshots">> => '_'
+                        <<"shots_snapshots">> => '_'
                         }
                       }
                     },
@@ -98,7 +98,7 @@ tests() ->
                     <<"data">> => #{
                       <<"arena_snapshot">> => #{
                         <<"players_snapshots">> => [ExpectedPlayerState],
-                        <<"shot_snapshots">> => '_'
+                        <<"shots_snapshots">> => '_'
                         }
                       }
                     },

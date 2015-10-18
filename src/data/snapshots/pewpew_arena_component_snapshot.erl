@@ -12,5 +12,5 @@ new(ArenaComponentData) ->
 
   #{
      players_snapshots => PlayersSnapshots,
-     shot_snapshots => ShotsSnapshots
+     shots_snapshots => ShotsSnapshots
   }.
