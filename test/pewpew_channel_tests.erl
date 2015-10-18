@@ -1,6 +1,13 @@
 -module(pewpew_channel_tests).
 -include_lib("eunit/include/eunit.hrl").
 
+when_calling_exit_test() ->
+  {ok, Pid} = pewpew_channel:create(worker),
+  true = is_process_alive(Pid),
+  pewpew_channel:exit(Pid),
+  timer:sleep(1000),
+  false = is_process_alive(Pid).
+
 when_created_test_() ->
   [
     it_registers_it_self_test()

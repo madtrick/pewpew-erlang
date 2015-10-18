@@ -6,7 +6,8 @@
   close/1,
   create/1,
   create/2,
-  send/2
+  send/2,
+  exit/1
 ]).
 -export([
   init/1,
@@ -37,6 +38,9 @@ create(WSWorker, Config) ->
 send(Channel, Data) ->
   gen_server:cast(Channel, {send, Data}).
 
+exit(Channel) ->
+  gen_server:cast(Channel, exit).
+
 init(Options) ->
   {WSWorker, Config} = Options,
   State = #pewpew_channel_state{
@@ -60,7 +64,9 @@ handle_cast(close, State) ->
   {stop, channel_close, State};
 handle_cast({send, Data}, State) ->
   wsserver_worker_websocket:send(State#pewpew_channel_state.wsserver_worker, Data),
-  {noreply, State, ?HEROKU_KEEP_ALIVE_TIMEOUT}.
+  {noreply, State, ?HEROKU_KEEP_ALIVE_TIMEOUT};
+handle_cast(exit, State) ->
+  {stop, normal, State}.
 
 terminate(_Reason, _State) ->
   die.
