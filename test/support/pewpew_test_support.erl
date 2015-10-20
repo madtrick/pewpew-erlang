@@ -230,23 +230,28 @@ generate_reject_move_command_test(Options) ->
   generate_move_command(GenerateMoveCommandOptions).
 
 generate_valid_move_command_test(Options) ->
+  #{ expectations := Expectations } = Options,
   #{
-    expectations := #{
-      x := ExpectedX,
-      y := ExpectedY
-     }
-  } = Options,
+    x := ExpectedX,
+    y := ExpectedY
+    } = Expectations,
+
+  ExpectedRotation = maps:get(rotation, Expectations, '_'),
 
   MessageExpectation = #{
     <<"type">> => <<"MovePlayerAck">>,
-    <<"data">> => #{<<"x">> => ExpectedX, <<"y">> => ExpectedY}
+    <<"data">> => #{
+      <<"x">> => ExpectedX,
+      <<"y">> => ExpectedY,
+      <<"rotation">> => ExpectedRotation
+      }
    },
 
   generate_move_command(
     maps:merge(Options,
       #{
         move_player_reply => <<"MovePlayerAck">>,
-        test => validate_message_in_last_reply_test(ws_player_client, MessageExpectation)
+        test => validate_message_in_last_reply_matches(ws_player_client, MessageExpectation)
      }
     )
  ).

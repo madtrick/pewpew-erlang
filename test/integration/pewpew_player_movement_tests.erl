@@ -104,12 +104,12 @@ tests() ->
                 #{
                   coordinates => Coordinates,
                   movements => [#{rotate => 60}, #{move => forward}],
-                  expectations => #{x => 10.5, y =>10.86603}
+                  expectations => #{x => 10.5, y =>10.86603, rotation => 60}
                   },
                 #{
                   coordinates => Coordinates,
                   movements => [#{rotate => 60}],
-                  expectations => #{x => 10, y =>10}
+                  expectations => #{x => 10, y =>10, rotation => 60}
                   },
                 #{
                   coordinates => Coordinates,

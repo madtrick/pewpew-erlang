@@ -1,10 +1,11 @@
 -module(pewpew_move_player_ack).
 
--export([new/2, toJSON/1]).
+-export([new/3, toJSON/1]).
 
-new(Coordinates, Channel) ->
+new(Coordinates, Rotation, Channel) ->
   Values = [
-    {coordinates, Coordinates}
+    {coordinates, Coordinates},
+    {rotation, Rotation}
   ],
   pewpew_move_player_ack_data:new(?MODULE, Channel, Values).
 
