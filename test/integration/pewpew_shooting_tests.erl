@@ -73,11 +73,10 @@ tests() ->
                 #{shooting_cost := ShootingCost, shooting_tokens := ShootingTokens } = Context,
                 UpdatedShootingCost = pewpew_utils:get_value_in_map([<<"data">>, <<"shooting">>, <<"cost">>], Message),
                 UpdatedShootingTokens = pewpew_utils:get_value_in_map([<<"data">>, <<"shooting">>, <<"tokens">>], Message),
-                NewTokensPerCycle = pewpew_config:get([players, shooting, new_tokens_per_cycle]),
 
                 [
                   ?_assertEqual(UpdatedShootingCost, ShootingCost),
-                  ?_assertEqual(UpdatedShootingTokens, ShootingTokens - ShootingCost + NewTokensPerCycle)
+                  ?_assertEqual(UpdatedShootingTokens, ShootingTokens - ShootingCost)
                 ]
             end
             })
@@ -332,7 +331,8 @@ tests() ->
               fun (_) ->
                   % Increase intial tokens to be able to destroy the other player
                   % without having to worry about the rate limiting
-                  pewpew_config:set([players, shooting, initial_tokens], 200)
+                  pewpew_config:set([players, shooting, initial_tokens], 200),
+                  pewpew_config:set([players, shooting, max_tokens], 200)
               end,
               register_player(ws_player_1_client),
               register_player(ws_player_2_client),
@@ -364,7 +364,8 @@ tests() ->
               fun (_) ->
                   % Increase intial tokens to be able to destroy the other player
                   % without having to worry about the rate limiting
-                  pewpew_config:set([players, shooting, initial_tokens], 200)
+                  pewpew_config:set([players, shooting, initial_tokens], 200),
+                  pewpew_config:set([players, shooting, max_tokens], 200)
               end,
               register_player(ws_player_1_client),
               register_player(ws_player_2_client),
@@ -404,7 +405,8 @@ tests() ->
               fun (_) ->
                   % Increase intial tokens to be able to destroy the other player
                   % without having to worry about the rate limiting
-                  pewpew_config:set([players, shooting, initial_tokens], 200)
+                  pewpew_config:set([players, shooting, initial_tokens], 200),
+                  pewpew_config:set([players, shooting, max_tokens], 200)
               end,
               register_player(ws_player_1_client),
               register_player(ws_player_2_client),
@@ -457,7 +459,8 @@ tests() ->
               fun (_) ->
                   % Increase intial tokens to be able to destroy the other player
                   % without having to worry about the rate limiting
-                  pewpew_config:set([players, shooting, initial_tokens], 200)
+                  pewpew_config:set([players, shooting, initial_tokens], 200),
+                  pewpew_config:set([players, shooting, max_tokens], 200)
               end,
               register_player(ws_player_1_client),
               register_player(ws_player_2_client),
@@ -523,7 +526,8 @@ tests() ->
        run_test(#{
             steps => [
               fun (_) ->
-                  pewpew_config:set([players, shooting, initial_tokens], 200)
+                  pewpew_config:set([players, shooting, initial_tokens], 200),
+                  pewpew_config:set([players, shooting, max_tokens], 200)
               end,
               register_player(ws_player_1_client),
               register_player(ws_player_2_client),
@@ -714,10 +718,15 @@ tests() ->
                     tokens := ShootingTokens,
                     new_tokens_per_cycle := NewTokensPerCycle
                     } = ShootingInfo,
-                  MaxShots = trunc(ShootingTokens / (ShootingCost - NewTokensPerCycle)),
+
+                  % NOTE
+                  % The equation below is only valid when the max_tokens and initial_tokens config values are equal.
+                  % On this case the first attemp to increase the tokens value will be rejected and thats why we start with
+                  % (ShootingTokens - ShootingCost) and add an extra initial (+ 1) shot
+                  MaxShots = trunc((ShootingTokens - ShootingCost) / (ShootingCost - NewTokensPerCycle)) + 1,
 
                   Steps = lists:seq(1, MaxShots),
-                  lists:map(fun(_) ->
+                  lists:map(fun(Index) ->
                         fun(_) ->
                             [
                               fun (InnerContext) ->
@@ -745,7 +754,11 @@ tests() ->
                                       new_tokens_per_cycle := InnerNewTokensPerCycle
                                       } = InnerContext,
 
-                                    ExpectedTokens = InnerShootingTokens - InnerShootingCost + InnerNewTokensPerCycle,
+                                    ExpectedTokens = case Index of
+                                      1 -> InnerShootingTokens - InnerShootingCost;
+                                      _ -> InnerShootingTokens - InnerShootingCost + InnerNewTokensPerCycle
+                                    end,
+
                                     ExpectedMessage = #{
                                         <<"data">> => #{
                                           <<"shooting">> => #{
@@ -763,6 +776,54 @@ tests() ->
               ]
             })
       },
+      {"Shooting tokens are not increased over a limit",
+       run_test(#{
+            steps => [
+              register_player(),
+              ws_client_sel_recv(ws_player_client, <<"RegisterPlayerAck">>),
+              ws_client_send(ws_control_client, #{type => <<"StartGameCommand">>, data => #{}}),
+              ws_client_sel_recv(ws_player_client, <<"StartGameOrder">>),
+              % wait some cycles
+              fun (_) ->
+                  MaxShootingTokens = pewpew_config:get([players, shooting, max_tokens]),
+                  InitialTokens     = pewpew_config:get([players, shooting, initial_tokens]),
+                  NewTokensPerCycle = pewpew_config:get([players, shooting, new_tokens_per_cycle]),
+
+                  CyclesToTokensParity = pewpew_utils:ceil((MaxShootingTokens - InitialTokens) / NewTokensPerCycle),
+
+                  % Add some extra cycles to ensure that after parity the number of tokens
+                  % remain stable
+                  Steps = lists:seq(1, CyclesToTokensParity + 5),
+                  lists:map(fun(_) ->
+                        fun(_) ->
+                              [
+                                ws_client_sel_recv(ws_control_client, <<"GameSnapshotNotification">>)
+                                ]
+                        end
+                    end, Steps)
+              end,
+              ws_client_send(ws_player_client, #{<<"type">> => <<"PlayerShootCommand">>, <<"data">> => #{}}),
+              ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>)
+              ],
+
+            test => fun(_) ->
+                MaxTokens = pewpew_config:get([players, shooting, max_tokens]),
+                ShotCost = pewpew_config:get([players, shooting, cost]),
+
+                ExpectedTokens = MaxTokens - ShotCost,
+
+                ExpectedMessage = #{
+                    <<"data">> => #{
+                      <<"shooting">> => #{
+                        <<"tokens">> => ExpectedTokens
+                        }
+                      }
+                    },
+
+                validate_message_in_last_reply_matches(ws_player_client, ExpectedMessage)
+            end
+            })
+      },
       {"Players can't shoot when they don't have enough shooting tokens",
        run_test(#{
             steps => [
@@ -775,20 +836,9 @@ tests() ->
                   ShootingInfo = pewpew_player_component:shooting_info(Player),
                   #{
                     cost := ShootingCost,
-                    tokens := ShootingTokens,
                     new_tokens_per_cycle := NewTokensPerCycle
                     } = ShootingInfo,
-                  MaxShots = trunc(ShootingTokens / (ShootingCost - NewTokensPerCycle)),
-
-                  Steps = lists:seq(1, MaxShots),
-                  lists:map(fun(_) ->
-                        fun(_) ->
-                            [
-                              ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
-                              ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>)
-                              ]
-                        end
-                    end, Steps)
+                  shoot_until_out_of_tokens(ShootingCost - NewTokensPerCycle)
               end,
               ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
               ws_client_recv(ws_player_client),
@@ -811,4 +861,21 @@ place_player_at_others_boundary() ->
       pewpew_player_component:set_coordinates(Player2, [{x, 200 + 2 * Radius + 1}, {y, 200}]),
 
       ok
+  end.
+
+shoot_until_out_of_tokens(Delta) ->
+  fun(_) ->
+      [
+        ws_client_send(ws_player_client, #{type => <<"PlayerShootCommand">>, data => #{}}),
+        ws_client_sel_recv(ws_player_client, <<"PlayerShootAck">>),
+        fun(Context) ->
+            Message = get_message_in_last_reply_for_client(ws_player_client, <<"PlayerShootAck">>, Context),
+            CurrentTokens = pewpew_utils:get_value_in_map([<<"data">>, <<"shooting">>, <<"tokens">>], Message),
+
+            case CurrentTokens < Delta of
+              true -> ok;
+              false -> shoot_until_out_of_tokens(Delta)
+            end
+        end
+        ]
   end.

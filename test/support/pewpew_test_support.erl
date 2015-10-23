@@ -161,7 +161,8 @@ ws_client_sel_recv(ClientId, Client, Type, Timeout, Replies) ->
       end, JSON),
 
       case Any of
-        true ->  {replies, ClientId, lists:reverse([Reply | Replies])};
+        true -> 
+          {replies, ClientId, lists:reverse([Reply | Replies])};
         _ -> ws_client_sel_recv(ClientId, Client, Type, Timeout, [Reply | Replies])
       end
   end.
@@ -406,6 +407,8 @@ execute_step(Fun, Context) ->
       Context#{tests => [Test | Tests]};
     List when is_list(List) ->
       execute_steps(List, Context);
+    NestedStep when is_function(NestedStep) ->
+      execute_step(NestedStep, Context);
     _ -> Context
   end.
 

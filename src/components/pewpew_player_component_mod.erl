@@ -139,9 +139,19 @@ player_destroyed_notification(PlayerComponentData) ->
 
 update_shooting_info(PlayerComponentData) ->
   ShootingInfo = pewpew_player_component_data:shooting_info(PlayerComponentData),
-  #{ tokens := Tokens, new_tokens_per_cycle := NewTokensPerCycle } = ShootingInfo,
+  #{
+    tokens := Tokens,
+    max_tokens := MaxTokens,
+    new_tokens_per_cycle := NewTokensPerCycle
+    } = ShootingInfo,
 
-  UpdatedTokensValue = Tokens + NewTokensPerCycle,
+  update_shooting_info(PlayerComponentData, MaxTokens, Tokens, NewTokensPerCycle).
+
+update_shooting_info(PlayerComponentData, MaxTokens, CurrentTokens, NewTokensPerCycle) when (CurrentTokens + NewTokensPerCycle) >= MaxTokens->
+  PlayerComponentData;
+update_shooting_info(PlayerComponentData, _MaxTokens, CurrentTokens, NewTokensPerCycle) ->
+  ShootingInfo = pewpew_player_component_data:shooting_info(PlayerComponentData),
+  UpdatedTokensValue = CurrentTokens + NewTokensPerCycle,
   UpdatedShootingInfo = maps:put(tokens, UpdatedTokensValue, ShootingInfo),
 
   pewpew_player_component_data:update(PlayerComponentData, [{shooting_info, UpdatedShootingInfo}]).

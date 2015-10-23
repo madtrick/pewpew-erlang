@@ -29,10 +29,12 @@ create_player(ArenaComponentData, PlayerData) ->
   ShootingShotCost      = pewpew_config:get([players, shooting, cost]),
   ShootingInitialTokens = pewpew_config:get([players, shooting, initial_tokens]),
   NewTokensPerCycle     = pewpew_config:get([players, shooting, new_tokens_per_cycle]),
+  MaxTokens             = pewpew_config:get([players, shooting, max_tokens]),
   ShootingInfo = #{
       cost => ShootingShotCost,
       tokens => ShootingInitialTokens,
-      new_tokens_per_cycle => NewTokensPerCycle
+      new_tokens_per_cycle => NewTokensPerCycle,
+      max_tokens => MaxTokens
       },
 
   PlayersSupervisor = pewpew_arena_component_data:pewpew_player_component_sup(ArenaComponentData),
