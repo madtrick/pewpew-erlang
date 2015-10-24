@@ -10,6 +10,11 @@
   update/1
 ]).
 
+% exported for testing
+-export([
+  update_shots/2
+  ]).
+
 -define(COLORS, [<<"red">>, <<"blue">>, <<"green">>]).
 
 get_player(Condition, ArenaComponentData) ->
@@ -116,20 +121,9 @@ update(ArenaComponentData) ->
     arena_dimensions => #{width => Width, height => Height},
     players => PlayersContext
   },
-  {UACD, ShotsUpdates2} = lists:foldl(fun(Shot, {ACD, ShotUpdates}) ->
 
-    {Action, NewACD} = case pewpew_shot_component:update(Shot, ShotUpdateContext) of
-      updated ->
-        {do_nothing, ACD};
-      destroyed ->
-        UpdatedShotsList = lists:filter(fun(S) -> S =/= Shot  end, Shots),
-        UpdatedArenaComponentData = pewpew_arena_component_data:update(ACD, [{shots, UpdatedShotsList}]),
-        {do_nothing, UpdatedArenaComponentData}
-     end,
-
-    {NewACD, [Action | ShotUpdates]}
-  end, {ArenaComponentData, []}, Shots),
-
+  {ShotsUpdates2, RemainingShots} = update_shots(ShotUpdateContext, Shots),
+  UACD = pewpew_arena_component_data:update(ArenaComponentData, [{shots, RemainingShots}]),
   UpdateContext = #{shots => ShotsContext},
   {UACD4, NonDestroyedPlayers, PlayersUpdates} = update_players(UpdateContext, Players, UACD),
   {UACD33, RadarUpdate} = update_radars(NonDestroyedPlayers, UACD4),
@@ -139,9 +133,20 @@ update(ArenaComponentData) ->
 
   {ok, lists:flatten(Updates), UACD33}.
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+update_shots(UpdateContext, Shots) ->
+  lists:foldl(fun(Shot, {ShotUpdates, RemainingShots}) ->
+    case pewpew_shot_component:update(Shot, UpdateContext) of
+      updated ->
+            {[do_nothing | ShotUpdates], [Shot | RemainingShots]};
+      destroyed ->
+            {[do_nothing | ShotUpdates], RemainingShots}
+        end
+    end, {[], []}, Shots).
+
 update_players(UpdateContext, Players, ArenaComponentData) ->
   update_players(UpdateContext, Players, ArenaComponentData, [], []).
 

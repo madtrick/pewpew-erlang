@@ -8,7 +8,6 @@ dispatch([Delivery | Deliveries]) ->
   {DispatchRule, Channels, Messages} = Delivery,
   JSONBody       = convert_to_json(Messages),
 
-  lager:debug("Dispatch rule ~w", [DispatchRule]),
   dispatch_with_rule(DispatchRule, JSONBody, Channels),
   dispatch( Deliveries).
 

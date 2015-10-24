@@ -22,3 +22,19 @@ get_player_using_id_test_() ->
   {ok, Result}       = pewpew_arena_component_mod:get_player(player_1, ArenaComponentData),
 
   [?_assertEqual(Player, Result)].
+
+when_multiple_shots_are_destroyed_in_one_cycle_all_are_removed_from_the_arena_test() ->
+  % Presuppose that the shots have been already moved
+  {ok, Shot1} = pewpew_shot_component:start_link([{rotation, 0}, {x, 200}, {y, 200}, {id, 1}]),
+  {ok, Shot2} = pewpew_shot_component:start_link([{rotation, 0}, {x, 200.5}, {y, 100}, {id, 2}]),
+  {ok, Shot3} = pewpew_shot_component:start_link([{rotation, 0}, {x, 10}, {y, 100}, {id, 3}]),
+
+  UpdateContext = #{
+    arena_dimensions => #{width => 200, height => 400},
+    players => []
+  },
+
+  Shots = [Shot1, Shot2, Shot3],
+  {_, RemainingShots} = pewpew_arena_component_mod:update_shots(UpdateContext, Shots),
+
+  ?assertEqual([Shot3], RemainingShots).
