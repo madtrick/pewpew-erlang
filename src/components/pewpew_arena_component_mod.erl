@@ -125,7 +125,8 @@ update(ArenaComponentData) ->
   {ShotsUpdates2, RemainingShots} = update_shots(ShotUpdateContext, Shots),
   UACD = pewpew_arena_component_data:update(ArenaComponentData, [{shots, RemainingShots}]),
   UpdateContext = #{shots => ShotsContext},
-  {UACD4, NonDestroyedPlayers, PlayersUpdates} = update_players(UpdateContext, Players, UACD),
+  {PlayersUpdates, NonDestroyedPlayers} = update_players(UpdateContext, Players),
+  UACD4 = pewpew_arena_component_data:update(UACD, [{players, NonDestroyedPlayers}]),
   {UACD33, RadarUpdate} = update_radars(NonDestroyedPlayers, UACD4),
 
   Updates = lists:append([RadarUpdate, PlayersUpdates, ShotsUpdates2]),
@@ -147,23 +148,18 @@ update_shots(UpdateContext, Shots) ->
         end
     end, {[], []}, Shots).
 
-update_players(UpdateContext, Players, ArenaComponentData) ->
-  update_players(UpdateContext, Players, ArenaComponentData, [], []).
+update_players(UpdateContext, Players) ->
+  update_players(UpdateContext, Players, [], []).
 
-update_players(_, [], ArenaComponentData, NonDestroyedPlayers, Notifications) ->
-  {ArenaComponentData, NonDestroyedPlayers, Notifications};
-update_players(UpdateContext, [Player | Players], ArenaComponentData, NonDestroyedPlayers, Notifications) ->
-  {UACD3, UpdatedNonDestroyedPlayers, PN} = case pewpew_player_component:update(Player, UpdateContext) of
-                                         {updated, PlayerUpdateNotifications} ->
-                                           {ArenaComponentData, [Player | NonDestroyedPlayers], PlayerUpdateNotifications};
-                                         {destroyed, PlayerUpdateNotifications} ->
-                                           UpdatedPlayersList = lists:filter(fun(P) -> P =/= Player end, pewpew_arena_component_data:players(ArenaComponentData)),
-                                           UpdatedArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, UpdatedPlayersList}]),
-                                           {UpdatedArenaComponentData, NonDestroyedPlayers, PlayerUpdateNotifications}
-                                       end,
-
-  N = [PN | Notifications],
-  update_players(UpdateContext, Players, UACD3, UpdatedNonDestroyedPlayers, N).
+update_players(_, [], NonDestroyedPlayers, PlayersNotifications) ->
+  {PlayersNotifications, NonDestroyedPlayers};
+update_players(UpdateContext, [Player | Players], NonDestroyedPlayers, PlayersNotifications) ->
+  case pewpew_player_component:update(Player, UpdateContext) of
+    {updated, PlayerUpdateNotifications} ->
+      update_players(UpdateContext, Players, [Player | NonDestroyedPlayers], [PlayerUpdateNotifications | PlayersNotifications]);
+    {destroyed, PlayerUpdateNotifications} ->
+      update_players(UpdateContext, Players, NonDestroyedPlayers, [PlayerUpdateNotifications | PlayersNotifications])
+  end.
 
 update_radars(Players, ArenaComponentData) ->
   update_radar(Players, Players, ArenaComponentData, []).
