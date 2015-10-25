@@ -98,7 +98,17 @@ handle_call(snapshot, _, ArenaComponentData) ->
   Snapshot = pewpew_arena_component_snapshot:new(ArenaComponentData),
   {reply, Snapshot, ArenaComponentData};
 handle_call({create_player, Data}, _, ArenaComponentData) ->
-  {ok, Player} = pewpew_arena_component_mod:create_player(ArenaComponentData, Data),
+  PlayerConfig = pewpew_arena_component_mod:create_player(ArenaComponentData, Data),
+
+  PlayersSupervisor = pewpew_arena_component_data:pewpew_player_component_sup(ArenaComponentData),
+  GameContextData   = pewpew_arena_component_data:pewpew_game_context_data(ArenaComponentData),
+  {ok, Player}      = pewpew_player_component_sup:add_player(
+    PlayersSupervisor,
+    GameContextData,
+    PlayerConfig
+  ),
+
+  monitor_player_componet(Player),
 
   Players               = pewpew_arena_component_data:players(ArenaComponentData),
   UpdatedPlayersList    = [{players, [Player | Players]}],
@@ -153,3 +163,6 @@ real_positions_left(ArenaComponentData) ->
 
 number_of_players(ArenaComponentData) ->
   erlang:length(pewpew_arena_component_data:players(ArenaComponentData)).
+
+monitor_player_componet(Player) ->
+  erlang:monitor(process, Player).

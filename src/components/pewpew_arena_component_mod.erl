@@ -42,8 +42,6 @@ create_player(ArenaComponentData, PlayerData) ->
       max_tokens => MaxTokens
       },
 
-  PlayersSupervisor = pewpew_arena_component_data:pewpew_player_component_sup(ArenaComponentData),
-  GameContextData   = pewpew_arena_component_data:pewpew_game_context_data(ArenaComponentData),
   PlayerConfig      = [
       {color, Color},
       {id, Id},
@@ -54,15 +52,7 @@ create_player(ArenaComponentData, PlayerData) ->
       {shooting_info, ShootingInfo}
       | PlayerData],
 
-  {ok, Player}      = pewpew_player_component_sup:add_player(
-    PlayersSupervisor,
-    GameContextData,
-    PlayerConfig
-  ),
-
-  monitor_player_componet(Player),
-
-  {ok, Player}.
+  PlayerConfig.
 
 create_shot(ArenaComponentData, ShotData) ->
   ShotsSupervisor   = pewpew_arena_component_data:shot_component_sup(ArenaComponentData),
@@ -244,17 +234,8 @@ pick_player_name(_ArenaComponentData) ->
 pick_player_radius() ->
   5. %in px
 
-pick_player_color(ArenaComponentData) ->
-  Players       = pewpew_arena_component_data:players(ArenaComponentData),
-  PlayersColors = [ pewpew_player_component:color(Player) || Player <- Players],
-  [Color | _]   = available_colors(?COLORS, PlayersColors),
-  Color.
-
-available_colors(AllColors, UsedColors) ->
-  lists:filter(fun(X) -> not lists:member(X, UsedColors) end, AllColors).
-
-monitor_player_componet(Player) ->
-  erlang:monitor(process, Player).
+pick_player_color(_ArenaComponentData) ->
+  pewpew_utils:hex_value(8).
 
 pick_shot_id() ->
   pewpew_utils:get_current_time_in_milliseconds().

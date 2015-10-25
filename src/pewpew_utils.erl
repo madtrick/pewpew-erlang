@@ -12,8 +12,11 @@
   contact_points_between_segment_and_circle/2,
   contact_points_between_line_and_circle/2,
   degrees_to_radians/1,
-  round_value/2
+  round_value/2,
+  hex_value/1
 ]).
+
+-define(HEX_CHARS, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]).
 
 proplist_to_map(Proplist) ->
   lists:foldl(fun(Element, Map) ->
@@ -164,6 +167,16 @@ degrees_to_radians(Degrees) ->
 round_value(Value, Precision) ->
   P = math:pow(10, Precision),
   round(Value * P) / P.
+
+hex_value(Length) ->
+  Steps = lists:seq(1, Length),
+
+  HEXValue = lists:foldl(fun(_, Acc) ->
+          Element =  lists:nth(random:uniform(16), ?HEX_CHARS),
+          Element ++ Acc
+    end, [], Steps),
+
+  HEXValue.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal
