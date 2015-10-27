@@ -231,28 +231,48 @@ generate_reject_move_command_test(Options) ->
   generate_move_command(GenerateMoveCommandOptions).
 
 generate_valid_move_command_test(Options) ->
-  #{ expectations := Expectations } = Options,
-  #{
-    x := ExpectedX,
-    y := ExpectedY
-    } = Expectations,
+  #{ coordinates := Coordinates, movements := Movements } = Options,
 
-  ExpectedRotation = maps:get(rotation, Expectations, '_'),
-
-  MessageExpectation = #{
-    <<"type">> => <<"MovePlayerAck">>,
-    <<"data">> => #{
-      <<"x">> => ExpectedX,
-      <<"y">> => ExpectedY,
-      <<"rotation">> => ExpectedRotation
-      }
-   },
+  InitialX = proplists:get_value(x, Coordinates),
+  InitialY = proplists:get_value(y, Coordinates),
 
   generate_move_command(
     maps:merge(Options,
       #{
         move_player_reply => <<"MovePlayerAck">>,
-        test => validate_message_in_last_reply_matches(ws_player_client, MessageExpectation)
+        test => fun (_) ->
+            Speed = pewpew_config:get([players, movement, speed]),
+
+            Expectations = lists:foldl(
+              fun(#{rotate := Rotation}, Acc) ->
+                maps:put(rotation, Rotation, Acc);
+              (#{move := forward}, Acc) ->
+                #{rotation := R, coordinates := C} = Acc,
+                UpdatedCoordinates = pewpew_utils:translate_point_by_vector(Speed, R, C),
+                maps:put(coordinates, UpdatedCoordinates, Acc);
+              (#{move := backward}, Acc) ->
+                #{rotation := R, coordinates := C} = Acc,
+                UpdatedCoordinates = pewpew_utils:translate_point_by_vector(Speed * -1, R, C),
+                maps:put(coordinates, UpdatedCoordinates, Acc)
+
+              end, #{rotation => 0, coordinates => {x, InitialX, y, InitialY}}, Movements),
+
+            #{
+              coordinates:= {x, ExpectedX, y, ExpectedY},
+              rotation := ExpectedRotation
+              } = Expectations,
+
+            MessageExpectation = #{
+                <<"type">> => <<"MovePlayerAck">>,
+                <<"data">> => #{
+                  <<"x">> => ExpectedX,
+                  <<"y">> => ExpectedY,
+                  <<"rotation">> => ExpectedRotation
+                  }
+                },
+
+            validate_message_in_last_reply_matches(ws_player_client, MessageExpectation)
+        end
      }
     )
  ).

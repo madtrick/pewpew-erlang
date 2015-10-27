@@ -13,7 +13,8 @@
   contact_points_between_line_and_circle/2,
   degrees_to_radians/1,
   round_value/2,
-  hex_value/1
+  hex_value/1,
+  translate_point_by_vector/3
 ]).
 
 -define(HEX_CHARS, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]).
@@ -177,6 +178,17 @@ hex_value(Length) ->
     end, [], Steps),
 
   HEXValue.
+
+translate_point_by_vector(Magnitude, Degrees, Point) ->
+  Radians = (Degrees * math:pi()) / 180,
+  DX      = Magnitude * math:cos(Radians),
+  DY      = Magnitude * math:sin(Radians),
+  {x, X, y, Y}  = Point,
+
+  RoundedX = round_value(X + DX, 5),
+  RoundedY = round_value(Y + DY, 5),
+
+  {x, RoundedX, y, RoundedY}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal

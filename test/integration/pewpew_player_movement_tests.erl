@@ -99,27 +99,23 @@ tests() ->
       },
       {"Accepts valid movements",
        fun () ->
-            Coordinates = fun(_, _) -> [{x, 10}, {y, 10}] end,
+            Coordinates = [{x, 10}, {y, 10}],
             Movements = [
                 #{
                   coordinates => Coordinates,
-                  movements => [#{rotate => 60}, #{move => forward}],
-                  expectations => #{x => 10.5, y =>10.86603, rotation => 60}
+                  movements => [#{rotate => 60}, #{move => forward}]
                   },
                 #{
                   coordinates => Coordinates,
-                  movements => [#{rotate => 60}],
-                  expectations => #{x => 10, y =>10, rotation => 60}
+                  movements => [#{rotate => 60}]
                   },
                 #{
                   coordinates => Coordinates,
-                  movements => [#{move => forward}],
-                  expectations => #{x => 11.0, y =>10.0}
+                  movements => [#{move => forward}]
                   },
                 #{
                   coordinates => Coordinates,
-                  movements => [#{move => backward}],
-                  expectations => #{x => 9.0, y =>10.0}
+                  movements => [#{move => backward}]
                   }
                 ],
 

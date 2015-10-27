@@ -35,6 +35,7 @@ create_player(ArenaComponentData, PlayerData) ->
   ShootingInitialTokens = pewpew_config:get([players, shooting, initial_tokens]),
   NewTokensPerCycle     = pewpew_config:get([players, shooting, new_tokens_per_cycle]),
   MaxTokens             = pewpew_config:get([players, shooting, max_tokens]),
+  Speed                 = pewpew_config:get([players, movement, speed]),
   ShootingInfo = #{
       cost => ShootingShotCost,
       tokens => ShootingInitialTokens,
@@ -49,7 +50,8 @@ create_player(ArenaComponentData, PlayerData) ->
       {y, Y},
       {name, Name},
       {radius, Radius},
-      {shooting_info, ShootingInfo}
+      {shooting_info, ShootingInfo},
+      {speed, Speed}
       | PlayerData],
 
   PlayerConfig.
@@ -60,6 +62,7 @@ create_shot(ArenaComponentData, ShotData) ->
   PlayerCoordinates = pewpew_player_component:coordinates(Player),
   PlayerRotation    = pewpew_player_component:rotation(Player),
   PlayerRadius      = pewpew_player_component:radius(Player),
+  ShotSpeed        = pewpew_config:get([shots, movement, speed]),
 
   pewpew_player_component:shoot(Player),
 
@@ -70,7 +73,8 @@ create_shot(ArenaComponentData, ShotData) ->
         {rotation, PlayerRotation},
         {x, X},
         {y, Y},
-        {id, ShotId} | ShotData]),
+        {id, ShotId},
+        {speed, ShotSpeed} | ShotData]),
   {ok, Shot}.
 
 move_player(Player, Movement, _) ->

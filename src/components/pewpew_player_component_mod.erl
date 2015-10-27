@@ -74,22 +74,21 @@ shoot(PlayerComponentData) ->
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 move_player(Sign, PlayerComponentData) ->
-  NewCoordinates         = calculate_new_coordinates(Sign, ?MOVEMENT_SPEED, PlayerComponentData),
+  Speed                  = pewpew_player_component_data:speed(PlayerComponentData),
+  NewCoordinates         = calculate_new_coordinates(Sign, Speed, PlayerComponentData),
   NewPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, NewCoordinates),
   {ok, NewPlayerComponentData}.
 
 calculate_new_coordinates(Sign, Speed, PlayerComponentData) ->
   Rotation = pewpew_player_component_data:rotation(PlayerComponentData),
-  RadianRotation = (Rotation * math:pi()) / 180,
-  DX       = Speed * math:cos(RadianRotation),
-  DY       = Speed * math:sin(RadianRotation),
-  X        = pewpew_player_component_data:x(PlayerComponentData),
-  Y        = pewpew_player_component_data:y(PlayerComponentData),
+  Speed    = pewpew_player_component_data:speed(PlayerComponentData),
+  Coordinates = {
+      x, pewpew_player_component_data:x(PlayerComponentData),
+      y, pewpew_player_component_data:y(PlayerComponentData)
+      },
 
-  RoundedX = pewpew_utils:round_value(X + (DX * Sign), 5),
-  RoundedY = pewpew_utils:round_value(Y + (DY * Sign), 5),
-
-  [{x, RoundedX}, {y, RoundedY}].
+  {x, UpdatedX, y, UpdatedY} = pewpew_utils:translate_point_by_vector(Speed * Sign, Rotation, Coordinates),
+  [{x, UpdatedX}, {y, UpdatedY}].
 
 evaluate_shots(Shots, PlayerComponentData) ->
   InitialLife = pewpew_player_component_data:life(PlayerComponentData),

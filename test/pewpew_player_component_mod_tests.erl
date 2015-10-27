@@ -30,30 +30,35 @@ movement_test_() ->
    #{
     movements => [{move, <<"backward">>}, {move, <<"forward">>}],
     expectation => {x, 0.0, y, 0.0}
+   },
+   #{
+    speed => 2,
+    movements => [{move, <<"forward">>}],
+    expectation => {x, 2.0, y, 0.0}
+   },
+   #{
+    speed => 2,
+    movements => [{rotate, 90}, {move, <<"forward">>}],
+    expectation => {x, 0.0, y, 2.0}
    }
   ],
 
   lists:map(fun(Case) ->
-    #{movements := Movements, expectation := Expectation} = Case,
-    InitialCoordinates = case maps:get(origin, Case, undefined) of
-     undefined -> {x, 0, y, 0};
-     Origin -> Origin
-    end,
+        #{movements := Movements, expectation := Expectation} = Case,
+        Speed = maps:get(speed, Case, 1),
+        InitialCoordinates =  maps:get(origin, Case, {x, 0, y, 0}),
+        InitialRotation = maps:get(rotation, Case, 0),
 
-    InitialRotation = case maps:get(rotation, Case, undefined)  of
-      undefined -> 0;
-      Rotation -> Rotation
-    end,
-
-    movement_sequence_test(InitialCoordinates, InitialRotation, Movements, Expectation)
+        movement_sequence_test(Speed, InitialCoordinates, InitialRotation, Movements, Expectation)
   end, Cases).
 
-movement_sequence_test(InitialCoordinates, InitialRotation, Movements, ExpectedCoordinates) ->
+movement_sequence_test(Speed, InitialCoordinates, InitialRotation, Movements, ExpectedCoordinates) ->
   {x, InitialX, y, InitialY} = InitialCoordinates,
   PlayerOptions = [
     {x, InitialX},
     {y, InitialY},
-    {rotation, InitialRotation}
+    {rotation, InitialRotation},
+    {speed, Speed}
   ],
 
   PlayerComponentData = pewpew_player_component_data:new(PlayerOptions),
