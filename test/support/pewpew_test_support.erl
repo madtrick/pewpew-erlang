@@ -45,7 +45,6 @@ run_test(Config) ->
         pewpew_game           => PewPewGame,
         arena_component       => ArenaComponent,
         per_client_replies    => #{},
-        last_reply_per_client => #{},
         last_thrown_exception => undefined,
         tests                 => []
       }
@@ -403,23 +402,15 @@ execute_step(Fun, Context) ->
 
   case Result of
     {replies, ClientId, Replies} ->
-      #{
-        per_client_replies := PerClientReplies,
-        last_reply_per_client := LastReplyPerClient
-      } = Context,
+      #{ per_client_replies := PerClientReplies } = Context,
 
       CurrentReplies = maps:get(ClientId, PerClientReplies, []),
 
       JSON      = lists:map(fun(E) -> jiffy:decode(E, [return_maps]) end, Replies),
-      LastReply = lists:last(JSON),
 
       UpdatedPerClientReplies  = maps:put(ClientId, CurrentReplies ++ JSON, PerClientReplies),
-      UpdatedLasReplyPerClient = maps:put(ClientId, LastReply, LastReplyPerClient),
 
-      Context#{
-        per_client_replies => UpdatedPerClientReplies,
-        last_reply_per_client => UpdatedLasReplyPerClient
-       };
+      Context#{ per_client_replies => UpdatedPerClientReplies };
     {context, UpdatedContext} ->
       UpdatedContext;
     {test, Test} ->

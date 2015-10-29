@@ -15,7 +15,8 @@
     validate_type_in_last_reply_test/2,
     throwing/1,
     it_threw/1,
-    get_player_for_client/2
+    get_player_for_client/2,
+    test_step/1
     ]).
 
 tests() ->
@@ -135,6 +136,21 @@ tests() ->
               ws_client_recv(ws_player_client)
               ],
             test => validate_type_in_last_reply_test(ws_player_client, <<"StartGameOrder">>)
+            })
+      },
+      {"It sends a notification when the are no free slots",
+       run_test(#{
+            steps => [
+              register_player(ws_player_1_client),
+              register_player(ws_player_2_client),
+              register_player(ws_player_3_client),
+              ws_client_sel_recv(ws_player_1_client, <<"RegisterPlayerAck">>),
+              ws_client_sel_recv(ws_player_2_client, <<"RegisterPlayerAck">>),
+              ws_client_sel_recv(ws_player_3_client, <<"RegisterPlayerAck">>),
+              register_player(ws_player_4_client),
+              ws_client_recv(ws_player_4_client),
+              test_step(validate_type_in_last_reply_test(ws_player_4_client, <<"NoSlotsLeftNotification">>))
+              ]
             })
       }
       ]}.

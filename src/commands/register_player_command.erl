@@ -15,7 +15,7 @@ run(_CommandData, ContextData) ->
 register_player_if(true, ArenaComponent, Data) ->
   {registered, pewpew_arena_component:create_player(ArenaComponent, Data)};
 register_player_if(false, _, _) ->
-  {not_registered, "Arena full"}.
+  {not_registered, arena_full}.
 
 
 can_register_player(ArenaComponent) ->
