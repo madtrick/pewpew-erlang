@@ -8,5 +8,6 @@ all_test_() ->
         pewpew_player_movement_tests:tests(),
         pewpew_game_snapshot_notification_tests:tests(),
         pewpew_radar_scan_notification_tests:tests(),
-        pewpew_shooting_tests:tests()
+        pewpew_shooting_tests:tests(),
+        pewpew_misc_tests:tests()
       ]).

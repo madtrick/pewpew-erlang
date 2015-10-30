@@ -139,7 +139,6 @@ tests() ->
             })
       },
       {"It sends a notification when the are no free slots",
-       focus,
        run_test(#{
             steps => [
               register_player(ws_player_1_client),
