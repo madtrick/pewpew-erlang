@@ -125,8 +125,13 @@ terminate(_, _) ->
 transform_replies(Replies) ->
   Dict = dict:new(),
   Transformation = transform_replies(Replies, Dict),
-  dict:fold(fun(Channel, Messages, Acc) ->
-    [{reply, [{send_to, Channel, lists:reverse(Messages)}]} | Acc]
+  dict:fold(fun(Channel, {Flag, Messages}, Acc) ->
+        case Flag of
+          open ->
+            [{Flag, [{send_to, Channel, lists:reverse(Messages)}]} | Acc];
+          close ->
+            [{Flag, Channel, [{send_to, Channel, lists:reverse(Messages)}]} | Acc]
+        end
   end, [], Transformation).
 
 transform_replies([], Dict) ->
@@ -139,20 +144,31 @@ transform_reply(noreply, Dict) ->
   Dict;
 transform_reply(close, Dict) ->
   Dict; % TODO: fix this when replace the 'channel_placeholder' in send_replies
-transform_reply({reply, Data}, Dict) when is_list(Data) ->
-  %group_messages_by_channel(Data, Dict).
+transform_reply({Type, Data}, Dict) when not is_list(Data) ->
+  transform_reply({Type, [Data]}, Dict);
+transform_reply({close, Data}, Dict) ->
   lists:foldl(fun(Element, Acc) ->
-    {send_to, Channel, Message} = Element,
-    case dict:is_key(Channel, Acc) of
-      true ->
-        Messages = dict:fetch(Channel, Acc),
-        dict:store(Channel, [Message | Messages], Acc);
-      false ->
-        dict:store(Channel, [Message], Acc)
-    end
+        {send_to, Channel, Message} = Element,
+        case dict:is_key(Channel, Acc) of
+          true ->
+            {_, Messages} = dict:fetch(Channel, Acc),
+            dict:store(Channel, {close, [Message | Messages]}, Acc);
+          false ->
+            dict:store(Channel, {close, [Message]}, Acc)
+        end
   end, Dict, Data);
 transform_reply({reply, Data}, Dict) ->
-  transform_reply({reply, [Data]}, Dict).
+  %group_messages_by_channel(Data, Dict).
+  lists:foldl(fun(Element, Acc) ->
+        {send_to, Channel, Message} = Element,
+        case dict:is_key(Channel, Acc) of
+          true ->
+            {Flag, Messages} = dict:fetch(Channel, Acc),
+            dict:store(Channel, {Flag, [Message | Messages]}, Acc);
+          false ->
+            dict:store(Channel, {open, [Message]}, Acc)
+        end
+  end, Dict, Data).
 
 %group_messages_by_channel(Messages, Dict) when not is_list(Messages) ->
 %  group_messages_by_channel([Messages], Dict);
@@ -230,18 +246,13 @@ send_replies([]) ->
   ok;
 send_replies([ReturnValue |  Tail]) ->
   case ReturnValue of
-    noreply ->
-      send_replies(Tail);
-    {reply, Messages} ->
+    {open, Messages} ->
       pewpew_message_dispatcher:dispatch(Messages),
       send_replies(Tail);
-    close ->
-      pewpew_channel:close(channel_placeholder),
-      ok %Discard all pending values
-    %{close, Messages} ->
-    %  pewpew_message_dispatcher:dispatch(Messages),
-    %  pewpew_channel:close(channel_placeholder),
-    %  ok %Discard all pending values
+    {close, Channel, Messages} ->
+      pewpew_message_dispatcher:dispatch(Messages),
+      pewpew_channel:close(Channel),
+      send_replies(Tail)
   end.
 
 build_pewpew_core_state() ->

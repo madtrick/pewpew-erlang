@@ -49,7 +49,7 @@ eval_result_from_command({registered, NewPlayer}, CommandOriginChannel, CommandC
   {reply, Replies};
 eval_result_from_command({not_registered, arena_full}, CommandOriginChannel, _) ->
   Message = pewpew_no_slots_left_notification:new(),
-  {reply, [{send_to, CommandOriginChannel, Message}]}.
+  {close, [{send_to, CommandOriginChannel, Message}]}.
 
 are_there_other_players_for_this_channel([], _) ->
   false;

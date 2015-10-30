@@ -27,13 +27,14 @@
   throwing/1,
   it_threw/1,
   place_player_at/2,
-  test_step/1
+  test_step/1,
+  is_ws_client_alive/2,
+  is_ws_client_dead/2
 ]).
 
 run_test(Config) ->
   {setup,
     fun() ->
-      meck:new(pewpew_core, [passthrough]),
       application:set_env(pewpew, execution_mode, test),
       pewpew:start(),
       {ok, ControlClient} = ws_client:start_link(4321),
@@ -57,8 +58,7 @@ run_test(Config) ->
       ClientsPids = maps:values(Clients),
       [ws_client:stop(ClientPid) || ClientPid <- ClientsPids],
 
-      pewpew:stop(),
-      meck:unload(pewpew_core)
+      pewpew:stop()
     end,
     fun(Context) ->
       Test   = maps:get(test, Config, []),
@@ -377,6 +377,14 @@ test_step(Step) ->
   fun (_) ->
       {test, Step}
   end.
+
+is_ws_client_alive(ClientId, Context) ->
+  #{clients := Clients} = Context,
+  Client = maps:get(ClientId, Clients),
+  is_process_alive(Client).
+
+is_ws_client_dead(ClientId, Context) ->
+  not is_ws_client_alive(ClientId, Context).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal

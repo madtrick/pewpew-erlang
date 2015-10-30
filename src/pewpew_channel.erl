@@ -61,7 +61,7 @@ handle_info(timeout, State) ->
 
 handle_cast(close, State) ->
   wsserver_worker_websocket:close(State#pewpew_channel_state.wsserver_worker),
-  {stop, channel_close, State};
+  {stop, normal, State};
 handle_cast({send, Data}, State) ->
   wsserver_worker_websocket:send(State#pewpew_channel_state.wsserver_worker, Data),
   {noreply, State, ?HEROKU_KEEP_ALIVE_TIMEOUT};
