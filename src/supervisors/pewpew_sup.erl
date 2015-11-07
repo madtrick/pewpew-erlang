@@ -15,7 +15,6 @@ init([]) ->
         ?CHILD_ALT(wsserver_players_server, wsserver_server, worker, [pewpew_players_wsserver:config()]),
         ?CHILD_ALT(wsserver_control_server, wsserver_server, worker, [pewpew_control_wsserver:config()]),
         ?CHILD(pewpew_timer, worker, []),
-        ?CHILD(pewpew_registry, worker, []),
         ?CHILD(pewpew_multicast, worker, []),
         ?CHILD(pewpew_games_sup, supervisor, []),
         ?CHILD(pewpew_core, worker, [])

@@ -47,7 +47,6 @@ init(Options) ->
      wsserver_worker = WSWorker,
      config = Config
   },
-  pewpew_registry:register(self()),
 
   {ok, State, ?HEROKU_KEEP_ALIVE_TIMEOUT}.
 

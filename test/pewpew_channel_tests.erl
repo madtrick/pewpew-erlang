@@ -8,27 +8,6 @@ when_calling_exit_test() ->
   timer:sleep(1000),
   false = is_process_alive(Pid).
 
-when_created_test_() ->
-  [
-    it_registers_it_self_test()
-  ].
-
-it_registers_it_self_test() ->
-  {setup,
-    fun() ->
-      meck:new(pewpew_registry),
-      meck:expect(pewpew_registry, register, 1, ok)
-    end,
-    fun(_) ->
-      meck:unload(pewpew_registry)
-    end,
-    fun(_) ->
-      pewpew_channel:create(wsworker),
-      [
-        ?_assertEqual(meck:called(pewpew_registry, register, ['_']), true)
-      ]
-    end}.
-
 it_sends_given_data_test_() ->
   {setup,
     fun () ->

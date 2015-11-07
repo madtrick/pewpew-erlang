@@ -4,11 +4,11 @@
 it_creates_a_channel_when_initialized_test_() ->
   {setup,
     fun() ->
-        meck:new([pewpew_channel, pewpew_registry]),
+        meck:new([pewpew_channel]),
         meck:expect(pewpew_channel, create, 2, {ok, ch1})
     end,
     fun(_) ->
-        meck:unload([pewpew_channel, pewpew_registry])
+        meck:unload([pewpew_channel])
     end,
     fun(_) ->
         pewpew_wsserver_player_handler:init([{worker, wk1}]),
@@ -40,7 +40,7 @@ passes_messages_to_core_for_processing_test_() ->
 it_terminates_the_channel_when_the_connection_is_closed_test_() ->
   {setup,
     fun() ->
-        meck:new([pewpew_channel, pewpew_registry, pewpew_core]),
+        meck:new([pewpew_channel, pewpew_core]),
         meck:expect(pewpew_channel, create, 2, {ok, ch1}),
         meck:expect(pewpew_channel, exit, 1, ok),
         meck:expect(pewpew_core, process_player_message, 2, ok),
@@ -48,7 +48,7 @@ it_terminates_the_channel_when_the_connection_is_closed_test_() ->
         pewpew_wsserver_player_handler:init([{worker, wk1}])
     end,
     fun(_) ->
-        meck:unload([pewpew_channel, pewpew_registry, pewpew_core])
+        meck:unload([pewpew_channel, pewpew_core])
     end,
     fun(State) ->
         pewpew_wsserver_player_handler:handle(connection_close, State),
@@ -60,7 +60,7 @@ it_terminates_the_channel_when_the_connection_is_closed_test_() ->
 it_terminates_the_channel_when_the_connection_is_closed_2_test_() ->
   {setup,
     fun() ->
-        meck:new([pewpew_channel, pewpew_registry, pewpew_core]),
+        meck:new([pewpew_channel, pewpew_core]),
         meck:expect(pewpew_channel, create, 2, {ok, ch1}),
         meck:expect(pewpew_channel, exit, 1, ok),
         meck:expect(pewpew_core, process_player_message, 2, ok),
@@ -68,7 +68,7 @@ it_terminates_the_channel_when_the_connection_is_closed_2_test_() ->
         pewpew_wsserver_player_handler:init([{worker, wk1}])
     end,
     fun(_) ->
-        meck:unload([pewpew_channel, pewpew_registry, pewpew_core])
+        meck:unload([pewpew_channel, pewpew_core])
     end,
     fun(State) ->
         pewpew_wsserver_player_handler:handle({close, reason}, State),

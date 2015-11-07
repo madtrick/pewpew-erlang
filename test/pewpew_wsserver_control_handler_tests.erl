@@ -19,14 +19,13 @@ registers_the_handler_test_() ->
 it_terminates_the_channel_when_the_connection_is_closed_test_() ->
   {setup,
     fun() ->
-        meck:new([pewpew_channel, pewpew_registry]),
         meck:expect(pewpew_channel, create, 2, {ok, ch1}),
         meck:expect(pewpew_channel, exit, 1, ok),
 
         pewpew_wsserver_control_handler:init([{worker, wk1}])
     end,
     fun(_) ->
-        meck:unload([pewpew_channel, pewpew_registry])
+        meck:unload([pewpew_channel])
     end,
     fun(State) ->
         pewpew_wsserver_control_handler:handle(connection_close, State),
@@ -38,14 +37,14 @@ it_terminates_the_channel_when_the_connection_is_closed_test_() ->
 it_terminates_the_channel_when_the_connection_is_closed_2_test_() ->
   {setup,
     fun() ->
-        meck:new([pewpew_channel, pewpew_registry]),
+        meck:new([pewpew_channel]),
         meck:expect(pewpew_channel, create, 2, {ok, ch1}),
         meck:expect(pewpew_channel, exit, 1, ok),
 
         pewpew_wsserver_control_handler:init([{worker, wk1}])
     end,
     fun(_) ->
-        meck:unload([pewpew_channel, pewpew_registry])
+        meck:unload([pewpew_channel])
     end,
     fun(State) ->
         pewpew_wsserver_control_handler:handle({close, reason}, State),
