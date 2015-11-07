@@ -232,13 +232,18 @@ evaluate_messages([MessagesPerChannel | Tail], GameState, Replies) ->
   % - pass the valid origin channel
 
   {Channel, [Message]}  = MessagesPerChannel,
-  CommandContext        = pewpew_command_parser:parse(Message),
-  UpdatedCommandContext = pewpew_command_context_data:update(CommandContext, [{origin, Channel}, {pewpew_game, GameState}]),
-  %Reply                = evaluate_command_return_values(
-  %  pewpew_command_runner:run(CommandContexts, GameState, origin),
-  %  origin
-  %),
-  Reply = pewpew_command_runner:run(UpdatedCommandContext),
+  Reply = try pewpew_command_parser:parse(Message) of
+    CommandContext ->
+      UpdatedCommandContext = pewpew_command_context_data:update(CommandContext, [
+            {origin, Channel},
+            {pewpew_game, GameState}
+            ]),
+       pewpew_command_runner:run(UpdatedCommandContext)
+  catch
+    _:_ ->
+      InvalidCommandError = pewpew_invalid_command_error:new(Channel),
+      {close, [{send_to, Channel, InvalidCommandError}]}
+  end,
 
   evaluate_messages(Tail, GameState, [Reply | Replies]).
 

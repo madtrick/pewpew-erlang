@@ -21,5 +21,32 @@ tests() ->
               test_step(validate_type_in_last_reply_test(ws_player_client, <<"RegisterPlayerAck">>))
               ]
             })
+      },
+      {"It returns an error when the message has no type property",
+       run_test(#{
+            steps => [
+              ws_client_send(ws_player_client, <<"\"{\"data\": 123}\"">>),
+              ws_client_recv(ws_player_client),
+              test_step(validate_type_in_last_reply_test(ws_player_client, <<"InvalidCommandError">>))
+              ]
+            })
+      },
+      {"It returns an error when the message is truncated",
+       run_test(#{
+            steps => [
+              ws_client_send(ws_player_client, <<"\"{\"data\"">>),
+              ws_client_recv(ws_player_client),
+              test_step(validate_type_in_last_reply_test(ws_player_client, <<"InvalidCommandError">>))
+              ]
+            })
+      },
+      {"It returns an error when the payload is not JSON",
+       run_test(#{
+            steps => [
+              ws_client_send(ws_player_client, <<"\"\"">>),
+              ws_client_recv(ws_player_client),
+              test_step(validate_type_in_last_reply_test(ws_player_client, <<"InvalidCommandError">>))
+              ]
+            })
       }
       ]}.
