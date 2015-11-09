@@ -1,4 +1,5 @@
 -module(pewpew_move_player_context).
+-include_lib("eunit/include/eunit.hrl").
 
 -export([call/1]).
 
@@ -7,49 +8,25 @@ call(CommandContextData) ->
   PewPewGame           = pewpew_command_context_data:pewpew_game(CommandContextData),
   ArenaComponent       = pewpew_game:arena_component(PewPewGame),
 
-  CommandData           = pewpew_command_context_data:command_data(CommandContextData),
-  CommandModule         = pewpew_command_data:command_module(CommandData),
-  MovePlayerCommandData = pewpew_command_data:command_data(CommandData),
-  IsStarted             = pewpew_game:is_started(PewPewGame),
-  Player                = pewpew_arena_component:get_player(ArenaComponent, CommandOriginChannel),
-  IsValidCommand        = CommandModule:is_valid(MovePlayerCommandData),
+  CommandData = pewpew_command_context_data:command_data(CommandContextData),
+  Player      = pewpew_arena_component:get_player(ArenaComponent, CommandOriginChannel),
 
-  case IsValidCommand of
+  PlayerState = pewpew_player_component:get_state(Player),
+  (pewpew_command_data:command_module(CommandData)):run(
+    pewpew_command_data:command_data(CommandData), CommandContextData
+    ),
+
+  case validates(Player, ArenaComponent) of
     true ->
-      case IsStarted of
-        false ->
-          InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
-          {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
-        true ->
-          case Player of
-            undefined ->
-
-              InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
-              {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
-            _ ->
-              PlayerState = pewpew_player_component:get_state(Player),
-              (pewpew_command_data:command_module(CommandData)):run(
-                pewpew_command_data:command_data(CommandData), CommandContextData
-              ),
-
-              case validates(Player, ArenaComponent) of
-                true ->
-                  Coordinates   = pewpew_player_component:coordinates(Player),
-                  Rotation      = pewpew_player_component:rotation(Player),
-                  MovePlayerAck = pewpew_move_player_ack:new(Coordinates, Rotation, CommandOriginChannel),
-                  {reply, [{send_to, CommandOriginChannel, MovePlayerAck}]};
-                false ->
-                  pewpew_player_component:set_state(Player, PlayerState),
-                  InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
-                  {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}
-              end
-          end
-      end;
+      Coordinates   = pewpew_player_component:coordinates(Player),
+      Rotation      = pewpew_player_component:rotation(Player),
+      MovePlayerAck = pewpew_move_player_ack:new(Coordinates, Rotation, CommandOriginChannel),
+      {reply, [{send_to, CommandOriginChannel, MovePlayerAck}]};
     false ->
+      pewpew_player_component:set_state(Player, PlayerState),
       InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
       {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}
   end.
-
 
 % TODO move this into the command
 validates(Player, ArenaComponent) ->

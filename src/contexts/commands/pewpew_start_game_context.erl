@@ -1,6 +1,6 @@
 -module(pewpew_start_game_context).
 
--export([call/1]).
+-export([call/1, skip_middleware/0]).
 
 call(CommandContextData) ->
   PewPewGame           = pewpew_command_context_data:pewpew_game(CommandContextData),
@@ -27,3 +27,9 @@ call(CommandContextData) ->
       InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
       {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}
   end.
+
+skip_middleware() ->
+  [
+    pewpew_middleware_is_game_started,
+    pewpew_middleware_is_player_registered
+  ].

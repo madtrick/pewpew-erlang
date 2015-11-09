@@ -1,7 +1,7 @@
 -module(pewpew_register_player_context).
 -include_lib("eunit/include/eunit.hrl").
 
--export([call/1]).
+-export([call/1, skip_middleware/0]).
 
 call(CommandContextData) ->
   CommandOriginChannel = pewpew_command_context_data:origin(CommandContextData),
@@ -11,6 +11,12 @@ call(CommandContextData) ->
 
   EvalCommandGuard = not are_there_other_players_for_this_channel(Players, CommandOriginChannel),
   maybe_eval_command(EvalCommandGuard, CommandContextData, CommandOriginChannel).
+
+skip_middleware() ->
+  [
+    pewpew_middleware_is_player_registered,
+    pewpew_middleware_is_game_started
+  ].
 
 maybe_eval_command(true, CommandContextData, CommandOriginChannel) ->
   CommandData = pewpew_command_context_data:command_data(CommandContextData),
