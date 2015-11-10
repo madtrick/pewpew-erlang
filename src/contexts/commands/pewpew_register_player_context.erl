@@ -19,12 +19,12 @@ skip_middleware() ->
   ].
 
 maybe_eval_command(true, CommandContextData, CommandOriginChannel) ->
-  CommandData = pewpew_command_context_data:command_data(CommandContextData),
+  CommandModule = pewpew_command_context_data:command_module(CommandContextData),
+  CommandPayload = pewpew_command_context_data:command_payload(CommandContextData),
 
-  eval_result_from_command(
-    (pewpew_command_data:command_module(CommandData)):run(
-    pewpew_command_data:command_data(CommandData), CommandContextData
-  ), CommandOriginChannel, CommandContextData);
+  Result = CommandModule:run(CommandPayload, CommandContextData),
+  eval_result_from_command(Result, CommandOriginChannel, CommandContextData);
+
 maybe_eval_command(false, _, CommandOriginChannel) ->
   InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),
   {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]}.
@@ -33,7 +33,7 @@ eval_result_from_command({registered, NewPlayer}, CommandOriginChannel, CommandC
   PewPewGame    = pewpew_command_context_data:pewpew_game(CommandContextData),
   IsGameStarted = pewpew_game:is_started(PewPewGame),
 
-  RegisterPlayerAck = pewpew_register_player_ack:new(NewPlayer, CommandOriginChannel),
+  RegisterPlayerAck = pewpew_register_player_ack:new(NewPlayer),
 
   InitialReplies = [{send_to, CommandOriginChannel, RegisterPlayerAck}],
 

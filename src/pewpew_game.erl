@@ -43,9 +43,8 @@ update(PewPewGame) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(_) ->
-  PewpewGameContextData = pewpew_game_context_data:new(),
-  {ok, ArenaComponent}  = pewpew_arena_component:start_link([{pewpew_game_context_data, PewpewGameContextData}, {width, arena_width()}, {height, arena_height()}]),
-  PewPewGameStateData   = pewpew_game_state_data:new([{pewpew_arena_component, ArenaComponent}, {pewpew_game_context_data, PewpewGameContextData}]),
+  {ok, ArenaComponent}  = pewpew_arena_component:start_link([{width, arena_width()}, {height, arena_height()}]),
+  PewPewGameStateData   = pewpew_game_state_data:new([{pewpew_arena_component, ArenaComponent}]),
 
   {ok, PewPewGameStateData}.
 

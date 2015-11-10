@@ -3,7 +3,8 @@
 -export([
   new/2,
   context/1,
-  command_data/1,
+  command_module/1,
+  command_payload/1,
   pewpew_game/1,
   origin/1,
   players_origins/1
@@ -20,7 +21,10 @@ new(Context, CommandData) ->
   pewpew_map_backed_data:new(Options).
 
 context(#{ context := Context }) -> Context.
-command_data(#{ command_data := CommandData }) -> CommandData.
+command_module(#{ command_data := CommandData }) ->
+  pewpew_command_data:command_module(CommandData).
+command_payload(#{ command_data := CommandData }) ->
+  pewpew_command_data:command_payload(CommandData).
 pewpew_game(#{ pewpew_game := PewpewGame }) -> PewpewGame.
 origin(#{ origin := Origin }) -> Origin.
 players_origins(CommandContextData) ->

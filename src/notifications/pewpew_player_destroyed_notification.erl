@@ -1,13 +1,6 @@
 -module(pewpew_player_destroyed_notification).
 
--export([
-  new/0,
-  toJSON/1
-]).
+-export([new/0]).
 
 new() ->
-  pewpew_player_destroyed_notification_data:new(?MODULE).
-
-toJSON(NotificationData) ->
-  pewpew_player_destroyed_notification_serializer:toJSON(NotificationData).
-
+  pewpew_message:new(pewpew_player_destroyed_notification_serializer).

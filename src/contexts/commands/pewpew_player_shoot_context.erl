@@ -6,11 +6,10 @@
 call(CommandContextData) ->
   CommandOriginChannel = pewpew_command_context_data:origin(CommandContextData),
 
-  CommandData            = pewpew_command_context_data:command_data(CommandContextData),
-  CommandModule          = pewpew_command_data:command_module(CommandData),
-  PlayerShootCommandData = pewpew_command_data:command_data(CommandData),
-  PewPewGame             = pewpew_command_context_data:pewpew_game(CommandContextData),
-  ArenaComponent         = pewpew_game:arena_component(PewPewGame),
+  CommandPayload = pewpew_command_context_data:command_payload(CommandContextData),
+  CommandModule  = pewpew_command_context_data:command_module(CommandContextData),
+  PewPewGame     = pewpew_command_context_data:pewpew_game(CommandContextData),
+  ArenaComponent = pewpew_game:arena_component(PewPewGame),
 
   Player       = pewpew_arena_component:get_player(ArenaComponent, CommandOriginChannel),
   InitialShootingInfo = pewpew_player_component:shooting_info(Player),
@@ -18,10 +17,10 @@ call(CommandContextData) ->
 
   case ShootingTokens >= ShootingCost of
     true ->
-      CommandModule:run(PlayerShootCommandData, CommandContextData),
+      CommandModule:run(CommandPayload, CommandContextData),
       ShootingInfo = pewpew_player_component:shooting_info(Player),
 
-      PlayerShootAck = pewpew_player_shoot_ack:new(CommandOriginChannel, ShootingInfo),
+      PlayerShootAck = pewpew_player_shoot_ack:new(ShootingInfo),
       {reply, [{send_to, CommandOriginChannel, PlayerShootAck}]};
     false ->
       InvalidCommandError = pewpew_invalid_command_error:new(CommandOriginChannel),

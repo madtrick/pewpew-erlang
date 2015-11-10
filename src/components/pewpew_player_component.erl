@@ -2,7 +2,7 @@
 -behaviour(gen_server).
 -include_lib("eunit/include/eunit.hrl").
 
--export([start_link/2]).
+-export([start_link/1]).
 -export([
   init/1,
   handle_call/3,
@@ -46,8 +46,8 @@
 %% API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-start_link(PewpewGameContextData, PlayerData) ->
-  gen_server:start_link(?MODULE, [PewpewGameContextData, PlayerData], []).
+start_link(PlayerData) ->
+  gen_server:start_link(?MODULE, [PlayerData], []).
 
 get_state(PlayerComponent) ->
   gen_server:call(PlayerComponent, get_state).
@@ -124,7 +124,7 @@ shoot(PlayerComponent) ->
 %% gen_server callback
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-init([PewpewGameContextData, PlayerData]) ->
+init([PlayerData]) ->
   %TODO: check if the player uses the game context data for anything
   %TODO: move the generation of the radar_config data to arena_component_mod
   PlayerRadarConfigData = pewpew_radar_config_data:new(
@@ -132,8 +132,7 @@ init([PewpewGameContextData, PlayerData]) ->
   ),
   PlayerComponentData = pewpew_player_component_data:new(
     [
-     {radar_config_data, PlayerRadarConfigData},
-     {pewpew_game_context_data, PewpewGameContextData}
+     {radar_config_data, PlayerRadarConfigData}
      | PlayerData
     ]
   ),

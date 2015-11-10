@@ -66,7 +66,7 @@ init(_) ->
 handle_cast(stop, State) ->
   {stop, normal, State};
 handle_cast({register_control_channel, Channel}, State) ->
-  UpdatedState = pewpew_core_state_data:update(State, [{control_channel, Channel}]),
+  UpdatedState = pewpew_dataset:update([{control_channel, Channel}], State),
   {noreply, UpdatedState};
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
   ok;
@@ -82,28 +82,28 @@ handle_cast({process_player_message, OriginChannel, Message}, State) ->
   {noreply, NewPewpewCoreStateData}.
 
 handle_call(number_of_pending_messages, _, State) ->
-  PendingMessages = pewpew_core_state_data:pending_messages(State),
+  PendingMessages = pewpew_dataset:get(pending_messages, State),
   NumberOfPendingMessages = internal_number_of_pending_messages(PendingMessages),
-  %PendingMessages = pewpew_core_state_data:pending_messages(State),
+  %PendingMessages = pewpew_dataset:get(pending_messages, State),
   {reply, NumberOfPendingMessages, State};
 handle_call({number_of_pending_messages_per_channel, Channel}, _, State) ->
-  PendingMessages = pewpew_core_state_data:pending_messages(State),
+  PendingMessages = pewpew_dataset:get(pending_messages, State),
   NumberOfPendingMessages = internal_number_of_pending_messages_per_channel(Channel, PendingMessages),
   {reply, NumberOfPendingMessages, State};
 handle_call(next_cycle, _, State) ->
-  PewPewGame = pewpew_core_state_data:pewpew_game(State),
+  PewPewGame = pewpew_dataset:get(pewpew_game, State),
   NotificationContextData = pewpew_notification_context_data:new([{pewpew_game, PewPewGame}]),
   Updates = pewpew_game_update_notification_context:call(NotificationContextData),
   %Updates2 = pewpew_game:update(PewPewGame),
-  PendingMessages              = pewpew_core_state_data:pending_messages(State),
+  PendingMessages              = pewpew_dataset:get(pending_messages, State),
   ReversedPendingMessages      = lists:reverse(PendingMessages),
   {_UpdatedGameState, Replies} = next_cycle(ReversedPendingMessages, pewpew_game(State)),
-  %UpdatedState                = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
-  UpdatedState = pewpew_core_state_data:update(State, [{pending_messages, []}]),
+  %UpdatedState                = pewpew_dataset:update([{pending_messages, UpdatedPendingMessagesList}], State),
+  UpdatedState = pewpew_dataset:update([{pending_messages, []}], State),
   %{reply, ok, UpdatedState}.
   PewPewGameSnapshot = pewpew_game:snapshot(PewPewGame),
   Notification = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
-  ControlChannel = pewpew_core_state_data:control_channel(State),
+  ControlChannel = pewpew_dataset:get(control_channel, State),
   % TODO move the construction of the notification to a separate module
   NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
   AllMessages = lists:flatten([ Updates | [NotificationDispatchRule | Replies] ]),
@@ -112,7 +112,7 @@ handle_call(next_cycle, _, State) ->
   ok = send_replies(TransformedReplies),
   {reply, ok, UpdatedState};
 handle_call(get_games, _, State) ->
-  PewPewGame = pewpew_core_state_data:pewpew_game(State),
+  PewPewGame = pewpew_dataset:get(pewpew_game, State),
   {reply, [PewPewGame], State}.
 
 terminate(_, _) ->
@@ -190,9 +190,9 @@ handle_process_message(OriginChannel, {text, Message}, State) ->
   %  pewpew_command_runner:run(CommandContexts, pewpew_game(State), OriginChannel),
   %  OriginChannel
   %),
-  PendingMessages            = pewpew_core_state_data:pending_messages(State),
+  PendingMessages            = pewpew_dataset:get(pending_messages, State),
   UpdatedPendingMessagesList = maybe_update_pending_messages_list(OriginChannel, PendingMessages, Message),
-  UpdatedState               = pewpew_core_state_data:update(State, [{pending_messages, UpdatedPendingMessagesList}]),
+  UpdatedState               = pewpew_dataset:update([{pending_messages, UpdatedPendingMessagesList}], State),
   UpdatedState.
 
 internal_number_of_pending_messages(PendingMessages) ->
@@ -263,10 +263,14 @@ send_replies([ReturnValue |  Tail]) ->
 build_pewpew_core_state() ->
   GameName = random_game_name(),
   pewpew_games_sup:add_game(GameName),
-  pewpew_core_state_data:new(GameName).
+  pewpew_dataset:new([
+      {pewpew_game, GameName},
+      {pending_messages, []},
+      {control_channel, undefined}
+      ]).
 
 pewpew_game(State) ->
-  pewpew_core_state_data:pewpew_game(State).
+  pewpew_dataset:get(pewpew_game, State).
 
 random_game_name() ->
   %

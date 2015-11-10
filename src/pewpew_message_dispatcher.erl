@@ -21,10 +21,10 @@ dispatch_with_rule(_, _, _) ->
 
 convert_to_json(Messages) ->
   Structs = lists:map(fun(Message) ->
-    MessageModule = pewpew_message_data:message_module(Message),
-    MessageData   = pewpew_message_data:message_data(Message),
+    Serializer = pewpew_message:serializer(Message),
+    MessageData   = pewpew_message:data(Message),
 
-    MessageModule:toJSON(MessageData)
+    Serializer:toJSON(MessageData)
   end, Messages),
 
   jiffy:encode(Structs).

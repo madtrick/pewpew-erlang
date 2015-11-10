@@ -12,7 +12,7 @@ toJSON(NotificationData) ->
   Struct.
 
 transform_data(NotificationData) ->
-  #{player := PlayerData} = NotificationData,
+  PlayerData = pewpew_dataset:get(player, NotificationData),
   {life, PlayerLife} = PlayerData,
 
   #{

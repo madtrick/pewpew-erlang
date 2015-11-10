@@ -1,17 +1,17 @@
 -module(pewpew_command_data).
 
--export([new/2, command_module/1, command_data/1]).
+-export([
+  new/2,
+  command_module/1,
+  command_payload/1
+]).
 
--record(pewpew_command_data, {
-    command_module,
-    command_data
-  }).
+new(CommandModule, CommandPayload) ->
+  PayloadDataset = pewpew_dataset:new(CommandPayload),
+  pewpew_dataset:new([
+      {command_module, CommandModule},
+      {command_payload, PayloadDataset}
+  ]).
 
-new(CommandModule, Data) ->
-  #pewpew_command_data{
-    command_module = CommandModule,
-    command_data   = Data
-  }.
-
-command_module(#pewpew_command_data{ command_module = Module}) -> Module.
-command_data(#pewpew_command_data{ command_data = Data}) -> Data.
+command_module(Data) -> pewpew_dataset:get(command_module, Data).
+command_payload(Data) -> pewpew_dataset:get(command_payload, Data).

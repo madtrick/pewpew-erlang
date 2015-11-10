@@ -19,7 +19,7 @@ call(CommandContextData) ->
           {reply, [{send_to, CommandOriginChannel, InvalidCommandError}]};
         false ->
           pewpew_game:start_game(PewPewGame),
-          StartGameAck   = pewpew_start_game_ack:new(CommandOriginChannel),
+          StartGameAck   = pewpew_start_game_ack:new(),
           StartGameOrder = pewpew_start_game_order:new(),
           {reply, [{send_to, CommandOriginChannel, StartGameAck}, {send_to, PlayersOrigins, StartGameOrder}]}
       end;

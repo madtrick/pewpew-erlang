@@ -2,18 +2,14 @@
 
 -export([
   fromJSON/1,
-  run/2,
-  is_valid/1
+  run/2
 ]).
 
 % {}
 fromJSON(_JSON) ->
-  pewpew_player_shoot_command_data:new(?MODULE, []).
+  pewpew_command_data:new(?MODULE, []).
 
-is_valid(_) ->
-  true.
-
-run(_CommandData, ContextData) ->
+run(_CommandPayload, ContextData) ->
   lager:debug("Running player_shoot_command"),
 
   PewPewGame = pewpew_command_context_data:pewpew_game(ContextData),

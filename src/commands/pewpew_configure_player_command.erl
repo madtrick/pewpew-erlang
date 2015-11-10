@@ -14,18 +14,18 @@ fromJSON(JSON) ->
   Op               = proplists:get_value(<<"op">>, JSONProperties),
   Args             = proplists:get_value(<<"args">>, JSONProperties),
 
-  pewpew_configure_player_command_data:new(?MODULE, [{op, Op}, {args, Args}]).
+  pewpew_command_data:new(?MODULE, [{op, Op}, {args, Args}]).
 
-is_valid(CommandData) ->
-  Op = pewpew_configure_player_command_data:op(CommandData),
+is_valid(PayloadData) ->
+  Op = pewpew_dataset:get(op, PayloadData),
   is_op_valid(Op).
 
-run(CommandData, ContextData) ->
+run(PayloadData, ContextData) ->
   lager:debug("Running configure player command"),
   Channel = pewpew_command_context_data:origin(ContextData),
   Player  = pewpew_arena_component:get_player(arena_component(ContextData), Channel),
-  Op      = pewpew_configure_player_command_data:op(CommandData),
-  Args    = pewpew_configure_player_command_data:args(CommandData),
+  Op      = pewpew_dataset:get(op, PayloadData),
+  Args    = pewpew_dataset:get(args, PayloadData),
 
   configure_player(Player, Op, Args).
 

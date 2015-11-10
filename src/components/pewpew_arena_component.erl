@@ -79,7 +79,6 @@ init([Data]) ->
         {radar_component, PewPewRadarComponent},
         {pewpew_player_component_sup, PewpewPlayerComponentSup},
         {shot_component_sup, PewpewShotComponentSup},
-        {pewpew_game_context_data, proplists:get_value(pewpew_game_context_data, Data)},
         {max_number_of_players, pewpew_config:get([arena, players, max])},
         {width, proplists:get_value(width, Data)},
         {height, proplists:get_value(height, Data)}
@@ -101,10 +100,8 @@ handle_call({create_player, Data}, _, ArenaComponentData) ->
   PlayerConfig = pewpew_arena_component_mod:create_player(ArenaComponentData, Data),
 
   PlayersSupervisor = pewpew_arena_component_data:pewpew_player_component_sup(ArenaComponentData),
-  GameContextData   = pewpew_arena_component_data:pewpew_game_context_data(ArenaComponentData),
   {ok, Player}      = pewpew_player_component_sup:add_player(
     PlayersSupervisor,
-    GameContextData,
     PlayerConfig
   ),
 

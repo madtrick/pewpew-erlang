@@ -12,16 +12,16 @@
 % [{move: }, {rotate: }]
 fromJSON(JSON) ->
   Movements = [ Object || {[Object]} <- JSON],
-  pewpew_move_player_command_data:new(?MODULE, [{movements, Movements}]).
+  pewpew_command_data:new(?MODULE, [{movements, Movements}]).
 
-is_valid(CommandData) ->
-  Movements = pewpew_move_player_command_data:movements(CommandData),
+is_valid(CommandPayload) ->
+  Movements = pewpew_dataset:get(movements, CommandPayload),
   are_movements_valid(Movements).
 
-run(CommandData, ContextData) ->
+run(CommandPayload, ContextData) ->
   lager:debug("Running move_player_command"),
   Channel   = pewpew_command_context_data:origin(ContextData),
-  Movements = pewpew_move_player_command_data:movements(CommandData),
+  Movements = pewpew_dataset:get(movements, CommandPayload),
   Player    = pewpew_arena_component:get_player(arena_component(ContextData), Channel),
   lists:foreach(fun(Movement) -> apply_movement(Movement, Player) end, Movements),
   Player.

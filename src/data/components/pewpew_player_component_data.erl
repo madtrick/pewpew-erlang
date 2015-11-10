@@ -6,7 +6,6 @@
   x/1,
   y/1,
   origin/1,
-  pewpew_game_context_data/1,
   color/1,
   name/1,
   life/1,
@@ -30,7 +29,6 @@ name(#{ name := Name }) -> Name.
 life(#{ life := Life }) -> Life.
 origin(#{ origin := Origin }) -> Origin.
 rotation(#{ rotation := Rotation }) -> Rotation.
-pewpew_game_context_data(#{ pewpew_game_context_data := Data }) -> Data.
 radius(#{ radius := Value }) -> Value.
 radar_config_data(#{ radar_config_data := Value }) -> Value.
 shooting_info(#{ shooting_info := Value }) -> Value.

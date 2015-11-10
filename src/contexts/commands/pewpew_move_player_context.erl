@@ -8,19 +8,19 @@ call(CommandContextData) ->
   PewPewGame           = pewpew_command_context_data:pewpew_game(CommandContextData),
   ArenaComponent       = pewpew_game:arena_component(PewPewGame),
 
-  CommandData = pewpew_command_context_data:command_data(CommandContextData),
+  CommandModule = pewpew_command_context_data:command_module(CommandContextData),
+  CommandPayload = pewpew_command_context_data:command_payload(CommandContextData),
   Player      = pewpew_arena_component:get_player(ArenaComponent, CommandOriginChannel),
 
   PlayerState = pewpew_player_component:get_state(Player),
-  (pewpew_command_data:command_module(CommandData)):run(
-    pewpew_command_data:command_data(CommandData), CommandContextData
-    ),
+
+  CommandModule:run(CommandPayload, CommandContextData),
 
   case validates(Player, ArenaComponent) of
     true ->
       Coordinates   = pewpew_player_component:coordinates(Player),
       Rotation      = pewpew_player_component:rotation(Player),
-      MovePlayerAck = pewpew_move_player_ack:new(Coordinates, Rotation, CommandOriginChannel),
+      MovePlayerAck = pewpew_move_player_ack:new(Coordinates, Rotation),
       {reply, [{send_to, CommandOriginChannel, MovePlayerAck}]};
     false ->
       pewpew_player_component:set_state(Player, PlayerState),

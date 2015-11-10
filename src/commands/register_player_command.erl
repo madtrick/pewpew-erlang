@@ -5,9 +5,9 @@
 % {player : {}}
 fromJSON(JSON) ->
   {[]} = JSON,
-  pewpew_register_player_command_data:new(?MODULE, []).
+  pewpew_command_data:new(?MODULE, []).
 
-run(_CommandData, ContextData) ->
+run(_PayloadData, ContextData) ->
   lager:debug("Running register_player_command"),
   ArenaComponent = arena_component(ContextData),
   register_player_if(can_register_player(ArenaComponent), ArenaComponent, [{origin, origin(ContextData)}]).

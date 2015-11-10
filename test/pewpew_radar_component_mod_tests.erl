@@ -227,7 +227,7 @@ generate_radar_test(Setup) ->
         application:set_env(pewpew, execution_mode, test),
         pewpew_config:load(),
         Options = #{
-          arena_options => [{width, 400}, {height, 400}, {pewpew_game_context_data, undefined}],
+          arena_options => [{width, 400}, {height, 400}],
           players_options => Players
          },
         % TODO maybe create only the players and not the arena too as we only

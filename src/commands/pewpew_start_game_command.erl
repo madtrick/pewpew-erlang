@@ -8,7 +8,7 @@
 % {}
 fromJSON(JSON) ->
   {[]} =JSON,
-  pewpew_start_game_command_data:new(?MODULE, []).
+  pewpew_command_data:new(?MODULE, []).
 
-run(_CommandData, _CommandContextData) ->
+run(_CommandPayload, _CommandContextData) ->
   ok.

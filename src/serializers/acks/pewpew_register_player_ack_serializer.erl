@@ -3,7 +3,7 @@
 -export([toJSON/1]).
 
 toJSON(RegisterPlayerAckData) ->
-  Player = pewpew_register_player_ack_data:player_component(RegisterPlayerAckData),
+  Player = pewpew_dataset:get(player_component, RegisterPlayerAckData),
 
   #{
     type => <<"RegisterPlayerAck">>,
