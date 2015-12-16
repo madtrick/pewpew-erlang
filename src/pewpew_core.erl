@@ -71,11 +71,10 @@ handle_cast({register_control_channel, Channel}, State) ->
 handle_cast({disconnect_player, _OriginChannel}, _State) ->
   ok;
 handle_cast({process_control_message, Channel, {text, Message}}, State) ->
-  Game                  = pewpew_game(State),
-  CommandContext        = pewpew_command_parser:parse(Message),
-  UpdatedCommandContext = pewpew_command_context_data:update(CommandContext, [{origin, Channel}, {pewpew_game, Game}]),
-  Reply                 = pewpew_command_runner:run(UpdatedCommandContext),
-  send_replies(transform_replies([Reply])),
+  Game = pewpew_game(State),
+  {_UpdatedGameSTate, Replies} = evaluate_messages([{Channel, [Message]}], Game),
+  ok = send_replies( transform_replies(Replies) ),
+
   {noreply, State};
 handle_cast({process_player_message, OriginChannel, Message}, State) ->
   NewPewpewCoreStateData = handle_process_message(OriginChannel, Message, State),
@@ -83,41 +82,17 @@ handle_cast({process_player_message, OriginChannel, Message}, State) ->
 
 handle_call(number_of_pending_messages, _, State) ->
   PendingMessages = pewpew_dataset:get(pending_messages, State),
-  NumberOfPendingMessages = internal_number_of_pending_messages(PendingMessages),
-  %PendingMessages = pewpew_dataset:get(pending_messages, State),
+  NumberOfPendingMessages = erlang:length(PendingMessages),
+
   {reply, NumberOfPendingMessages, State};
 handle_call({number_of_pending_messages_per_channel, Channel}, _, State) ->
   PendingMessages = pewpew_dataset:get(pending_messages, State),
-  NumberOfPendingMessages = internal_number_of_pending_messages_per_channel(Channel, PendingMessages),
+  PendingMessagesPerChannel = pending_messages_per_channel(Channel, PendingMessages),
+  NumberOfPendingMessages = erlang:length(PendingMessagesPerChannel),
+
   {reply, NumberOfPendingMessages, State};
 handle_call(next_cycle, _, State) ->
-  PewPewGame = pewpew_dataset:get(pewpew_game, State),
-  NotificationContextData = pewpew_notification_context_data:new([{pewpew_game, PewPewGame}]),
-  Updates = pewpew_game_update_notification_context:call(NotificationContextData),
-  %Updates2 = pewpew_game:update(PewPewGame),
-  PendingMessages              = pewpew_dataset:get(pending_messages, State),
-  ReversedPendingMessages      = lists:reverse(PendingMessages),
-  {_UpdatedGameState, Replies} = next_cycle(ReversedPendingMessages, pewpew_game(State)),
-  %UpdatedState                = pewpew_dataset:update([{pending_messages, UpdatedPendingMessagesList}], State),
-  UpdatedState = pewpew_dataset:update([{pending_messages, []}], State),
-  %{reply, ok, UpdatedState}.
-  ControlChannel = pewpew_dataset:get(control_channel, State),
-  AllMessages = case ControlChannel of
-    undefined -> lists:flatten([ Updates | Replies ]);
-    ControlChannel ->
-      PewPewGameSnapshot = pewpew_game:snapshot(PewPewGame),
-      Notification = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
-      NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
-      lists:flatten([ Updates | [NotificationDispatchRule | Replies] ])
-  end,
-
-  % TODO move the construction of the notification to a separate module
-  %NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
-  %AllMessages = lists:flatten([ Updates | [NotificationDispatchRule | Replies] ]),
-  TransformedReplies = transform_replies(AllMessages),
-  %ok = send_replies( TransformedReplies ),
-  ok = send_replies(TransformedReplies),
-  {reply, ok, UpdatedState};
+  {reply, ok, next_cycle(State)};
 handle_call(get_games, _, State) ->
   PewPewGame = pewpew_dataset:get(pewpew_game, State),
   {reply, [PewPewGame], State}.
@@ -128,6 +103,51 @@ terminate(_, _) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+next_cycle(State) ->
+  CycleSteps = [
+      fun update_game/1,
+      fun evaluate_commands/1,
+      fun create_snapshot/1
+    ],
+  {Replies, NewState} = run_cycle_steps(CycleSteps, State),
+  ok = send_replies( transform_replies(Replies) ),
+
+  NewState.
+
+run_cycle_steps(Steps, State) ->
+  lists:foldl(fun (F, {Replies, NewState}) ->
+          {R, S} = F(NewState),
+          {lists:append(Replies, R), S}
+      end, {[], State}, Steps).
+
+update_game(State) ->
+  PewPewGame = pewpew_dataset:get(pewpew_game, State),
+  NotificationContextData = pewpew_notification_context_data:new([{pewpew_game, PewPewGame}]),
+  Updates = pewpew_game_update_notification_context:call(NotificationContextData),
+
+  {Updates, State}.
+
+evaluate_commands(State) ->
+  PendingMessages              = pewpew_dataset:get(pending_messages, State),
+  UpdatedState                 = pewpew_dataset:update([{pending_messages, []}], State),
+  ReversedPendingMessages      = lists:reverse(PendingMessages),
+  {_UpdatedGameState, Replies} = evaluate_messages(ReversedPendingMessages, pewpew_game(State)),
+
+  {Replies, UpdatedState}.
+
+create_snapshot(State) ->
+  ControlChannel = pewpew_dataset:get(control_channel, State),
+  create_snapshot(ControlChannel, State).
+
+create_snapshot(undefined, State) ->
+  {[], State};
+create_snapshot(ControlChannel, State) ->
+  PewPewGame               = pewpew_dataset:get(pewpew_game, State),
+  PewPewGameSnapshot       = pewpew_game:snapshot(PewPewGame),
+  Notification             = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
+  NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
+
+  {[NotificationDispatchRule], State}.
 
 transform_replies(Replies) ->
   transform_replies(Replies, #{}).
@@ -159,22 +179,11 @@ transform_reply({Type, Data}, Map) ->
   end, Map, Data).
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
-  %CommandContexts = pewpew_command_parser:parse(Message),
-  %evaluate_command_return_values(
-  %  pewpew_command_runner:run(CommandContexts, pewpew_game(State), OriginChannel),
-  %  OriginChannel
-  %),
   PendingMessages            = pewpew_dataset:get(pending_messages, State),
   UpdatedPendingMessagesList = maybe_update_pending_messages_list(OriginChannel, PendingMessages, Message),
   UpdatedState               = pewpew_dataset:update([{pending_messages, UpdatedPendingMessagesList}], State),
+
   UpdatedState.
-
-internal_number_of_pending_messages(PendingMessages) ->
-  erlang:length(PendingMessages).
-
-internal_number_of_pending_messages_per_channel(Channel, PendingMessages) ->
-  PendingMessagesForChannel = pending_messages_per_channel(Channel, PendingMessages),
-  internal_number_of_pending_messages(PendingMessagesForChannel).
 
 pending_messages_per_channel(Channel, PendingMessages) ->
   proplists:get_value(Channel, PendingMessages, []).
@@ -191,20 +200,12 @@ maybe_update_pending_messages_list(Channel, PendingMessages, Message) ->
   PendingMessagesForChannel = pending_messages_per_channel(Channel, PendingMessages),
   maybe_update_pending_messages_list(Channel, PendingMessages, Message, PendingMessagesForChannel).
 
-next_cycle(Messages, GameState) ->
-  % TODO:
-  % - update state after evaluating a message
-  evaluate_messages(Messages, GameState).
-
 evaluate_messages(Messages, GameState) ->
   evaluate_messages(Messages, GameState, []).
 
 evaluate_messages([], GameState, Replies) ->
   {GameState, lists:reverse(Replies)};
 evaluate_messages([MessagesPerChannel | Tail], GameState, Replies) ->
-  % TODO:
-  % - pass the valid origin channel
-
   {Channel, [Message]}  = MessagesPerChannel,
   Reply = try pewpew_command_parser:parse(Message) of
     CommandContext ->
