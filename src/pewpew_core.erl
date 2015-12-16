@@ -130,66 +130,33 @@ terminate(_, _) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 transform_replies(Replies) ->
-  Dict = dict:new(),
-  Transformation = transform_replies(Replies, Dict),
-  dict:fold(fun(Channel, {Flag, Messages}, Acc) ->
-        case Flag of
-          open ->
-            [{Flag, [{send_to, Channel, lists:reverse(Messages)}]} | Acc];
-          close ->
-            [{Flag, Channel, [{send_to, Channel, lists:reverse(Messages)}]} | Acc]
-        end
-  end, [], Transformation).
+  transform_replies(Replies, #{}).
 
-transform_replies([], Dict) ->
-  Dict;
-transform_replies([Reply | Tail], Dict) ->
-  UpdatedDict = transform_reply(Reply, Dict),
-  transform_replies(Tail, UpdatedDict).
+transform_replies([], Map) ->
+  maps:values(Map);
+transform_replies([Reply | Tail], Map) ->
+  UpdatedMap = transform_reply(Reply, Map),
+  transform_replies(Tail, UpdatedMap).
 
-transform_reply(noreply, Dict) ->
-  Dict;
-transform_reply(close, Dict) ->
-  Dict; % TODO: fix this when replace the 'channel_placeholder' in send_replies
-transform_reply({Type, Data}, Dict) when not is_list(Data) ->
-  transform_reply({Type, [Data]}, Dict);
-transform_reply({close, Data}, Dict) ->
+transform_reply(noreply, Map) ->
+  Map;
+transform_reply(close, Map) ->
+  Map; % TODO: fix this when replace the 'channel_placeholder' in send_replies
+transform_reply({Type, Data}, Map) when not is_list(Data) ->
+  transform_reply({Type, [Data]}, Map);
+transform_reply({Type, Data}, Map) ->
   lists:foldl(fun(Element, Acc) ->
         {send_to, Channel, Message} = Element,
-        case dict:is_key(Channel, Acc) of
-          true ->
-            {_, Messages} = dict:fetch(Channel, Acc),
-            dict:store(Channel, {close, [Message | Messages]}, Acc);
-          false ->
-            dict:store(Channel, {close, [Message]}, Acc)
+        case maps:get(Channel, Acc, undefined) of
+          undefined ->
+            Value = {Type, Channel, [{send_to, Channel, [Message]}]},
+            maps:put(Channel, Value, Acc);
+          {_, Channel, [{send_to, Channel, Messages}]} ->
+            NewMessages = lists:append(Messages, [Message]),
+            Value = {Type, Channel, [{send_to, Channel, NewMessages}]},
+            maps:put(Channel , Value, Acc)
         end
-  end, Dict, Data);
-transform_reply({reply, Data}, Dict) ->
-  %group_messages_by_channel(Data, Dict).
-  lists:foldl(fun(Element, Acc) ->
-        {send_to, Channel, Message} = Element,
-        case dict:is_key(Channel, Acc) of
-          true ->
-            {Flag, Messages} = dict:fetch(Channel, Acc),
-            dict:store(Channel, {Flag, [Message | Messages]}, Acc);
-          false ->
-            dict:store(Channel, {open, [Message]}, Acc)
-        end
-  end, Dict, Data).
-
-%group_messages_by_channel(Messages, Dict) when not is_list(Messages) ->
-%  group_messages_by_channel([Messages], Dict);
-%group_messages_by_channel(Messages, Dict) ->
-%  lists:foldl(fun(Element, Acc) ->
-%    {send_to, Channel, Message} = Element,
-%    case dict:is_key(Channel, Acc) of
-%      true ->
-%        Messages = dict:fetch(Channel, Acc),
-%        dict:store(Channel, [Message | Messages], Acc);
-%      false ->
-%        dict:store(Channel, [Message], Acc)
-%    end
-%  end, Dict, Messages).
+  end, Map, Data).
 
 handle_process_message(OriginChannel, {text, Message}, State) ->
   %CommandContexts = pewpew_command_parser:parse(Message),
@@ -258,7 +225,7 @@ send_replies([]) ->
   ok;
 send_replies([ReturnValue |  Tail]) ->
   case ReturnValue of
-    {open, Messages} ->
+    {reply, _, Messages} ->
       pewpew_message_dispatcher:dispatch(Messages),
       send_replies(Tail);
     {close, Channel, Messages} ->

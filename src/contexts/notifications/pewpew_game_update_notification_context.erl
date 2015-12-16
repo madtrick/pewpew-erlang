@@ -25,6 +25,7 @@ call(NotificationContextData) ->
           {player, PlayerChannel, destroyed, U} ->
               {notification, Notification} = U,
               %PlayerChannel = pewpew_player_component:channel(Player),
+              % TODO: shouldn't this be a "close" type
               {reply, [{send_to, PlayerChannel, Notification}]};
           {shot, _, update, _} ->
             noreply; %ignore them for now
