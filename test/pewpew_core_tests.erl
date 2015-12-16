@@ -66,3 +66,39 @@ it_clears_the_players_message_queue_after_each_game_cycle_test_() ->
         ]
     end
   }.
+
+it_doesnt_send_snapshots_if_there_is_no_control_channel_test_() ->
+  MockedModules = [
+    pewpew_games_sup,
+    pewpew_command_parser,
+    pewpew_command_context_data,
+    pewpew_command_runner,
+    pewpew_game,
+    pewpew_message_dispatcher
+  ],
+
+  {setup,
+    fun() ->
+        meck:new(MockedModules),
+        meck:expect(pewpew_games_sup, add_game, 1, ok),
+        meck:expect(pewpew_command_parser, parse, 1, commmand_context),
+        meck:expect(pewpew_command_context_data, update, 2, updated_commmand_context),
+        meck:expect(pewpew_command_runner, run, 1, noreply),
+        meck:expect(pewpew_game, snapshot, 1, snapshot),
+        meck:expect(pewpew_game, is_started, 1, true),
+        meck:expect(pewpew_game, update, 1, []),
+        meck:expect(pewpew_message_dispatcher, dispatch, 1, ok),
+        pewpew_core:start_link()
+    end,
+    fun(_) ->
+        meck:unload(MockedModules),
+        pewpew_core:stop()
+    end,
+    fun(_) ->
+        pewpew_core:next_cycle(),
+
+        [
+          ?_assert(not meck:called(pewpew_message_dispatcher, dispatch, ['_']))
+        ]
+    end
+  }.

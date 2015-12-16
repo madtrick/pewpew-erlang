@@ -101,12 +101,19 @@ handle_call(next_cycle, _, State) ->
   %UpdatedState                = pewpew_dataset:update([{pending_messages, UpdatedPendingMessagesList}], State),
   UpdatedState = pewpew_dataset:update([{pending_messages, []}], State),
   %{reply, ok, UpdatedState}.
-  PewPewGameSnapshot = pewpew_game:snapshot(PewPewGame),
-  Notification = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
   ControlChannel = pewpew_dataset:get(control_channel, State),
+  AllMessages = case ControlChannel of
+    undefined -> lists:flatten([ Updates | Replies ]);
+    ControlChannel ->
+      PewPewGameSnapshot = pewpew_game:snapshot(PewPewGame),
+      Notification = pewpew_game_snapshot_notification:new(PewPewGameSnapshot),
+      NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
+      lists:flatten([ Updates | [NotificationDispatchRule | Replies] ])
+  end,
+
   % TODO move the construction of the notification to a separate module
-  NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
-  AllMessages = lists:flatten([ Updates | [NotificationDispatchRule | Replies] ]),
+  %NotificationDispatchRule = {reply, [{send_to, ControlChannel, Notification}]},
+  %AllMessages = lists:flatten([ Updates | [NotificationDispatchRule | Replies] ]),
   TransformedReplies = transform_replies(AllMessages),
   %ok = send_replies( TransformedReplies ),
   ok = send_replies(TransformedReplies),
