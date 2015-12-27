@@ -12,10 +12,8 @@
 
 % exported for testing
 -export([
-  update_shots/2
+  update_shots/1
   ]).
-
--define(COLORS, [<<"red">>, <<"blue">>, <<"green">>]).
 
 get_player(Condition, ArenaComponentData) ->
   MatchingPlayers = find_players_matching_condition(Condition, ArenaComponentData),
@@ -45,6 +43,7 @@ create_player(ArenaComponentData, PlayerData) ->
 
   PlayerConfig      = [
       {color, Color},
+      {hits, []},
       {id, Id},
       {x, X},
       {y, Y},
@@ -62,7 +61,7 @@ create_shot(ArenaComponentData, ShotData) ->
   PlayerCoordinates = pewpew_player_component:coordinates(Player),
   PlayerRotation    = pewpew_player_component:rotation(Player),
   PlayerRadius      = pewpew_player_component:radius(Player),
-  ShotSpeed        = pewpew_config:get([shots, movement, speed]),
+  ShotSpeed         = pewpew_config:get([shots, movement, speed]),
 
   pewpew_player_component:shoot(Player),
 
@@ -88,74 +87,73 @@ dimensions(ArenaComponentData) ->
   {ok, {width, Width, height, Height}}.
 
 update(ArenaComponentData) ->
-  Players        = pewpew_arena_component_data:players(ArenaComponentData),
-  %RadarComponent = pewpew_arena_component_data:radar_component(ArenaComponentData),
-  Height = pewpew_arena_component_data:height(ArenaComponentData),
-  Width = pewpew_arena_component_data:width(ArenaComponentData),
-  %ArenaDimensions = {width, Width, height, Height},
+  {UACD, N} = update_shots(ArenaComponentData),
+  %UACD = pewpew_arena_component_data:update(ArenaComponentData, [{shots, RemainingShots}]),
+  {UACD2, N2} = update_players(UACD),
+  %UACD4 = pewpew_arena_component_data:update(UACD, [{players, NonDestroyedPlayers}]),
+  {UACD3, N3} = update_radars(UACD2),
 
-  Shots = pewpew_arena_component_data:shots(ArenaComponentData),
-  lists:foreach(fun(Shot) ->
-                    pewpew_shot_component:move(Shot)
-                end, Shots),
+  Updates = lists:append([N, N2, N3]),
 
-  ShotsContext = lists:map(fun(Shot) ->
-    {x, X, y, Y} = pewpew_shot_component:coordinates(Shot),
-    Radius = 1,
-    {x, X, y, Y, radius, Radius}
-  end, pewpew_arena_component_data:shots(ArenaComponentData)),
-
-  PlayersContext = lists:map(fun(Player) ->
-    {x, X, y, Y} = pewpew_player_component:coordinates(Player),
-    Radius = pewpew_player_component:radius(Player),
-    {x, X, y, Y, radius, Radius}
-                             end, Players),
-
-  ShotUpdateContext = #{
-    arena_dimensions => #{width => Width, height => Height},
-    players => PlayersContext
-  },
-
-  {ShotsUpdates2, RemainingShots} = update_shots(ShotUpdateContext, Shots),
-  UACD = pewpew_arena_component_data:update(ArenaComponentData, [{shots, RemainingShots}]),
-  UpdateContext = #{shots => ShotsContext},
-  {PlayersUpdates, NonDestroyedPlayers} = update_players(UpdateContext, Players),
-  UACD4 = pewpew_arena_component_data:update(UACD, [{players, NonDestroyedPlayers}]),
-  {UACD33, RadarUpdate} = update_radars(NonDestroyedPlayers, UACD4),
-
-  Updates = lists:append([RadarUpdate, PlayersUpdates, ShotsUpdates2]),
-
-
-  {ok, lists:flatten(Updates), UACD33}.
+  {ok, lists:flatten(Updates), UACD3}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-update_shots(UpdateContext, Shots) ->
-  lists:foldl(fun(Shot, {ShotUpdates, RemainingShots}) ->
+update_shots(ArenaComponentData) ->
+  Shots = pewpew_arena_component_data:shots(ArenaComponentData),
+  lists:foreach(fun pewpew_shot_component:move/1, Shots),
+
+  Players = pewpew_arena_component_data:players(ArenaComponentData),
+  Height = pewpew_arena_component_data:height(ArenaComponentData),
+  Width = pewpew_arena_component_data:width(ArenaComponentData),
+  UpdateContext = #{
+    arena_dimensions => #{
+        width => Width,
+        height => Height
+        },
+    players => Players
+  },
+
+  {Updates, S} = lists:foldl(fun(Shot, {ShotUpdates, RemainingShots}) ->
     case pewpew_shot_component:update(Shot, UpdateContext) of
       updated ->
             {[do_nothing | ShotUpdates], [Shot | RemainingShots]};
       destroyed ->
             {[do_nothing | ShotUpdates], RemainingShots}
         end
-    end, {[], []}, Shots).
+    end, {[], []}, Shots),
 
-update_players(UpdateContext, Players) ->
-  update_players(UpdateContext, Players, [], []).
+  UpdatedArenaComponentData = pewpew_player_component_data:update(ArenaComponentData, [{shots, S}]),
+  {UpdatedArenaComponentData, Updates}.
 
-update_players(_, [], NonDestroyedPlayers, PlayersNotifications) ->
-  {PlayersNotifications, NonDestroyedPlayers};
-update_players(UpdateContext, [Player | Players], NonDestroyedPlayers, PlayersNotifications) ->
+update_players(ArenaComponentData) ->
+  Players = pewpew_arena_component_data:players(ArenaComponentData),
+  update_players(ArenaComponentData, Players, [], []).
+
+update_players(ArenaComponentData, [], NonDestroyedPlayers, PlayersNotifications) ->
+  UpdatedArenaComponentData = pewpew_arena_component_data:update(ArenaComponentData, [{players, NonDestroyedPlayers}]),
+  {UpdatedArenaComponentData, PlayersNotifications};
+update_players(ArenaComponentData, [Player | Players], NonDestroyedPlayers, PlayersNotifications) ->
+  ?debugVal(pewpew_arena_component_data:shots(ArenaComponentData)),
+  ShotsContext = lists:map(fun(Shot) ->
+          ?debugVal(Shot),
+    {x, X, y, Y} = pewpew_shot_component:coordinates(Shot),
+    Radius = 1,
+    {x, X, y, Y, radius, Radius}
+  end, pewpew_arena_component_data:shots(ArenaComponentData)),
+  UpdateContext = #{shots => ShotsContext},
+
   case pewpew_player_component:update(Player, UpdateContext) of
     {updated, PlayerUpdateNotifications} ->
-      update_players(UpdateContext, Players, [Player | NonDestroyedPlayers], [PlayerUpdateNotifications | PlayersNotifications]);
+      update_players(ArenaComponentData, Players, [Player | NonDestroyedPlayers], [PlayerUpdateNotifications | PlayersNotifications]);
     {destroyed, PlayerUpdateNotifications} ->
-      update_players(UpdateContext, Players, NonDestroyedPlayers, [PlayerUpdateNotifications | PlayersNotifications])
+      update_players(ArenaComponentData, Players, NonDestroyedPlayers, [PlayerUpdateNotifications | PlayersNotifications])
   end.
 
-update_radars(Players, ArenaComponentData) ->
+update_radars(ArenaComponentData) ->
+  Players = pewpew_arena_component_data:players(ArenaComponentData),
   update_radar(Players, Players, ArenaComponentData, []).
 
 update_radar([], _, ArenaComponentData, Notifications) ->

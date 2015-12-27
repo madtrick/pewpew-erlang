@@ -2,19 +2,29 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -export([
+  bounding_circle/1,
   set_coordinates/2,
   get_coordinates/1,
   move/2,
   snapshot/1,
   update/2,
   configure/3,
-  shoot/1
+  shoot/1,
+  hit/2
 ]).
 
 -define(MOVEMENT_SPEED, 1).
 % TODO remove the RADAR_MODES constant
 -define(RADAR_MODES, [<<"long_range_scan">>]).
 -define(LIFE_LOSS_BY_SHOT_HIT, 5).
+
+bounding_circle(PlayerComponentData) ->
+  X = pewpew_player_component_data:x(PlayerComponentData),
+  Y = pewpew_player_component_data:y(PlayerComponentData),
+  Radius = pewpew_player_component_data:radius(PlayerComponentData),
+  BoundingCircle = {x, X, y, Y, radius, Radius},
+
+  {ok, BoundingCircle}.
 
 set_coordinates(Coordinates, PlayerComponentData) ->
   NewPlayerComponentData = pewpew_player_component_data:update(Coordinates, PlayerComponentData),
@@ -36,11 +46,22 @@ snapshot(PlayerComponentData) ->
 
   {ok, Snapshot}.
 
-update(PlayerComponentData, UpdateContext) ->
-  #{shots := Shots} = UpdateContext,
+update(PlayerComponentData, _UpdateContext) ->
+  %#{shots := Shots} = UpdateContext,
+  %Life = pewpew_player_component_data:life(PlayerComponentData),
 
-  UpdatedPlayerComponentData = update_shooting_info(PlayerComponentData),
-  evaluate_shots(Shots, UpdatedPlayerComponentData).
+  {Status, UPCD, Notifications} = evaluate_hits(PlayerComponentData),
+  UPCD2 = pewpew_player_component_data:update(UPCD, [{hits, []}]),
+  case Status of
+    alive ->
+      UpdatedPlayerComponentData = update_shooting_info(UPCD2),
+      {ok, UpdatedPlayerComponentData, Notifications};
+    destroyed ->
+      {destroyed, UPCD2, Notifications}
+  end.
+
+
+  %evaluate_shots(Shots, UpdatedPlayerComponentData).
 
 configure(PlayerComponentData, <<"radarType">>, [NewType]) ->
   %TODO: remove this check as this is also checked in the radar_mod file
@@ -70,6 +91,13 @@ shoot(PlayerComponentData) ->
 
   {ok, UpdatedPlayerComponentData}.
 
+hit(PlayerComponentData, Hit) ->
+  Hits = pewpew_player_component_data:hits(PlayerComponentData),
+  NewHits = [Hit | Hits],
+  UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{hits, NewHits}]),
+
+  {ok, UpdatedPlayerComponentData}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,40 +118,25 @@ calculate_new_coordinates(Sign, Speed, PlayerComponentData) ->
   {x, UpdatedX, y, UpdatedY} = pewpew_utils:translate_point_by_vector(Speed * Sign, Rotation, Coordinates),
   [{x, UpdatedX}, {y, UpdatedY}].
 
-evaluate_shots(Shots, PlayerComponentData) ->
-  InitialLife = pewpew_player_component_data:life(PlayerComponentData),
-  evaluate_shots(Shots, InitialLife, PlayerComponentData, []).
+evaluate_hits(PlayerComponentData) ->
+  Hits = pewpew_player_component_data:hits(PlayerComponentData),
+  evaluate_hit(PlayerComponentData, Hits, []).
 
-evaluate_shots([], _, PlayerComponentData, Notifications) ->
-  {ok, PlayerComponentData, Notifications};
-evaluate_shots([Shot | Tail], Life, PlayerComponentData, Notifications) ->
-  Radius = pewpew_player_component_data:radius(PlayerComponentData),
-  PX = pewpew_player_component_data:x(PlayerComponentData),
-  PY = pewpew_player_component_data:y(PlayerComponentData),
-  {x, ShotX, y, ShotY, radius, ShotRadius} = Shot,
-
-  PlayerCircle = {x, PX, y, PY, radius, Radius},
-  ShotCircle = {x, ShotX, y, ShotY, radius, ShotRadius},
-  Intersect = pewpew_utils:circles_intersect(ShotCircle, PlayerCircle),
-
-  case Intersect of
+evaluate_hit(PlayerComponentData, [], Notifications) ->
+  Life = pewpew_player_component_data:life(PlayerComponentData),
+  case Life =< 0 of
     true ->
-      CurrentLife = pewpew_player_component_data:life(PlayerComponentData),
-      NewLife = CurrentLife - ?LIFE_LOSS_BY_SHOT_HIT,
-      UpdatedPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{life, NewLife}]),
-      case NewLife =< 0 of
-        false ->
-          Notification = player_hit_by_shot_notification(UpdatedPlayerComponentData),
-          UpdatedNotifications = [Notification | Notifications],
-          evaluate_shots(Tail, NewLife, UpdatedPlayerComponentData, UpdatedNotifications);
-        true ->
-          Notification = player_destroyed_notification(UpdatedPlayerComponentData),
-          UpdatedNotifications = [Notification | Notifications],
-          {destroyed, UpdatedPlayerComponentData, UpdatedNotifications}
-      end;
+      PlayerDestroyedNotification = player_destroyed_notification(PlayerComponentData),
+      {destroyed, PlayerComponentData, [PlayerDestroyedNotification | Notifications]};
     false ->
-      evaluate_shots(Tail, Life, PlayerComponentData, Notifications)
-  end.
+      {alive, PlayerComponentData, Notifications}
+  end;
+evaluate_hit(PlayerComponentData, [_ | Hits], Notifications) ->
+  Life = pewpew_player_component_data:life(PlayerComponentData),
+  NewLife = Life - ?LIFE_LOSS_BY_SHOT_HIT,
+  NewPlayerComponentData = pewpew_player_component_data:update(PlayerComponentData, [{life, NewLife}]),
+  Notification = player_hit_by_shot_notification(NewPlayerComponentData),
+  evaluate_hit(NewPlayerComponentData, Hits, [Notification | Notifications]).
 
 player_hit_by_shot_notification(PlayerComponentData) ->
   Life = pewpew_player_component_data:life(PlayerComponentData),

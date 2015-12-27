@@ -8,6 +8,7 @@
   origin/1,
   color/1,
   name/1,
+  hits/1,
   life/1,
   rotation/1,
   radius/1,
@@ -26,6 +27,7 @@ x(#{ x := X }) -> X.
 y(#{ y := Y }) -> Y.
 color(#{ color := Color }) -> Color.
 name(#{ name := Name }) -> Name.
+hits(#{ hits := Hits }) -> Hits.
 life(#{ life := Life }) -> Life.
 origin(#{ origin := Origin }) -> Origin.
 rotation(#{ rotation := Rotation }) -> Rotation.

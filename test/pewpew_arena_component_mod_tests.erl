@@ -23,16 +23,12 @@ get_player_using_id_test_() ->
 
 when_multiple_shots_are_destroyed_in_one_cycle_all_are_removed_from_the_arena_test() ->
   % Presuppose that the shots have been already moved
-  {ok, Shot1} = pewpew_shot_component:start_link([{rotation, 0}, {x, 200}, {y, 200}, {id, 1}]),
-  {ok, Shot2} = pewpew_shot_component:start_link([{rotation, 0}, {x, 200.5}, {y, 100}, {id, 2}]),
-  {ok, Shot3} = pewpew_shot_component:start_link([{rotation, 0}, {x, 10}, {y, 100}, {id, 3}]),
-
-  UpdateContext = #{
-    arena_dimensions => #{width => 200, height => 400},
-    players => []
-  },
+  {ok, Shot1} = pewpew_shot_component:start_link([{rotation, 0}, {x, 200}, {y, 200}, {id, 1}, {speed, 1.5}]),
+  {ok, Shot2} = pewpew_shot_component:start_link([{rotation, 0}, {x, 200.5}, {y, 100}, {id, 2}, {speed, 1.5}]),
+  {ok, Shot3} = pewpew_shot_component:start_link([{rotation, 0}, {x, 10}, {y, 100}, {id, 3}, {speed, 1.5}]),
 
   Shots = [Shot1, Shot2, Shot3],
-  {_, RemainingShots} = pewpew_arena_component_mod:update_shots(UpdateContext, Shots),
+  ArenaComponentData = pewpew_arena_component_data:new([{shots, Shots}, {width, 200}, {height, 400}]),
+  {_, RemainingShots} = pewpew_arena_component_mod:update_shots(ArenaComponentData),
 
   ?assertEqual([Shot3], RemainingShots).

@@ -11,6 +11,7 @@
   terminate/2
 ]).
 -export([
+  bounding_circle/1,
   get_state/1,
   set_state/2,
   id/1,
@@ -20,7 +21,7 @@
   destroy/1,
   color/1,
   name/1,
-  hit/1,
+  hit/2,
   life/1,
   rotate/2,
   rotation/1,
@@ -49,6 +50,9 @@
 start_link(PlayerData) ->
   gen_server:start_link(?MODULE, [PlayerData], []).
 
+bounding_circle(PlayerComponent) ->
+  gen_server:call(PlayerComponent, bounding_circle).
+
 get_state(PlayerComponent) ->
   gen_server:call(PlayerComponent, get_state).
 
@@ -66,8 +70,8 @@ y(PlayerComponent) ->
   {_, _, y, Y} = coordinates(PlayerComponent),
   Y.
 
-hit(PlayerComponent) ->
-  gen_server:cast(PlayerComponent, hit).
+hit(PlayerComponent, Hit) ->
+  gen_server:cast(PlayerComponent, {hit, Hit}).
 
 color(PlayerComponent) ->
   gen_server:call(PlayerComponent, color).
@@ -144,8 +148,6 @@ handle_info(?PROCESS_DOWN(Pid), PlayerComponentData) ->
 
 handle_cast(destroy, PlayerComponentData) ->
   {stop, destroyed, PlayerComponentData};
-handle_cast(hit, PlayerComponentData) ->
-  {noreply, hit2(PlayerComponentData)};
 handle_cast({move, Data}, PlayerComponentData) ->
   [{direction, Direction}]     = Data,
   {ok, NewPlayerComponentData} = pewpew_player_component_mod:move(Direction, PlayerComponentData),
@@ -156,8 +158,14 @@ handle_cast({set_coordinates, Coordinates}, PlayerComponentData) ->
   {ok, NewPlayerComponentData} = pewpew_player_component_mod:set_coordinates(PlayerComponentData, Coordinates),
   {noreply, NewPlayerComponentData};
 handle_cast({set_state, Data}, _) ->
-  {noreply, Data}.
+  {noreply, Data};
+handle_cast({hit, Hit}, PlayerComponentData) ->
+  {ok, NewPlayerComponentData} = pewpew_player_component_mod:hit(PlayerComponentData, Hit),
+  {noreply, NewPlayerComponentData}.
 
+handle_call(bounding_circle, _, PlayerComponentData) ->
+  {ok, BoundingCircle} = pewpew_player_component_mod:bounding_circle(PlayerComponentData),
+  {reply, BoundingCircle, PlayerComponentData};
 handle_call({update, UpdateContext}, _, PlayerComponentData) ->
   case pewpew_player_component_mod:update(PlayerComponentData, UpdateContext) of
     {ok, UpdatedPlayerComponentData, Notifications} ->
@@ -206,12 +214,6 @@ terminate(_Repos, _PlayerComponentData) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-hit2(PlayerComponentData) ->
-  pewpew_player_component_data:update(
-    PlayerComponentData,
-    [{life, player_component_data_life(PlayerComponentData) - 10}]
-  ).
 
 player_component_data_life(PlayerComponentData) ->
   pewpew_player_component_data:life(PlayerComponentData).
