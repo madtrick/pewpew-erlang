@@ -88,9 +88,7 @@ dimensions(ArenaComponentData) ->
 
 update(ArenaComponentData) ->
   {UACD, N} = update_shots(ArenaComponentData),
-  %UACD = pewpew_arena_component_data:update(ArenaComponentData, [{shots, RemainingShots}]),
   {UACD2, N2} = update_players(UACD),
-  %UACD4 = pewpew_arena_component_data:update(UACD, [{players, NonDestroyedPlayers}]),
   {UACD3, N3} = update_radars(UACD2),
 
   Updates = lists:append([N, N2, N3]),
@@ -140,8 +138,7 @@ update_players(ArenaComponentData, [Player | Players], NonDestroyedPlayers, Play
   ShotsContext = lists:map(fun(Shot) ->
           ?debugVal(Shot),
     {x, X, y, Y} = pewpew_shot_component:coordinates(Shot),
-    Radius = 1,
-    {x, X, y, Y, radius, Radius}
+    {x, X, y, Y, radius, 1}
   end, pewpew_arena_component_data:shots(ArenaComponentData)),
   UpdateContext = #{shots => ShotsContext},
 
