@@ -1,0 +1,4 @@
+- game cycle
+  - how many messages a player can send per cycle
+- Commands
+- Notifications
