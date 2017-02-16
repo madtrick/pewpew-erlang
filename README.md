@@ -6,9 +6,9 @@ These bots will communicate with the game server via a WebSockets connection.
 
 For more information about the game take a look to:
 
-- [Game overview](./game)
-- [Commands](./commands) that the bot can send and their possible response
-- [Notifications](./notifications) that the game server can send on each game cycle
+- [Game overview](./game.md)
+- [Commands](./commands.md) that the bot can send and their possible response
+- [Notifications](./notifications.md) that the game server can send on each game cycle
 
 ## Author
 Developed by Farruco Sanjurjo. You can find me:
