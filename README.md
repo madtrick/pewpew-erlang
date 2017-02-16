@@ -1,3 +1,15 @@
+## The game
+
+PewPew is a programming game loosely based on the [Real Time Battle Game](http://realtimebattle.sourceforge.net/). As with RTB players program a small bot whose goal is to be last standing one in a deathmatch game.
+
+These bots will communicate with the game server via a WebSockets connection.
+
+For more information about the game take a look to:
+
+- [Game overview](./game)
+- [Commands](./commands) that the bot can send and their possible response
+- [Notifications](./notifications) that the game server can send on each game cycle
+
 ## Author
 Developed by Farruco Sanjurjo. You can find me:
 
