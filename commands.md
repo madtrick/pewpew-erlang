@@ -8,43 +8,44 @@ Following are the available commands:
 - `StartGameCommand`
 - `ConfigurePlayerCommand`
 
-OTHER
-
-####ShootingInfo
-Struct that describes the shooting capabilities of the player. Fields
-
-- tokens (integer) shooting tokens the player has
-- cost (integer) the cost of each shot in terms of tokens
-
-
 ## RegisterPlayerCommand
 
-- payload
-```
+- When can be sent
+ - At any time during the game. But depending on the value of the `players_can_join_started_game` configuration variable they might not be able to participate on an ongoing game
+
+- Payload
+```json
 {"type": "RegisterPlayerCommand"}
 ```
-- when can be sent
-At any time during the game. But depending on the value of the `players_can_join_started_game` configuration variable they might
-not be able to participate on an ongoin game
 
-- expects response
-Yes
-  - which response
-    If the registration was successful:
-    ```
+- Response
+    - If the registration was successful:
+
+    ```json
     {
       "type": "RegisterPlayerAck",
         "data": {
-          "id": // (string) Player ID,
-          "x": // (integer) X coordinate of the player in the arena
-          "y": // (integer) Y coordinate of the player in the arena
-          "life": // (integer) Life units left on the player
-          "shooting": // (ShootingInfo) Details about the shooting capabilities of the player
+          "id": "/* (string) Player ID */",
+          "x": "/* (integer) X coordinate of the player in the arena */",
+          "y": "/* (integer) Y coordinate of the player in the arena */",
+          "life": "/* (integer) Life units left on the player */",
+          "shooting": "/* (ShootingInfo) Details about the shooting capabilities of the player */"
         }
     }
     ```
-    If the player can also join an ongoin game then he will also receive:
+
+    Where `ShootingInfo` is:
+
+    ```json
+    {
+      "tokens": // (integer) shooting tokens the player has
+      "cost": // (integer) the cost of each shot in terms of tokens
+    }
     ```
+
+    If the player can also join an ongoing game then he will also receive:
+
+    ```json
     {
       "type": "StartGameOrder"
     }
@@ -52,163 +53,174 @@ Yes
     meaning that he should start playing
 
     If the registration failed:
-    ```
+
+    ```json
     {
       "type": "InvalidCommandError"
     }
     ```
 
-- Reasons for an "InvalidCommandError"
+- Reasons for an `InvalidCommandError`
   - The arena is already full
   - The same Websocket connection is being used to register more than one player
 
 
 ## MovePlayerCommand
 
-- payload
-```
-{"type": "MovePlayerCommand", "data": [(Movement)]}
-```
-Where movement can be
-```
-{"move": // (string) either "forward" or "backward"}
-{"rotate": // (integer, min: 0, max: 360) number of degress to rotate }
-```
-There can be only one `move` and one `rotate` per `MovePlayerCommand`.
-
-- when can be sent
+- When can be sent
   - Only after the player has registerd and the game has started
 
-- expects response
-Yes
-  - which response
-    If the movement went fine
-    ```
-{
-  "type": "MovePlayerAck",
-    "data": {
-"x": // (integer) X coordinate of the player in the arena after the move,
-"y": // (integer) Y coordinate of the player in the arena after the move,
-"rotation": // (integer?) angle of the player in the arena after the move
+- Payload
+
+```json
+{"type": "MovePlayerCommand", "data": [(Movement), (Rotation)]}
+```
+
+Where `Movement` is:
+
+```json
+{"move": // (string) either "forward" or "backward"}
+```
+
+and `Rotation` is:
+
+```json
+{"rotate": // (integer, min: 0, max: 360) number of degress to rotate }
+```
+
+There can be only one `move` and one `rotate` per `MovePlayerCommand`.
+
+- Response
+  - If the command was valid
+
+    ```json
+    {
+      "type": "MovePlayerAck",
+        "data": {
+          "x": // (integer) X coordinate of the player in the arena after the move,
+          "y": // (integer) Y coordinate of the player in the arena after the move,
+          "rotation": // (integer?) angle of the player in the arena after the move
+        }
     }
-}
     ```
 
-    If the movement failed:
-    ```
+  - If the command failed:
+    ```json
     {
       "type": "InvalidCommandError"
     }
     ```
 
-
-- Reasons for an "InvalidCommandError"
+- Reasons for an `InvalidCommandError`
   - The game was not started when the command was sent
   - The player was not registered
   - The player hit a wall because of the move
   - The player hit a player because of the move
 
-### PlayerShootCommand
+## PlayerShootCommand
 
-- payload
-```
-{"type": "PlayerShootComman"}
-```
 - when can be sent
   - Only after the player has registered and the game has started
-- expects response
-Yes
-  - which response
-    If the shot was possible
-    ```
-{
-  "type": "PlayerShotAck",
-    "data": {
-      "shooting": {
-        "tokens": // (integer) shooting tokens the player has,
-        "cost": // (integer) the cost of each shot in terms of tokens,
-      }
+
+- Payload
+```json
+{"type": "PlayerShootComman"}
+```
+
+- Response
+  - If the command was valid
+
+    ```json
+    {
+      "type": "PlayerShotAck",
+        "data": {
+          "shooting": {
+            "tokens": // (integer) shooting tokens the player has,
+            "cost": // (integer) the cost of each shot in terms of tokens,
+          }
+        }
     }
-}
     ```
 
-    If the shot failed
+  - If the command failed
+    ```json
+    {"type": "InvalidCommandError"}
     ```
-{"type": "InvalidCommandError"}
-    ```
-- Reasons for an "InvalidCommandError"
+
+- Reasons for an `InvalidCommandError`
   - The game was not started when the command was sent
   - The player was not registered
   - The player run out of tokens
 
-### StartGameCommand
+## StartGameCommand
 
-- payload
-```
+- When can be sent
+  - When the game hasn't started
+
+- Payload
+
+```json
 {"type": "StartGameCommand"}
 ```
-- when can be sent
-  - When the game hasn't started
-- who can send it
-  - The controller
 
-- expects response
-Yes
-  - which response
-    If the shot was possible
-    ```
-{
-  "type": "StartGameAck"
-}
+- Who can send it
+  - The controller bot
+
+- Response
+  - If the command was valid
+
+    ```json
+    {
+      "type": "StartGameAck"
+    }
     ```
 
-    If the game could not be started
+  - If the command failed
+    ```json
+    {"type": "InvalidCommandError"}
     ```
-{"type": "InvalidCommandError"}
-    ```
-- Reasons for an "InvalidCommandError"
+
+- Reasons for an `InvalidCommandError`
   - Who sent the command was not the controller
   - The game was already started
 
-When the game is started the server will also send a `StartGameOrder` order to all registerd players
+When the game is started the server will also send a `StartGameOrder` order to all registerd players.
 
-### ConfigurePlayerCommand
+## ConfigurePlayerCommand
 
-- payload
-```
+- When can be sent
+  - At any point in time
+
+- Payload
+```json
 {"type": "ConfigurePlayerCommand", "data": [(Config)]}
 ```
+
 Where `Config` is:
 
-```
+```json
 {"op": // (ConfigurationOp), "args": // }
 ```
 
 Where `ConfigurationOp` can be:
 
 - `radarType`. Valid args for this `ConfigurationOp` are: `long_range_scan`
-TODO: make available the switch back to `circular_scan`
 
-- when can be sent
-  - When the game has started
-  - When the player has registered
 
-- expects response
-Yes
-  - which response
-    If the configuration was possible
-    ```
-{
-  "type": "ConfigurePlayerAck"
-}
+- Response
+  - If the command was valid
+
+    ```json
+    {
+      "type": "ConfigurePlayerAck"
+    }
     ```
 
-    If the player could not be configured
+  - If the command failed
+    ```json
+    {"type": "InvalidCommandError"}
     ```
-{"type": "InvalidCommandError"}
-    ```
-- Reasons for an "InvalidCommandError"
-  - The game wasn't started
-  - The player wasn't registered
+
+- Reasons for an `InvalidCommandError`
   - The `ConfigurationOp` was invalid
 
