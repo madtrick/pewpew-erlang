@@ -38,7 +38,7 @@ Yes
           "id": // (string) Player ID,
           "x": // (integer) X coordinate of the player in the arena
           "y": // (integer) Y coordinate of the player in the arena
-          "life": // (integer) Life left on the player
+          "life": // (integer) Life units left on the player
           "shooting": // (ShootingInfo) Details about the shooting capabilities of the player
         }
     }
