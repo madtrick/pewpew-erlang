@@ -11,118 +11,139 @@ Following are the available notifications:
 
 ## GameSnapshotNotification
 
-- payload
-```
-{
-  "type": "GameSnapshotNotification",
-    "data": {
-      "arena_snapshot": {
-        "players:_snapshots": [(PlayerSnapshot)],
-        "shots_snapshots": []
+- When is it sent
+  - Its sent on every game cycle
+
+- Who can receive it
+  - The controller
+
+- Payload
+
+  ```
+  {
+    "type": "GameSnapshotNotification",
+      "data": {
+        "arena_snapshot": {
+          "players:_snapshots": [(PlayerSnapshot)],
+          "shots_snapshots": [(ShotSnapshot)]
+        }
       }
-    }
-}
-```
-
-Where `PlayerSnapshot` is:
-
-```
-{
-  "id": // (string) Player ID,
-    "coordinates": {
-      "x": // (float) X coordinate of the player in the arena,
-      "y": // (float) Y coordinate of the player in the arena
-    }
-  "rotation": // (integer) Angle of the player in the arena ,
-  "life": // (integer) Life units left on the player,
-  "radar": {
-    "type": // (string) Radar type. One of ['longScan', 'circular_scan'],
-    "radius": // (integer) Radius of the radar
   }
-}
-```
+  ```
 
-Where `ShotSnapshot` is:
+  Where `PlayerSnapshot` is:
 
-```
-{
-  "id": // (integer) Shot ID,
-    "coordinates": {
-      "x": // (float) X coordinate of the player in the arena,
-      "y": // (float) Y coordinate of the player in the arena
+  ```
+  {
+    "id": // (string) Player ID,
+      "coordinates": {
+        "x": // (float) X coordinate of the player in the arena,
+        "y": // (float) Y coordinate of the player in the arena
+      }
+    "rotation": // (integer) Angle of the player in the arena ,
+    "life": // (integer) Life units left on the player,
+    "radar": {
+      "type": // (string) Radar type. One of ['longScan', 'circular_scan'],
+      "radius": // (integer) Radius of the radar
     }
-}
-```
+  }
+  ```
 
-- when is sent
-Its sent on every game cycle through the control Websocket connection
+  Where `ShotSnapshot` is:
+
+  ```
+  {
+    "id": // (integer) Shot ID,
+      "coordinates": {
+        "x": // (float) X coordinate of the player in the arena,
+        "y": // (float) Y coordinate of the player in the arena
+      }
+  }
+  ```
 
 ## NoSlotsLeftNofication
 
-- payload
+- When is it sent
+  - When a player tries to register but the arena is already full
 
-```
-{"type": "NoSlotsLeftNotification"}
-```
+- Who can receive it
+  - A bot
 
-- when is sent
-When a player tries to register but the arena is already full
+- Payload
+
+  ```
+  {"type": "NoSlotsLeftNotification"}
+  ```
 
 ## PlayerDestroyedNotification
+
+- When is it sent
+  - When the player's life runs out
+
+- Who can receive it
+  - A bot
 
 - payload
 ```
 {"type": "PlayerDestroyedNotification"}
 ```
 
-- when is sent
-When the player's life runs out
-
 ## PlayerHitByShotNotification
 
-- payload
-```
-{
-  "type": "PlayerHitByShotNotification",
-    "data": {
-      "life": // (integer) Life units left on the player
-    }
-}
-```
+- When is it sent
+  - When the player is hit by a shot
 
-- when is sent
-When the player is hit by a shot
+- Who can receive it
+  - A bot
+
+- Payload
+
+  ```
+  {
+    "type": "PlayerHitByShotNotification",
+      "data": {
+        "life": // (integer) Life units left on the player
+      }
+  }
+  ```
 
 ## RadarScanNotification
 
-- payload
-```
-{
-  "type": "RadarScanNotification",
-    "data": {
-      "elements": [(ScannedElement)],
-      "walls": [(ScannedWall)]
+- When is it sent
+  - On every cycle
+
+- Who can receive it
+  - A bot
+
+- Payload
+
+    ```
+    {
+      "type": "RadarScanNotification",
+        "data": {
+          "elements": [(ScannedElement)],
+          "walls": [(ScannedWall)]
+        }
     }
-}
-```
+    ```
 
-Where `ScannedElement` is:
+  Where `ScannedElement` is:
 
-```
-{
-  "type": "unknown",
-    "coordinates": {
-      "x": // (float) X coordinate of the player in the arena,
-      "y": // (float) Y coordinate of the player in the arena
-    }
-}
-```
+  ```
+  {
+    "type": "unknown",
+      "coordinates": {
+        "x": // (float) X coordinate of the player in the arena,
+        "y": // (float) Y coordinate of the player in the arena
+      }
+  }
+  ```
 
-Where `ScannedWall` is:
+  Where `ScannedWall` is:
 
-```
-[
-  // (float) X coordinate of the intersection of the scan with the wall,
-  // (float) Y coordinate of the intersection of the scan with the wall
-]
-```
+  ```
+  [
+    // (float) X coordinate of the intersection of the scan with the wall,
+    // (float) Y coordinate of the intersection of the scan with the wall
+  ]
+  ```
