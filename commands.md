@@ -14,29 +14,29 @@ Following are the available commands:
  - At any time during the game. But depending on the value of the `players_can_join_started_game` configuration variable they might not be able to participate on an ongoing game
 
 - Payload
-```json
+```
 {"type": "RegisterPlayerCommand"}
 ```
 
 - Response
     - If the registration was successful:
 
-    ```json
+    ```
     {
       "type": "RegisterPlayerAck",
         "data": {
-          "id": "/* (string) Player ID */",
-          "x": "/* (integer) X coordinate of the player in the arena */",
-          "y": "/* (integer) Y coordinate of the player in the arena */",
-          "life": "/* (integer) Life units left on the player */",
-          "shooting": "/* (ShootingInfo) Details about the shooting capabilities of the player */"
+          "id": // (string) Player ID
+          "x": // (integer) X coordinate of the player in the arena
+          "y": // (integer) Y coordinate of the player in the arena
+          "life": // (integer) Life units left on the player
+          "shooting": // (ShootingInfo) Details about the shooting capabilities of the player
         }
     }
     ```
 
     Where `ShootingInfo` is:
 
-    ```json
+    ```
     {
       "tokens": // (integer) shooting tokens the player has
       "cost": // (integer) the cost of each shot in terms of tokens
@@ -45,7 +45,7 @@ Following are the available commands:
 
     If the player can also join an ongoing game then he will also receive:
 
-    ```json
+    ```
     {
       "type": "StartGameOrder"
     }
@@ -54,7 +54,7 @@ Following are the available commands:
 
     If the registration failed:
 
-    ```json
+    ```
     {
       "type": "InvalidCommandError"
     }
@@ -72,19 +72,19 @@ Following are the available commands:
 
 - Payload
 
-```json
+```
 {"type": "MovePlayerCommand", "data": [(Movement), (Rotation)]}
 ```
 
 Where `Movement` is:
 
-```json
+```
 {"move": // (string) either "forward" or "backward"}
 ```
 
 and `Rotation` is:
 
-```json
+```
 {"rotate": // (integer, min: 0, max: 360) number of degress to rotate }
 ```
 
@@ -93,7 +93,7 @@ There can be only one `move` and one `rotate` per `MovePlayerCommand`.
 - Response
   - If the command was valid
 
-    ```json
+    ```
     {
       "type": "MovePlayerAck",
         "data": {
@@ -105,7 +105,7 @@ There can be only one `move` and one `rotate` per `MovePlayerCommand`.
     ```
 
   - If the command failed:
-    ```json
+    ```
     {
       "type": "InvalidCommandError"
     }
@@ -123,14 +123,14 @@ There can be only one `move` and one `rotate` per `MovePlayerCommand`.
   - Only after the player has registered and the game has started
 
 - Payload
-```json
+```
 {"type": "PlayerShootComman"}
 ```
 
 - Response
   - If the command was valid
 
-    ```json
+    ```
     {
       "type": "PlayerShotAck",
         "data": {
@@ -143,7 +143,7 @@ There can be only one `move` and one `rotate` per `MovePlayerCommand`.
     ```
 
   - If the command failed
-    ```json
+    ```
     {"type": "InvalidCommandError"}
     ```
 
@@ -159,7 +159,7 @@ There can be only one `move` and one `rotate` per `MovePlayerCommand`.
 
 - Payload
 
-```json
+```
 {"type": "StartGameCommand"}
 ```
 
@@ -169,14 +169,14 @@ There can be only one `move` and one `rotate` per `MovePlayerCommand`.
 - Response
   - If the command was valid
 
-    ```json
+    ```
     {
       "type": "StartGameAck"
     }
     ```
 
   - If the command failed
-    ```json
+    ```
     {"type": "InvalidCommandError"}
     ```
 
@@ -192,13 +192,13 @@ When the game is started the server will also send a `StartGameOrder` order to a
   - At any point in time
 
 - Payload
-```json
+```
 {"type": "ConfigurePlayerCommand", "data": [(Config)]}
 ```
 
 Where `Config` is:
 
-```json
+```
 {"op": // (ConfigurationOp), "args": // }
 ```
 
@@ -210,14 +210,14 @@ Where `ConfigurationOp` can be:
 - Response
   - If the command was valid
 
-    ```json
+    ```
     {
       "type": "ConfigurePlayerAck"
     }
     ```
 
   - If the command failed
-    ```json
+    ```
     {"type": "InvalidCommandError"}
     ```
 
