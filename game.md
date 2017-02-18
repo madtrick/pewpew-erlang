@@ -1,5 +1,38 @@
 ## Game
 
+The game will open 2 WebSockets connections. One connection will be used by the bots
+to communicate with the server (send commands, receive notifications, etc) and the other
+one by the game controller.
+
+The game controller is the one who can start the game and it's also the one who will
+receive updates about the state of the game at any moment.
+
+```
+                      +---------------+
+                      |  CONTROLLER   |
+                      +---+--------^--+
+                          |        |
+                          |        |
+                          |        |
++---------------+   +-----v--------+-----+
+|               +---+ CONTROL CONNECTION |
+|               |   +--------------------+
+|               |
+|     GAME      |
+|               |
+|               |   +--------------------+
+|               +---+  BOTS   CONNECTIONS|
++---------------+   --+---^-------+---^--+
+                      |   |       |   |
+                      |   |       |   |
+                      |   |       |   |
+                    +-v---+-+   +-v---+-+
+                    |       |   |       |
+                    |  BOT  |   |  BOT  |   ...
+                    +-------+   +-------+
+```
+
+
 Game moves forward in the sense of cycles. Each cycle has a fixed time duration on which the game engine
 will evaluate the commands sent by the bots and react to them. At the end of each cycle the engine
 will
