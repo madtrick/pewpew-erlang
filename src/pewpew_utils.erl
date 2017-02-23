@@ -26,7 +26,7 @@ proplist_to_map(Proplist) ->
   end, #{}, Proplist).
 
 get_value_in_map(KeyOrKeys, Map, Default) ->
-  try get_value_in_map(KeyOrKeys, Map) catch _:bad_key -> Default end.
+  try get_value_in_map(KeyOrKeys, Map) catch _:{badkey, _} -> Default end.
 get_value_in_map(Key, Map) when is_atom(Key) ->
   get_value_in_map([Key], Map);
 get_value_in_map([], Result) ->

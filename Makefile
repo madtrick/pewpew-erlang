@@ -9,7 +9,7 @@ ifeq ($(ERL),)
 $(error "Erlang not available on this system")
 endif
 
-REBAR=$(shell which rebar)
+REBAR=./rebar
 
 ifeq ($(REBAR),)
 $(error "Rebar not available on this system")
