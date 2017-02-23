@@ -29,6 +29,7 @@ when_multiple_shots_are_destroyed_in_one_cycle_all_are_removed_from_the_arena_te
 
   Shots = [Shot1, Shot2, Shot3],
   ArenaComponentData = pewpew_arena_component_data:new([{shots, Shots}, {width, 200}, {height, 400}]),
-  {_, RemainingShots} = pewpew_arena_component_mod:update_shots(ArenaComponentData),
+  {UpdatedArenaComponentData, _} = pewpew_arena_component_mod:update_shots(ArenaComponentData),
+  RemainingShots = pewpew_arena_component_data:shots(UpdatedArenaComponentData),
 
   ?assertEqual([Shot3], RemainingShots).
