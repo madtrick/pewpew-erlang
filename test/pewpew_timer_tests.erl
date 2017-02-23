@@ -16,7 +16,7 @@ executes_the_callback_function_after_the_tick_period_test_() ->
     fun(_) ->
       pewpew_timer:tick_every(pewpew_timer_callback_mock, callback),
 
-      timer:sleep(60),
+      timer:sleep(65),
 
       [
         ?_assertEqual(3, meck:num_calls(pewpew_timer_callback_mock, callback, 0))
