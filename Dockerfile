@@ -21,5 +21,6 @@ COPY include /app/include/
 RUN rebar get-deps
 RUN rebar compile
 
-CMD /bin/bash
-#CMD PEWPEW_ENV=${MODE} $(ERL) $(ERLFLAGS) -config app -s pewpew
+ENV PEWPEW_ENV development
+
+CMD erl -pa ebin -pa deps/*/ebin -config app -s pewpew
